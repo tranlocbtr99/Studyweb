@@ -45,7 +45,8 @@ app.post('/api/v1/auth/login', sameOrigin, async c => {
       .bind(crypto.randomUUID(), user.id, await sha256(token), now + 86400).run();
     setCookie(c, 'studyweb_session', token, { httpOnly: true, secure: true, sameSite: 'Strict', path: '/', maxAge: 86400 });
     return c.json({ status: 'authenticated' });
-  } catch {
+  } catch (cause) {
+    console.error('studyweb.auth.login: storage_or_crypto_failure', cause instanceof Error ? cause.name : 'unknown');
     return c.json(error('AUTH_UNAVAILABLE', 'Authentication service unavailable', ''), 503);
   }
 });
