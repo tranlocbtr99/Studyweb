@@ -21,6 +21,7 @@ export default function AdminPanel(){
   const [correctOption,setCorrectOption]=useState<'A'|'B'|'C'|'D'>('A');
   const [explanation,setExplanation]=useState('');
   const [count,setCount]=useState(0);
+  const [createdQuestions,setCreatedQuestions]=useState<Array<{id:string;body:string}>>([]);
   const [message,setMessage]=useState('');
   const [busy,setBusy]=useState(false);
   async function action(fn:()=>Promise<void>){
@@ -48,7 +49,8 @@ export default function AdminPanel(){
       <button disabled={busy}>Lưu chủ đề</button>
     </form>}
     {topic&&<form onSubmit={event=>{event.preventDefault();void action(async()=>{
-      await create('questions',{topicId:topic.id,body,options,correctOption,explanation});
+      const data=await create<{question:Created}>('questions',{topicId:topic.id,body,options,correctOption,explanation});
+      setCreatedQuestions(prev=>[...prev,{id:data.question.id,body}]);
       setBody('');setOptions(['','','','']);setExplanation('');setMessage('Đã lưu câu hỏi vào ngân hàng câu hỏi');
     });}}>
       <h2>3. Tạo câu hỏi trắc nghiệm</h2>
@@ -75,8 +77,8 @@ export default function AdminPanel(){
     </div>}
     {version&&<div className="admin-step">
       <h2>6. Thêm câu hỏi vào đề</h2>
-      <p>Mã câu hỏi được trả về khi tạo qua API. Nhập mã UUID của câu hỏi thuộc môn học này.</p>
-      <QuestionPicker busy={busy} position={count} onAdd={id=>action(async()=>{
+      <p>Chọn câu hỏi đã tạo để thêm vào phiên bản đề thi.</p>
+      <QuestionPicker busy={busy} position={count} questions={createdQuestions} onAdd={id=>action(async()=>{
         await create('exam-items',{versionId:version.id,questionId:id,position:count});
         setCount(prev=>prev+1);setMessage('Đã thêm câu hỏi vào đề');
       })}/>
@@ -91,10 +93,10 @@ export default function AdminPanel(){
     {message&&<p role="status" className="notice">{message}</p>}
   </section>;
 }
-function QuestionPicker({busy,position,onAdd}:{busy:boolean;position:number;onAdd:(id:string)=>void}){
+function QuestionPicker({busy,position,questions,onAdd}:{busy:boolean;position:number;questions:Array<{id:string;body:string}>;onAdd:(id:string)=>void}){
   const [id,setId]=useState('');
   return <form onSubmit={e=>{e.preventDefault();onAdd(id);setId('');}}>
-    <label>Mã câu hỏi UUID<input required pattern="[0-9a-fA-F-]{36}" value={id} onChange={e=>setId(e.target.value)}/></label>
+    <label>Câu hỏi<select required value={id} onChange={e=>setId(e.target.value)}><option value="">Chọn câu hỏi</option>{questions.map(q=><option key={q.id} value={q.id}>{q.body.slice(0,90)}</option>)}</select></label>
     <button disabled={busy}>Thêm câu {position+1}</button>
   </form>;
 }
