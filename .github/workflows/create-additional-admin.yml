@@ -1,0 +1,30 @@
+name: Create additional Studyweb administrator (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Enter CREATE_ADDITIONAL_ADMIN'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: studyweb-admin-provision
+  cancel-in-progress: false
+jobs:
+  create-admin:
+    if: ${{ inputs.confirmation == 'CREATE_ADDITIONAL_ADMIN' }}
+    runs-on: ubuntu-latest
+    environment: production-bootstrap
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Create a new administrator from protected secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          STUDYWEB_NEW_ADMIN_EMAIL: ${{ secrets.STUDYWEB_NEW_ADMIN_EMAIL }}
+          STUDYWEB_NEW_ADMIN_PASSWORD: ${{ secrets.STUDYWEB_NEW_ADMIN_PASSWORD }}
+        run: node scripts/create-additional-admin.mjs
