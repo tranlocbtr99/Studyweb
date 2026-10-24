@@ -3,7 +3,7 @@ import app from '../src/index';
 import type { ReadDb, ReadQuery } from '../src/auth';
 
 const token = 'a'.repeat(64);
-async function fixture(role = 'admin') {
+async function fixture(role = 'admin', snapshotReady = false) {
   const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))), b => b.toString(16).padStart(2, '0')).join('');
   const statements: Array<{ sql: string; args: unknown[] }> = [];
   const core: ReadDb = {
@@ -11,8 +11,8 @@ async function fixture(role = 'admin') {
       const record = { sql, args: [] as unknown[] };
       return {
         bind(...args: unknown[]) { record.args = args; return this; },
-        async first<T = unknown>() { return (sql.includes('FROM sessions') && record.args[0] === hash ? { id: 'admin-user' } : (sql.includes('FROM subjects WHERE id=') || sql.includes('FROM topics WHERE id=') || sql.includes('FROM exams WHERE id=')) ? { id: record.args[0] } : null) as T | null; },
-        async all() { return { results: sql.includes('FROM user_roles') ? [{ code: role }] : [] }; },
+        async first<T = unknown>() { return (snapshotReady && sql.includes('FROM exam_versions v JOIN exams') ? { id: record.args[0], subjectId: '123e4567-e89b-42d3-a456-426614174099' } : snapshotReady && sql.includes('FROM questions q JOIN question_drafts') ? { id: record.args[0], body: 'What is demand?', correctOption: 'B', explanation: 'Private explanation' } : sql.includes('FROM sessions') && record.args[0] === hash ? { id: 'admin-user' } : (sql.includes('FROM subjects WHERE id=') || sql.includes('FROM topics WHERE id=') || sql.includes('FROM exams WHERE id=')) ? { id: record.args[0] } : null) as T | null; },
+        async all() { return { results: sql.includes('FROM user_roles') ? [{ code: role }] : snapshotReady && sql.includes('FROM question_options') ? ['A','B','C','D'].map(label => ({label,text:'Option '+label})) : [] }; },
         async run() { statements.push(record); return {}; }
       };
     },
@@ -192,6 +192,20 @@ describe('admin exam item snapshots', () => {
     const res=await app.request('/api/v1/admin/exam-items',request(payload),env);
     expect(res.status).toBe(403);
     expect(statements).toHaveLength(0);
+  });
+  it('stores a public snapshot and private answer without leaking it', async () => {
+    const {env,statements}=await fixture('admin',true);
+    const res=await app.request('/api/v1/admin/exam-items',request(payload),env);
+    expect(res.status).toBe(201);
+    const data=await res.json();
+    expect(data.item.question.options).toHaveLength(4);
+    expect(JSON.stringify(data)).not.toContain('Private explanation');
+    expect(JSON.stringify(data)).not.toContain('correctOption');
+    expect(statements).toHaveLength(2);
+    expect(statements[0].sql).toContain("status='draft'");
+    expect(JSON.parse(statements[0].args[2] as string).options).toHaveLength(4);
+    expect(JSON.parse(statements[0].args[3] as string).correctOption).toBe('B');
+    expect(statements[1].args[2]).toBe('exam_item.created');
   });
   it('rejects unknown draft versions', async () => {
     const {env,statements}=await fixture();
