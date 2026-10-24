@@ -189,8 +189,8 @@ admin.post('/publish-exam-version', sameOrigin, async c => {
   const { versionId } = parsed.data;
   try {
     const version = await c.env.EXAM_CORE.prepare(
-      "SELECT id FROM exam_versions WHERE id=? AND status='draft' AND published_at IS NULL"
-    ).bind(versionId).first();
+      "SELECT id,items_revision AS itemsRevision FROM exam_versions WHERE id=? AND status='draft' AND published_at IS NULL"
+    ).bind(versionId).first<{ id: string; itemsRevision: number }>();
     if (!version) return c.json({ error: { code: 'VERSION_NOT_DRAFT' } }, 409);
     const result = await c.env.EXAM_CORE.prepare(
       'SELECT position,question_snapshot_json AS questionSnapshotJson,answer_key_private_json AS answerKeyPrivateJson FROM exam_items WHERE exam_version_id=? ORDER BY position'
@@ -203,8 +203,8 @@ admin.post('/publish-exam-version', sameOrigin, async c => {
     // Conditional UPDATE must affect exactly one row. D1 batch rolls back audit on failure.
     const writes = await c.env.EXAM_CORE.batch([
       c.env.EXAM_CORE.prepare(
-        "UPDATE exam_versions SET content_hash=?,published_at=?,status='published' WHERE id=? AND status='draft' AND published_at IS NULL AND (SELECT COUNT(*) FROM exam_items WHERE exam_version_id=?)=?"
-      ).bind(hash,publishedAt,versionId,versionId,items.length),
+        "UPDATE exam_versions SET content_hash=?,published_at=?,status='published' WHERE id=? AND status='draft' AND published_at IS NULL AND items_revision=? AND (SELECT COUNT(*) FROM exam_items WHERE exam_version_id=?)=?"
+      ).bind(hash,publishedAt,versionId,version.itemsRevision,versionId,items.length),
       c.env.EXAM_CORE.prepare(
         "INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) SELECT ?,?,?,?,? WHERE (SELECT status FROM exam_versions WHERE id=?)='published' AND (SELECT content_hash FROM exam_versions WHERE id=?)=?"
       ).bind(crypto.randomUUID(),c.get('identity').id,'exam_version.published',versionId,publishedAt,versionId,versionId,hash)
