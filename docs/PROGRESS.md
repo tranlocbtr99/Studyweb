@@ -41,3 +41,9 @@ Updated: 2026-10-24
 - Fixed envelope buffering; existing fixtures and a multiline regression both pass.
 - Correlated diagnostic workflow captures one administrator login during a 60-second tail window and prints only allowlisted categories/statuses. No passwords or raw log bodies are printed; no data/password reset or application deployment.
 - Authentication root cause remains unconfirmed pending correlated production telemetry.
+
+## Confirmed production failure stage (2026-10-25)
+- Correlated run 40115464366 captured two live POST failures with `password_verification` / `NotSupportedError`, HTTP 503; JSON envelopes now parse correctly (2 HTTP responses, 2 console entries).
+- This locates the observed administrator failure before session insertion. Current password code requests 310000 PBKDF2 iterations, matching Cloudflare's documented workerd issue #1346 about the production 100000-iteration ceiling. The exact exception message was deliberately not printed.
+- No authentication algorithm, password, user record, or deployed application was changed in this investigation.
+- Next repair must preserve existing credentials: changing only the creation iteration count cannot verify existing 310000-iteration records. Verify a compatible implementation on deployed Workers before migration or release.

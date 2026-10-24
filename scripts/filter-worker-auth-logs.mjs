@@ -34,7 +34,7 @@ for await (const line of readline.createInterface({ input: process.stdin, crlfDe
     if (pending.length > 2_000_000 || (!pending.trimStart().startsWith('{') && !pending.trimStart().startsWith('['))) pending = '';
     continue;
   }
-  pending = ''; 
+  pending = '';
   parsedJsonLines++;
   if (Array.isArray(event)) {
     arrayEnvelopeLines++;
