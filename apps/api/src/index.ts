@@ -1,6 +1,10 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-type Env = { Bindings: { EXAM_CORE: D1Database; EXAM_RESULTS: D1Database } };
+// Minimal structural typing keeps this read-only scaffold independent of
+// Cloudflare type-package publication dates; replace with generated Env types.
+type ReadQuery = { bind(...args: unknown[]): ReadQuery; all(): Promise<{ results: unknown[] }>; first(): Promise<unknown> };
+type ReadDb = { prepare(query: string): ReadQuery };
+type Env = { Bindings: { EXAM_CORE: ReadDb; EXAM_RESULTS: ReadDb } };
 const app = new Hono<Env>();
 const error = (code: string, message: string, requestId: string) => ({ error: { code, message, requestId } });
 app.use('*', async (c, next) => {
@@ -31,9 +35,7 @@ app.get('/api/v1/exams/:id', async c => {
     return c.json(error('DB_UNAVAILABLE', 'Database unavailable', c.res.headers.get('X-Request-ID') ?? ''), 503);
   }
 });
-// Mutating exam routes deliberately unavailable until authentication, CSRF,
-// cross-D1 grading snapshot verification and atomic submission are implemented.
-// Never expose answer_key_private_json or grading_snapshot_json to clients.
+// Mutation endpoints are disabled pending authentication and atomic grading.
 app.notFound(c => c.json(error('NOT_FOUND', 'Route not found', c.res.headers.get('X-Request-ID') ?? ''), 404));
 app.onError((_, c) => c.json(error('INTERNAL_ERROR', 'Internal server error', c.res.headers.get('X-Request-ID') ?? ''), 500));
 export default app;

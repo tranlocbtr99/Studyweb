@@ -1,13 +1,10 @@
 # Changelog
+## 2026-10-24 — API CI dependency repair
+- Removed unavailable @cloudflare/workers-types version after confirmed npm ETARGET.
+- Added local structural read-only D1 binding type to keep scaffold typecheckable.
 ## 2026-10-24 — Read-only API scaffold
-- Added Hono Worker API, public metadata endpoints, input validation, route tests and CI.
-- Mutating routes intentionally disabled pending secure authentication and grading.
-## 2026-10-24 — Database verification
-- Database CI passed on commit 31366b0.
-- Added CI and integrity tests.
-## 2026-10-24 — Database module
-- Added Drizzle mappings and two initial migrations.
-## 2026-10-24 — Architecture v2
-- Adopted two D1 databases.
-## 2026-10-24 — Bootstrap
-- Created initial docs and directory placeholders.
+- Added Hono Worker API, public metadata endpoints and CI.
+## 2026-10-24 — Database checks
+- Database CI passed.
+## 2026-10-24 — Initial database and architecture
+- Added two D1 schemas, migrations, docs and placeholders.
