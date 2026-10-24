@@ -1,5 +1,5 @@
 -- Local D1 admin write / audit and duplicate slug integrity smoke test.
-PRAGMA foreign_keys=ON;
+-- D1 manages foreign key enforcement; do not toggle this pragma.
 INSERT INTO users(id,email,password_hash,status,created_at)
 VALUES('ci-admin','ci-admin@example.test','not-a-real-password','active',1);
 INSERT INTO subjects(id,slug,title) VALUES('ci-admin-subject','ci-admin-subject','Admin subject');
