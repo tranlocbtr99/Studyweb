@@ -1,9 +1,9 @@
 # Changelog
+## 2026-10-24 — Exam integrity digest
+- Added canonical SHA-256 digest over public question content and private marking keys, with validation and unit tests. Not yet used by publishing.
 ## 2026-10-24 — D1 snapshot verification
-- Added local D1 smoke test for question snapshots, four options, private correct answer and public JSON secrecy.
-## 2026-10-24 — API snapshot tests
-- Added positive-path API tests for private answer separation.
-## 2026-10-24 — Exam authoring and integrity
+- Local D1 snapshot and private-key separation checks passed.
+## 2026-10-24 — Exam authoring
 - Admin subject/topic/question/exam/version/item endpoints and immutable version checks.
 ## 2026-10-24 — Foundation
 - Two D1 databases, authentication and CI.

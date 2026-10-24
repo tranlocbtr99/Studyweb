@@ -1,13 +1,14 @@
 # Progress
 Updated: 2026-10-24
 ## Completed
-- Core/results D1, authentication, admin question/exam/version authoring and draft item API.
-- Added real local D1 SQL snapshot smoke test for four options and separation of private answers; new D1 CI pending.
+- D1 core/results, secure auth and admin exam authoring.
+- Local D1 snapshot and database checks passed: https://github.com/tranlocbtr99/Studyweb/actions/runs/40097742030
+- Added deterministic SHA-256 digest helper over public question snapshots AND private answer keys; rejects empty, gapped and malformed versions. API CI pending.
 ## Pending
-- Verify snapshot D1 and API CI; HTTP-to-D1 batch rollback tests; content hash and guarded publishing.
-- Attempts/autosave/grading, frontend, load tests, deployment.
+- Verify digest CI; integrate digest with guarded publishing and D1 atomicity checks.
+- Attempts/autosave/grading, frontend, load tests and deployment.
 ## Risks
-- SQL smoke does not yet execute the HTTP endpoint or validate atomic rollback.
-- 500 concurrent users unverified; no production deployment.
+- Digest helper is not yet connected to a publishing endpoint; published versions remain unavailable through the API.
+- HTTP-to-D1 rollback and 500-user concurrency are unverified; no production deployment.
 ## Next task
-- Verify CI and build real API-to-D1 integration coverage.
+- Verify digest CI, then implement guarded publish transaction with current D1 snapshot validation.
