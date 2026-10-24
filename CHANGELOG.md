@@ -15,3 +15,8 @@
 - Published exam reads, attempts, autosave, grading, result history.
 ## 2026-10-24 — Foundation
 - D1, authentication, admin authoring and publication integrity.
+
+## 2026-10-25 — Production PBKDF2 compatibility
+- Identified HTTP 503 cause from live Worker log: `NotSupportedError` at password verification, due to production 100000 PBKDF2 iteration limit.
+- Use 100000 iterations for new password records and protected administrator password reset; existing 310000 records require a controlled password reset/migration.
+- Production rollout and real login verification pending.
