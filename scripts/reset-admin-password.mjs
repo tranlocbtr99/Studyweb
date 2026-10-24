@@ -12,7 +12,7 @@ async function query(sql, params = []) {
     Authorization: `Bearer ${token}`, 'Content-Type': 'application/json'
   }, body: JSON.stringify({ sql, params }) });
   const body = await response.json();
-  if (!response.ok || !body.success || body.result?.some(item => item.success === false)
+  if (!response.ok || !body.success || body.result?.some(item => item.success === false))
     throw new Error(`D1 request failed (HTTP ${response.status})`);
   return body.result?.[0]?.results ?? [];
 }
