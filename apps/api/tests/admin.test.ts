@@ -121,3 +121,31 @@ describe('admin question drafts', () => {
     expect(statements[6].args[2]).toBe('question.created');
   });
 });
+
+describe('admin exam drafts', () => {
+  const payload = { subjectId: '123e4567-e89b-42d3-a456-426614174000', title: 'Microeconomics practice exam' };
+  it('rejects non-admin users', async () => {
+    const { env, statements } = await fixture('student');
+    const res = await app.request('/api/v1/admin/exams', request(payload), env);
+    expect(res.status).toBe(403);
+    expect(statements).toHaveLength(0);
+  });
+  it('rejects invalid subject ids', async () => {
+    const { env, statements } = await fixture();
+    const res = await app.request('/api/v1/admin/exams', request({...payload,subjectId:'invalid'}), env);
+    expect(res.status).toBe(400);
+    expect(statements).toHaveLength(0);
+  });
+  it('creates an exam and audit without publishing', async () => {
+    const { env, statements } = await fixture();
+    const res = await app.request('/api/v1/admin/exams', request(payload), env);
+    expect(res.status).toBe(201);
+    const data = await res.json();
+    expect(data.exam.subjectId).toBe(payload.subjectId);
+    expect(statements).toHaveLength(2);
+    expect(statements[0].sql).toContain('INSERT INTO exams');
+    expect(statements[1].args[2]).toBe('exam.created');
+    expect(statements[1].args[3]).toBe(data.exam.id);
+    expect(statements.every(s => !s.sql.includes('exam_versions'))).toBe(true);
+  });
+});
