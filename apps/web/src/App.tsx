@@ -15,6 +15,7 @@ export default function App(){
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
   const [signedIn,setSignedIn]=useState<boolean|null>(null);
+  const [catalog,setCatalog]=useState<Array<{versionId:string;title:string;subject:string;questionCount:number}>>([]);
   const [versionId,setVersionId]=useState('');
   const [exam,setExam]=useState<Exam|null>(null);
   const [attempt,setAttempt]=useState<Attempt|null>(null);
@@ -49,6 +50,13 @@ export default function App(){
     const tick=()=>setRemaining(Math.max(0,attempt.expiresAt-Math.floor(Date.now()/1000)));
     tick();const timer=window.setInterval(tick,1000);return()=>window.clearInterval(timer);
   },[attempt]);
+  async function showCatalog(){
+    setBusy(true);setMessage('');
+    try{
+      const data=await api<{exams:Array<{versionId:string;title:string;subject:string;questionCount:number}>}>('/exam-catalog');
+      setCatalog(data.exams);
+    }catch(e){setMessage(String(e));}finally{setBusy(false);}
+  }
   async function loadExam(){
     setBusy(true);setMessage('');
     try{const data=await api<{version:Exam['version'];questions:Exam['questions']}>('/exam-versions/'+encodeURIComponent(versionId));setExam(data);setAttempt(null);setAnswers({});setResult(null);}
@@ -92,6 +100,8 @@ export default function App(){
     </section>}
     {signedIn&&<div className="toolbar account"><span>Đã đăng nhập</span><button className="secondary" disabled={busy} onClick={logout}>Đăng xuất</button></div>}
     {signedIn&&<section className="panel"><h1>Phòng thi trực tuyến</h1><p>Nhập mã phiên bản đề thi đã xuất bản. Bạn có thể tải đề thi bằng mã phiên bản đã xuất bản.</p>
+      <div className="toolbar"><button disabled={busy} onClick={showCatalog}>Xem danh sách đề thi</button></div>
+      {catalog.map(item=><button key={item.versionId} className="secondary" disabled={busy} onClick={()=>setVersionId(item.versionId)}>{item.subject} — {item.title} ({item.questionCount} câu)</button>)}
       <div className="toolbar"><input aria-label="Mã phiên bản đề thi" placeholder="Mã phiên bản đề thi (UUID)" value={versionId} onChange={e=>setVersionId(e.target.value)}/><button disabled={busy||!versionId} onClick={loadExam}>Tải đề thi</button></div>
     </section>}
     {signedIn&&exam&&<section className="panel"><div className="toolbar"><h2>Đề thi · {exam.questions.length} câu</h2>{!attempt&&<button disabled={busy} onClick={start}>Bắt đầu làm bài</button>}</div>
