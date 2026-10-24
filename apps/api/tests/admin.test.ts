@@ -214,3 +214,74 @@ describe('admin exam item snapshots', () => {
     expect(statements).toHaveLength(0);
   });
 });
+
+describe('admin publication safeguards', () => {
+  const versionId='123e4567-e89b-42d3-a456-426614174000';
+  const question={questionId:'q1',body:'What is demand?',options:['A','B','C','D'].map(label=>({label,text:'Option '+label}))};
+  const answer={correctOption:'B',explanation:'Private explanation'};
+  async function publishFixture(mode:'success'|'conflict'|'empty'|'batch-failure'='success',role='admin') {
+    const tokenHash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token))),b=>b.toString(16).padStart(2,'0')).join('');
+    const writes:Array<{sql:string;args:unknown[]}>= [];
+    const db:ReadDb={
+      prepare(sql:string):ReadQuery {
+        const entry={sql,args:[] as unknown[]};
+        return {
+          bind(...args:unknown[]){entry.args=args;return this;},
+          async first<T=unknown>(){
+            return (sql.includes('FROM sessions') ? {id:'admin-user'} :
+              sql.includes('SELECT id,items_revision') ? {id:versionId,itemsRevision:1} : null) as T|null;
+          },
+          async all(){
+            return {results:sql.includes('FROM user_roles')?[{code:role}]:
+              sql.includes('FROM exam_items WHERE exam_version_id=') && mode!=='empty'?
+              [{position:0,questionSnapshotJson:JSON.stringify(question),answerKeyPrivateJson:JSON.stringify(answer)}]:[]};
+          },
+          async run(){writes.push(entry);return {};}
+        };
+      },
+      async batch(queries:ReadQuery[]){
+        if(mode==='batch-failure')throw new Error('D1 transaction rejected');
+        for(const query of queries)await query.run();
+        return [{meta:{changes:mode==='conflict'?0:1}},{meta:{changes:mode==='conflict'?0:1}}];
+      }
+    };
+    return {env:{EXAM_CORE:db,EXAM_RESULTS:db},writes,tokenHash};
+  }
+  it('rejects non-admin publication before any write',async()=>{
+    const {env,writes}=await publishFixture('success','student');
+    const res=await app.request('/api/v1/admin/publish-exam-version',request({versionId}),env);
+    expect(res.status).toBe(403);
+    expect(writes).toHaveLength(0);
+  });
+  it('rejects an empty version before any write',async()=>{
+    const {env,writes}=await publishFixture('empty');
+    const res=await app.request('/api/v1/admin/publish-exam-version',request({versionId}),env);
+    expect(res.status).toBe(409);
+    expect((await res.json()).error.code).toBe('INVALID_EXAM_CONTENT');
+    expect(writes).toHaveLength(0);
+  });
+  it('reports a stale revision as a conflict, not success',async()=>{
+    const {env,writes}=await publishFixture('conflict');
+    const res=await app.request('/api/v1/admin/publish-exam-version',request({versionId}),env);
+    expect(res.status).toBe(409);
+    expect((await res.json()).error.code).toBe('PUBLISH_CONFLICT');
+    expect(writes[0].sql).toContain('items_revision=?');
+    expect(writes[0].args[3]).toBe(1);
+  });
+  it('returns a digest after a successful conditional publication',async()=>{
+    const {env,writes}=await publishFixture();
+    const res=await app.request('/api/v1/admin/publish-exam-version',request({versionId}),env);
+    expect(res.status).toBe(200);
+    const data=await res.json();
+    expect(data.version.status).toBe('published');
+    expect(data.version.contentHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(JSON.stringify(data)).not.toContain('Private explanation');
+    expect(writes[1].args[2]).toBe('exam_version.published');
+  });
+  it('does not report publication success after a failed batch',async()=>{
+    const {env}=await publishFixture('batch-failure');
+    const res=await app.request('/api/v1/admin/publish-exam-version',request({versionId}),env);
+    expect(res.status).toBe(503);
+    expect((await res.json()).error.code).toBe('WRITE_FAILED');
+  });
+});
