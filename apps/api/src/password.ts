@@ -1,4 +1,4 @@
-// Password records: pbkdf2$310000$<32 hex salt>$<64 hex derived key>.
+// Password records: pbkdf2$100000$<32 hex salt>$<64 hex derived key>.
 // Never store plaintext passwords or return the record to clients.
 const toHex = (bytes: Uint8Array) => Array.from(bytes, x => x.toString(16).padStart(2, '0')).join('');
 const fromHex = (hex: string) => new Uint8Array(hex.match(/../g)!.map(x => parseInt(x, 16)));
@@ -20,13 +20,13 @@ async function derive(password: string, salt: Uint8Array, iterations: number): P
 export async function hashPassword(password: string): Promise<string> {
   if (password.length < 12 || password.length > 256) throw new Error('Password length invalid');
   const salt = crypto.getRandomValues(new Uint8Array(16));
-  return 'pbkdf2$310000$' + toHex(salt) + '$' + toHex(await derive(password, salt, 310000));
+  return 'pbkdf2$100000$' + toHex(salt) + '$' + toHex(await derive(password, salt, 100000));
 }
 export async function verifyPassword(password: string, record: string): Promise<boolean> {
   const parts = record.split('$');
   if (parts.length !== 4 || parts[0] !== 'pbkdf2' || !/^\d+$/.test(parts[1]) ||
       !/^[a-f0-9]{32}$/.test(parts[2]) || !/^[a-f0-9]{64}$/.test(parts[3]) ||
-      Number(parts[1]) < 100000 || Number(parts[1]) > 600000 || password.length > 256) return false;
+      Number(parts[1]) < 100000 || Number(parts[1]) > 100000 || password.length > 256) return false;
   const actual = await derive(password, fromHex(parts[2]), Number(parts[1]));
   const expected = fromHex(parts[3]);
   let diff = 0;
