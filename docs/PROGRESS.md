@@ -78,3 +78,8 @@ Updated: 2026-10-24
 - Added protected GET /api/v1/admin/exams listing saved exams and their versions, including question counts; admin editor can reopen a draft and continue at its persisted item count.
 - Existing subject/topic API and web checks passed. New draft-listing CI pending. Production not deployed; still requires manual rollout.
 - The list is capped at 200 rows; question editing, draft item removal, full pagination and E2E authoring remain future work.
+
+## Draft question editing (2026-10-25)
+- Added admin-only PUT /api/v1/admin/questions/:id with strict validation, same-origin protection, audit trail and draft-only status gate.
+- Question bank now exposes editing body, four options, answer key and explanation. Existing exam item snapshots are not rewritten, preserving published content.
+- API and Web CI are pending; production rollout not performed. Next: API tests for authorization/immutability and end-to-end authoring flow.
