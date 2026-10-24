@@ -23,9 +23,18 @@ const statusCounts = new Map();
 const methodCounts = new Map();
 const eventShapes = new Map();
 const outcomes = new Map();
+let pending = '';
 for await (const line of readline.createInterface({ input: process.stdin, crlfDelay: Infinity })) {
+  // Wrangler emits pretty-printed JSON objects across multiple lines.
+  // Keep the envelope intact instead of parsing nested scalar lines as events.
+  if (!pending && !line.trim()) continue;
+  pending += line + '\n';
   let event;
-  try { event = JSON.parse(line); } catch { continue; }
+  try { event = JSON.parse(pending); } catch {
+    if (pending.length > 2_000_000 || (!pending.trimStart().startsWith('{') && !pending.trimStart().startsWith('['))) pending = '';
+    continue;
+  }
+  pending = ''; 
   parsedJsonLines++;
   if (Array.isArray(event)) {
     arrayEnvelopeLines++;

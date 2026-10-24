@@ -1,4 +1,7 @@
 # Changelog
+## 2026-10-25 — Authentication observation
+- Fix parsing of multiline Wrangler tail JSON; add regression coverage.
+- Correlate one live login with sanitized runtime telemetry.
 ## 2026-10-24 — Authentication diagnostics and registration
 - Added student self-registration API and form with server-enforced student role and rate limits.
 - Added negative registration security tests and sanitized authentication error logging.

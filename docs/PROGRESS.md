@@ -35,3 +35,9 @@ Updated: 2026-10-24
 - Investigate production login's exact failure stage with trusted runtime telemetry. Local PBKDF2 and mocked session INSERT passed; D1 schema and integrity checks passed. Do not conclude production session INSERT succeeds without a real write-path test. Do not claim either is the cause without stage-level evidence.
 - Stop repeating the same live login probe; a different diagnostic is required. Avoid extra login attempts that consume rate-limit budget.
 - Preserve data, passwords and existing published exam versions.
+
+## 2026-10-25 authentication investigation
+- Reproduced a diagnostic defect with pretty-printed multiline Wrangler JSON: the previous line-oriented parser discarded envelopes and parsed nested scalars as unrelated events.
+- Fixed envelope buffering; existing fixtures and a multiline regression both pass.
+- Correlated diagnostic workflow captures one administrator login during a 60-second tail window and prints only allowlisted categories/statuses. No passwords or raw log bodies are printed; no data/password reset or application deployment.
+- Authentication root cause remains unconfirmed pending correlated production telemetry.

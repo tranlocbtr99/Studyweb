@@ -1,6 +1,9 @@
 name: Diagnose live Studyweb authentication logs (manual)
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/diagnose-live-auth.yml']
 permissions:
   contents: read
 jobs:
@@ -10,6 +13,8 @@ jobs:
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      STUDYWEB_ADMIN_EMAIL: ${{ secrets.STUDYWEB_ADMIN_EMAIL }}
+      STUDYWEB_ADMIN_PASSWORD: ${{ secrets.STUDYWEB_ADMIN_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,7 +22,7 @@ jobs:
           node-version: '22'
       - name: Verify parser against safe synthetic fixtures
         run: node scripts/test-filter-worker-auth-logs.mjs
-      - name: Capture only allowlisted authentication error categories for 2 minutes
+      - name: Capture multiline Worker logs alongside exactly one administrator login
         working-directory: apps/api
         shell: bash
         run: |
@@ -25,10 +30,41 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           npm install --no-audit --no-fund
+          # One correlated request after the tail connection has time to open.
+          (
+            sleep 15
+            node --input-type=module <<'JS'
+          const email = process.env.STUDYWEB_ADMIN_EMAIL;
+          const password = process.env.STUDYWEB_ADMIN_PASSWORD;
+          if (!email || !password) throw new Error('Missing administrator secrets');
+          const base = 'https://studyweb-api.tranlocbtr99.workers.dev';
+          try {
+            const response = await fetch(base + '/api/v1/auth/login', {
+              method: 'POST', headers: { Origin: base, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, password }), signal: AbortSignal.timeout(20000)
+            });
+            console.log(JSON.stringify({ check: 'correlated_admin_login', httpStatus: response.status }));
+            // Revoke the diagnostic session immediately if login succeeds.
+            if (response.status === 200) {
+              const cookie = response.headers.get('set-cookie')?.split(';')[0];
+              if (cookie) {
+                const logout = await fetch(base + '/api/v1/auth/logout', {
+                  method: 'POST', headers: { Origin: base, Cookie: cookie }, signal: AbortSignal.timeout(15000)
+                });
+                console.log(JSON.stringify({ check: 'diagnostic_session_logout', httpStatus: logout.status }));
+              }
+            }
+          } catch { console.log(JSON.stringify({ check: 'correlated_admin_login', networkError: true })); process.exitCode = 1; }
+          JS
+          ) &
+          probe_pid=$!
           set +e
-          timeout 120s npx wrangler tail studyweb-api --format json 2> /tmp/studyweb-tail-status.log | node ../../scripts/filter-worker-auth-logs.mjs
+          timeout 60s npx wrangler tail studyweb-api --format json 2> /tmp/studyweb-tail-status.log | node ../../scripts/filter-worker-auth-logs.mjs
           result=${PIPESTATUS[0]}
+          wait "$probe_pid"
+          probe_result=$?
           set -e
+          test "$probe_result" -eq 0
           if [ "$result" -ne 0 ] && [ "$result" -ne 124 ]; then
             echo "Worker tail failed; check Cloudflare token permission for tail access (exit $result)"
             exit "$result"

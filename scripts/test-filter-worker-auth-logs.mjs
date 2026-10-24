@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-const run = (input) => {
+const run = (input, pretty = false) => {
   const result = spawnSync(process.execPath, ['scripts/filter-worker-auth-logs.mjs'], {
-    input: input.map(x => JSON.stringify(x)).join('\n') + '\n',
+    input: input.map(x => JSON.stringify(x, null, pretty ? 2 : undefined)).join('\n') + '\n',
     encoding: 'utf8'
   });
   assert.equal(result.status, 0, result.stderr);
@@ -33,3 +33,11 @@ assert.equal(unrelated.summary.validWorkerEvents, 2);
 assert.equal(unrelated.summary.primitiveJsonLines, 1);
 assert.equal(unrelated.events.length, 0);
 console.log('Authentication tail parser fixture checks passed');
+
+const pretty = run([sample, { outcome: 'exceededCpu', logs: [] }], true);
+assert.equal(pretty.summary.validWorkerEvents, 2);
+assert.equal(pretty.events[0].stage, 'password_verification');
+assert.equal(pretty.events[0].errorType, 'OperationError');
+assert.equal(pretty.summary.outcomes.exceededCpu, 1);
+assert.ok(!JSON.stringify(pretty).includes('example.invalid'));
+console.log('Multiline Wrangler JSON regression checks passed');
