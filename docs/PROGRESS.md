@@ -1,14 +1,14 @@
 # Progress
 Updated: 2026-10-24
 ## Completed
-- Core/results D1, auth, admin authoring and SHA-256 publication guard.
-- API checks for zero-row insert correction passed (e2421c9).
-- Added real D1 negative test for inserting into published exam versions and follow-up state/audit assertion; CI pending.
+- Core/results D1, auth, admin authoring and publication safeguards.
+- D1 published-item rejection CI passed (c3a4496).
+- Added authenticated student read-only published exam endpoint, excludes private answer columns; unit tests added, CI pending.
 ## Pending
-- Verify D1 CI and implement HTTP-to-real-D1 transaction rollback/audit integration coverage.
-- Student attempts/autosave/grading, frontend, load tests and deployment.
+- Student attempt lifecycle, autosave, grading and results; frontend, load tests and deployment.
+- Defer full HTTP-to-D1 integration and comprehensive regression until module milestones, with critical security checks retained.
 ## Risks
-- This negative SQL test does not prove multi-statement batch rollback through HTTP.
-- 500 simultaneous users unverified; no production deployment.
+- No proven 500-user concurrency or production deployment.
+- Public snapshots must remain validated at authoring; private answer keys are not selected by student endpoint.
 ## Next task
-- Verify D1 CI and implement real HTTP-to-D1 batch rollback integration.
+- Implement attempt creation with server-side trusted grading snapshot and expiry.

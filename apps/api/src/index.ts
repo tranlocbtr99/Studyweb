@@ -6,6 +6,7 @@ import { verifyPassword } from './password';
 import { enforceLoginLimit } from './login-limit';
 import type { Env } from './auth';
 import admin from './admin';
+import student from './student';
 const app = new Hono<Env>();
 const error = (code: string, message: string, requestId: string) => ({ error: { code, message, requestId } });
 app.use('*', async (c, next) => {
@@ -70,6 +71,7 @@ app.get('/api/v1/exams/:id', async c => {
   } catch { return c.json(error('DB_UNAVAILABLE', 'Database unavailable', ''), 503); }
 });
 app.route('/api/v1/admin',admin);
+app.route('/api/v1/student',student);
 app.get('/api/v1/me', requireSession, c => c.json({ user: c.get('identity') }));
 app.get('/api/v1/admin/status', requireSession, requireRole('admin'), c => c.json({ status: 'authorized' }));
 // No exam mutation endpoints until trusted grading snapshots and atomic finalization.

@@ -1,9 +1,7 @@
 # Changelog
-## 2026-10-24 — Published-item D1 regression
-- Added negative D1 SQL test ensuring published exam item insertion is rejected, with follow-up assertion that no item or audit entry exists.
-## 2026-10-24 — Item insert conflict fix
-- Reject false 201 responses on zero-row insert; conditional audit and API regression passed.
-## 2026-10-24 — Publication integrity
-- Revision CAS, SHA-256 and conflict tests.
+## 2026-10-24 — Student published exam read API
+- Added authenticated read-only student route for published exam versions and public snapshots only; tests cover auth, invalid IDs, drafts and answer privacy.
+## 2026-10-24 — Publication safeguards
+- D1 published-item rejection, SHA-256 integrity, item revision compare-and-swap and API checks.
 ## 2026-10-24 — Foundation
-- Core/results D1, authentication and admin authoring.
+- Core/results D1, auth and admin authoring.
