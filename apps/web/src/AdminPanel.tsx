@@ -24,9 +24,21 @@ export default function AdminPanel(){
   const [createdQuestions,setCreatedQuestions]=useState<Array<{id:string;body:string}>>([]);
   const [message,setMessage]=useState('');
   const [busy,setBusy]=useState(false);
+  const [bank,setBank]=useState<Array<{id:string;body:string;topicId:string;subjectId:string}>>([]);
+  const [search,setSearch]=useState('');
+  const [offset,setOffset]=useState(0);
   async function action(fn:()=>Promise<void>){
     setBusy(true);setMessage('');
     try{await fn();}catch(error){setMessage('Thao tác thất bại: '+String(error));}finally{setBusy(false);}
+  }
+  async function loadBank(nextOffset=0){
+    setBusy(true);setMessage('');
+    try{
+      const response=await fetch('/api/v1/admin/questions?'+new URLSearchParams({search,offset:String(nextOffset),limit:'30'}),{credentials:'same-origin'});
+      const result=await response.json() as {questions?:Array<{id:string;body:string;topicId:string;subjectId:string}>;error?:{code:string}};
+      if(!response.ok)throw new Error(result.error?.code??'HTTP '+response.status);
+      setBank(result.questions??[]);setOffset(nextOffset);
+    }catch(error){setMessage('Không tải được ngân hàng câu hỏi: '+String(error));}finally{setBusy(false);}
   }
   return <section className="panel admin-editor">
     <h1>Quản trị · Biên soạn đề thi</h1>
@@ -75,10 +87,20 @@ export default function AdminPanel(){
         setVersion(data.version);setCount(0);setMessage('Đã tạo phiên bản nháp');
       })}>Tạo phiên bản nháp</button>
     </div>}
+    <div className="admin-step">
+      <h2>Ngân hàng câu hỏi đã lưu</h2>
+      <p>Tìm kiếm câu hỏi đã lưu trên máy chủ, kể cả từ các phiên làm việc trước.</p>
+      <form onSubmit={e=>{e.preventDefault();void loadBank(0);}}>
+        <label>Tìm nội dung câu hỏi<input value={search} maxLength={120} onChange={e=>setSearch(e.target.value)} placeholder="Nhập từ khóa"/></label>
+        <button disabled={busy}>Tìm câu hỏi</button>
+      </form>
+      {bank.map(q=><div key={q.id} className="bank-question"><strong>{q.body}</strong><small>{q.id}</small></div>)}
+      <div className="toolbar"><button className="secondary" disabled={busy||offset===0} onClick={()=>void loadBank(Math.max(0,offset-30))}>Trang trước</button><button className="secondary" disabled={busy||bank.length<30} onClick={()=>void loadBank(offset+30)}>Trang tiếp</button></div>
+    </div>
     {version&&<div className="admin-step">
       <h2>6. Thêm câu hỏi vào đề</h2>
       <p>Chọn câu hỏi đã tạo để thêm vào phiên bản đề thi.</p>
-      <QuestionPicker busy={busy} position={count} questions={createdQuestions} onAdd={id=>action(async()=>{
+      <QuestionPicker busy={busy} position={count} questions={[...createdQuestions,...bank.filter(q=>!createdQuestions.some(item=>item.id===q.id)&&(!subject||q.subjectId===subject.id))]} onAdd={id=>action(async()=>{
         await create('exam-items',{versionId:version.id,questionId:id,position:count});
         setCount(prev=>prev+1);setMessage('Đã thêm câu hỏi vào đề');
       })}/>
