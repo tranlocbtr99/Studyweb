@@ -15,6 +15,7 @@ const api = async <T,>(path:string,init?:RequestInit):Promise<T> => {
 export default function App(){
   const [accessMode,setAccessMode]=useState<'student'|'admin'|'register'>('student');
   const [isAdmin,setIsAdmin]=useState(false);
+  const [workspace,setWorkspace]=useState<'overview'|'authoring'|'exams'>('overview');
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
   const [signedIn,setSignedIn]=useState<boolean|null>(null);
@@ -98,7 +99,7 @@ export default function App(){
   }
   useEffect(()=>{
     let alive=true;
-    fetch('/api/v1/me',{credentials:'same-origin'}).then(r=>{if(alive)setSignedIn(r.ok);if(r.ok)return fetch('/api/v1/admin/status',{credentials:'same-origin'}).then(admin=>{if(alive)setIsAdmin(admin.ok);});}).catch(()=>{if(alive)setSignedIn(false);});
+    fetch('/api/v1/me',{credentials:'same-origin'}).then(r=>{if(alive)setSignedIn(r.ok);if(r.ok)return fetch('/api/v1/admin/status',{credentials:'same-origin'}).then(admin=>{if(alive){setIsAdmin(admin.ok);if(admin.ok)setWorkspace('overview');}});}).catch(()=>{if(alive)setSignedIn(false);});
     return()=>{alive=false;};
   },[]);
   async function login(){
@@ -110,7 +111,7 @@ export default function App(){
         const status=await fetch('/api/v1/admin/status',{credentials:'same-origin'});
         if(!status.ok){await fetch('/api/v1/auth/logout',{method:'POST',credentials:'same-origin'});throw new Error('Tài khoản không có quyền quản trị');}
       }
-      setIsAdmin(accessMode==='admin');setSignedIn(true);setPassword('');
+      setIsAdmin(accessMode==='admin');setWorkspace(accessMode==='admin'?'authoring':'exams');setSignedIn(true);setPassword('');
     }catch(e){setMessage(String(e));}finally{setBusy(false);}
   }
   async function register(){
@@ -192,20 +193,33 @@ export default function App(){
       </form></>}
     </section>}
     {signedIn&&<div className="toolbar account"><span>Đã đăng nhập</span><button className="secondary" disabled={busy} onClick={logout}>Đăng xuất</button></div>}
-    {signedIn&&isAdmin&&<AdminPanel/>}
-    {signedIn&&resumeAvailable&&!attempt&&<section className="panel"><h2>Bài thi đang làm</h2><p>Khôi phục câu trả lời đã lưu trên máy chủ sau khi tải lại trang.</p><button disabled={busy} onClick={resume}>Tiếp tục bài thi</button></section>}
-    {signedIn&&<section className="panel"><h1>Phòng thi trực tuyến</h1><p>Nhập mã phiên bản đề thi đã xuất bản. Bạn có thể tải đề thi bằng mã phiên bản đã xuất bản.</p>
+    {signedIn&&isAdmin&&<section className="panel admin-home">
+      <div className="admin-home-heading"><div><span className="admin-eyebrow">LTStudy · Quản trị</span><h1>Không gian quản trị</h1><p>Quản lý nội dung học tập và tổ chức thi trực tuyến.</p></div><span className="admin-live">Hệ thống trực tuyến</span></div>
+      <nav className="admin-navigation" aria-label="Điều hướng quản trị">
+        <button className={workspace==='overview'?'':'secondary'} onClick={()=>setWorkspace('overview')}>Tổng quan</button>
+        <button className={workspace==='authoring'?'':'secondary'} onClick={()=>setWorkspace('authoring')}>Tạo đề thi</button>
+        <button className={workspace==='exams'?'':'secondary'} onClick={()=>setWorkspace('exams')}>Phòng thi</button>
+      </nav>
+      {workspace==='overview'&&<div className="admin-overview-grid">
+        <article><span className="admin-stat-icon">📚</span><h2>Khóa học và môn học</h2><p>Phân chia môn học và chủ đề để xây dựng ngân hàng câu hỏi.</p><button onClick={()=>setWorkspace('authoring')}>Quản lý nội dung</button></article>
+        <article><span className="admin-stat-icon">📝</span><h2>Ngân hàng câu hỏi</h2><p>Soạn câu hỏi trắc nghiệm, đáp án đúng và phần giải thích.</p><button onClick={()=>setWorkspace('authoring')}>Biên soạn câu hỏi</button></article>
+        <article><span className="admin-stat-icon">🎓</span><h2>Đề thi trực tuyến</h2><p>Tạo phiên bản nháp, ghép câu hỏi và xuất bản đề thi.</p><button onClick={()=>setWorkspace('authoring')}>Tạo đề mới</button></article>
+      </div>}
+    </section>}
+    {signedIn&&isAdmin&&workspace==='authoring'&&<AdminPanel/>}
+    {signedIn&&(!isAdmin||workspace==='exams')&&resumeAvailable&&!attempt&&<section className="panel"><h2>Bài thi đang làm</h2><p>Khôi phục câu trả lời đã lưu trên máy chủ sau khi tải lại trang.</p><button disabled={busy} onClick={resume}>Tiếp tục bài thi</button></section>}
+    {signedIn&&(!isAdmin||workspace==='exams')&&<section className="panel"><h1>Phòng thi trực tuyến</h1><p>Nhập mã phiên bản đề thi đã xuất bản. Bạn có thể tải đề thi bằng mã phiên bản đã xuất bản.</p>
       <div className="toolbar"><button disabled={busy} onClick={showCatalog}>Xem danh sách đề thi</button></div>
       {catalog.map(item=><button key={item.versionId} className="secondary" disabled={busy} onClick={()=>setVersionId(item.versionId)}>{item.subject} — {item.title} ({item.questionCount} câu)</button>)}
       <div className="toolbar"><input aria-label="Mã phiên bản đề thi" placeholder="Mã phiên bản đề thi (UUID)" value={versionId} onChange={e=>setVersionId(e.target.value)}/><button disabled={busy||!versionId} onClick={loadExam}>Tải đề thi</button></div>
     </section>}
-    {signedIn&&exam&&<section className="panel"><div className="toolbar"><h2>Đề thi · {exam.questions.length} câu</h2>{!attempt&&<button disabled={busy} onClick={start}>Bắt đầu làm bài</button>}</div>
+    {signedIn&&(!isAdmin||workspace==='exams')&&exam&&<section className="panel"><div className="toolbar"><h2>Đề thi · {exam.questions.length} câu</h2>{!attempt&&<button disabled={busy} onClick={start}>Bắt đầu làm bài</button>}</div>
       {attempt&&<div className="status"><span>Thời gian còn lại: <strong>{Math.floor(remaining/60)}:{String(remaining%60).padStart(2,'0')}</strong></span><span>Phiên bản lưu: {attempt.saveVersion} · {({idle:'Chưa thay đổi',pending:'Chờ lưu',saving:'Đang lưu',saved:'Đã lưu',error:'Lưu thất bại'} as const)[saveState]}</span></div>}
       {exam.questions.map(({position,question})=><article className="question" key={position}><h3>Câu {position+1}. {question.body}</h3>
         {question.options.map(option=><label className="option" key={option.label}><input type="radio" name={'q'+position} disabled={!attempt||!!result||remaining===0} checked={answers[String(position)]===option.label} onChange={()=>setAnswers(prev=>({...prev,[String(position)]:option.label}))}/><span>{option.label}. {option.text}</span></label>)}</article>)}
       {attempt&&!result&&<div className="toolbar"><button className="secondary" disabled={busy} onClick={recover}>Khôi phục đáp án</button><button disabled={busy||remaining===0} onClick={save}>Lưu bài</button><button className="danger" disabled={busy||remaining===0} onClick={submit}>Nộp bài</button></div>}
     </section>}
-    {signedIn&&result&&<section className="panel"><h2>Kết quả bài thi</h2><p className="score">{result.points} / {result.maxPoints}</p><p>Đã nộp: {new Date(result.submittedAt*1000).toLocaleString('vi-VN')}</p></section>}
+    {signedIn&&(!isAdmin||workspace==='exams')&&result&&<section className="panel"><h2>Kết quả bài thi</h2><p className="score">{result.points} / {result.maxPoints}</p><p>Đã nộp: {new Date(result.submittedAt*1000).toLocaleString('vi-VN')}</p></section>}
     {message&&<p role="alert" className="notice">{message}</p>}
   </main>;
 }
