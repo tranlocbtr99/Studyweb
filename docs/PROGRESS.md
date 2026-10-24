@@ -1,15 +1,15 @@
 # Progress
 Updated: 2026-10-24
 ## Completed
-- Core/results D1, authentication, admin authoring, immutable published exams.
-- Student published exam reads and attempt creation; API checks passed (6e4e08b).
-- Added versioned autosave PUT and recovery GET with ownership checks, answer-position validation, expiry/status restrictions and optimistic SQL update; CI pending.
+- D1 core/results, authentication, admin authoring and immutable published exams.
+- Student public exam read, attempt start, versioned autosave and recovery; previous API checks passed.
+- Added server-graded submission with save-version guard, time cutoff, D1 transactional score/receipt writes and same-key idempotent replay; CI pending.
 ## Pending
-- Idempotent submission, server grading, results history, frontend, load tests and deployment.
-- Group full HTTP-to-D1 integration and comprehensive regression at module milestones.
+- Student results history, frontend and end-to-end/load testing; deployment.
+- Full D1 transactional concurrency/rollback integration to be tested at milestone.
 ## Risks
-- Start-attempt retries can create duplicates until idempotency support is added.
-- Autosave PUT replaces the complete answer map; clients must merge local state before saving.
-- 90-minute duration remains a temporary default; 500-user concurrency unverified.
+- Submission scoring uses one point per question; exam-specific grading policies not yet supported.
+- Start-attempt retries may duplicate attempts; add start idempotency.
+- 90-minute duration temporary; 500-user concurrency unverified; no production deployment.
 ## Next task
-- Implement idempotent final submission and server-side grading.
+- Add student results and attempt history read API, then milestone integration checks.

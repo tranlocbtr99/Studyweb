@@ -120,4 +120,68 @@ student.get('/attempts/:attemptId/answers', async c => {
     return c.json({ error: { code: 'DB_UNAVAILABLE' } }, 503);
   }
 });
+
+const submitSchema = z.object({
+  idempotencyKey: z.string().uuid(),
+  saveVersion: z.number().int().min(0)
+}).strict();
+student.post('/attempts/:attemptId/submit', sameOrigin, async c => {
+  const id = versionId.safeParse(c.req.param('attemptId'));
+  if (!id.success) return c.json({ error: { code: 'VALIDATION_FAILED' } }, 400);
+  let input: unknown;
+  try { input = await c.req.json(); }
+  catch { return c.json({ error: { code: 'BAD_JSON' } }, 400); }
+  const parsed = submitSchema.safeParse(input);
+  if (!parsed.success) return c.json({ error: { code: 'VALIDATION_FAILED' } }, 400);
+  const { idempotencyKey, saveVersion } = parsed.data;
+  const db = c.env.EXAM_RESULTS;
+  const userId = c.get('identity').id;
+  try {
+    const receipt = await db.prepare(
+      'SELECT r.idempotency_key AS idempotencyKey,r.response_json AS responseJson FROM submission_receipts r JOIN attempts a ON a.id=r.attempt_id WHERE r.attempt_id=? AND a.user_id=?'
+    ).bind(id.data,userId).first<{idempotencyKey:string;responseJson:string}>();
+    if (receipt) {
+      if (receipt.idempotencyKey !== idempotencyKey)
+        return c.json({ error: { code: 'ALREADY_SUBMITTED' } }, 409);
+      return c.json(JSON.parse(receipt.responseJson) as object);
+    }
+    const attempt = await db.prepare(
+      'SELECT id,save_version AS saveVersion,grading_snapshot_json AS gradingSnapshotJson,answer_snapshot_json AS answerSnapshotJson,expires_at AS expiresAt,status FROM attempts WHERE id=? AND user_id=?'
+    ).bind(id.data,userId).first<{id:string;saveVersion:number;gradingSnapshotJson:string;answerSnapshotJson:string;expiresAt:number;status:string}>();
+    if (!attempt) return c.json({ error: { code: 'NOT_FOUND' } }, 404);
+    const now = Math.floor(Date.now()/1000);
+    if (attempt.status !== 'active' || attempt.expiresAt <= now)
+      return c.json({ error: { code: 'ATTEMPT_CLOSED' } }, 409);
+    if (attempt.saveVersion !== saveVersion)
+      return c.json({ error: { code: 'SAVE_CONFLICT', currentVersion: attempt.saveVersion } }, 409);
+    const grading = JSON.parse(attempt.gradingSnapshotJson) as Array<{position:number;correctOption:string}>;
+    const answers = JSON.parse(attempt.answerSnapshotJson) as Record<string,string>;
+    const points = grading.reduce((sum,item)=>sum+(answers[String(item.position)]===item.correctOption?1:0),0);
+    const response = { result: { attemptId: id.data, points, maxPoints: grading.length, submittedAt: now } };
+    const writes = await db.batch([
+      db.prepare(
+        "UPDATE attempts SET status='submitted',submitted_at=?,updated_at=? WHERE id=? AND user_id=? AND status='active' AND expires_at>? AND save_version=?"
+      ).bind(now,now,id.data,userId,now,saveVersion),
+      db.prepare(
+        "INSERT INTO scores(id,attempt_id,points,max_points,graded_at,grading_version) SELECT ?,id,?,?,?,'v1' FROM attempts WHERE id=? AND user_id=? AND status='submitted' AND submitted_at=?"
+      ).bind(crypto.randomUUID(),points,grading.length,now,id.data,userId,now),
+      db.prepare(
+        "INSERT INTO submission_receipts(id,attempt_id,idempotency_key,response_json,created_at) SELECT ?,id,?,?,? FROM attempts WHERE id=? AND user_id=? AND status='submitted' AND submitted_at=?"
+      ).bind(crypto.randomUUID(),idempotencyKey,JSON.stringify(response),now,id.data,userId,now)
+    ]);
+    if ((writes as Array<{meta?:{changes?:number}}>)[0]?.meta?.changes !== 1)
+      return c.json({ error: { code: 'SUBMISSION_CONFLICT' } }, 409);
+    return c.json(response);
+  } catch {
+    // A concurrent request may have committed first; allow exact-key replay.
+    try {
+      const receipt = await db.prepare(
+        'SELECT r.idempotency_key AS idempotencyKey,r.response_json AS responseJson FROM submission_receipts r JOIN attempts a ON a.id=r.attempt_id WHERE r.attempt_id=? AND a.user_id=?'
+      ).bind(id.data,userId).first<{idempotencyKey:string;responseJson:string}>();
+      if (receipt?.idempotencyKey === idempotencyKey) return c.json(JSON.parse(receipt.responseJson) as object);
+      if (receipt) return c.json({ error: { code: 'ALREADY_SUBMITTED' } }, 409);
+    } catch { /* Keep the original failure response. */ }
+    return c.json({ error: { code: 'SUBMISSION_UNAVAILABLE' } }, 503);
+  }
+});
 export default student;
