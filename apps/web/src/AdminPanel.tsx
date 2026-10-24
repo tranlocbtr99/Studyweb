@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 type Created = { id: string };
+type Subject = Created & {slug:string;title:string};
+type Topic = Created & {subjectId:string;title:string};
 const labels = ['A','B','C','D'] as const;
 async function create<T>(path: string, body: object): Promise<T> {
   const response = await fetch('/api/v1/admin/'+path,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -9,6 +11,8 @@ async function create<T>(path: string, body: object): Promise<T> {
 }
 export default function AdminPanel(){
   const [subject,setSubject]=useState<Created|null>(null);
+  const [subjects,setSubjects]=useState<Subject[]>([]);
+  const [topics,setTopics]=useState<Topic[]>([]);
   const [topic,setTopic]=useState<Created|null>(null);
   const [exam,setExam]=useState<Created|null>(null);
   const [version,setVersion]=useState<Created|null>(null);
@@ -27,6 +31,23 @@ export default function AdminPanel(){
   const [bank,setBank]=useState<Array<{id:string;body:string;topicId:string;subjectId:string}>>([]);
   const [search,setSearch]=useState('');
   const [offset,setOffset]=useState(0);
+  useEffect(()=>{
+    let alive=true;
+    fetch('/api/v1/admin/subjects',{credentials:'same-origin'}).then(async response=>{
+      if(!response.ok)throw Error('HTTP '+response.status);
+      return response.json() as Promise<{subjects:Subject[]}>;
+    }).then(result=>{if(alive)setSubjects(result.subjects);}).catch(()=>{if(alive)setMessage('Không tải được danh sách môn học');});
+    return ()=>{alive=false;};
+  },[]);
+  useEffect(()=>{
+    if(!subject){setTopics([]);return;}
+    let alive=true;
+    fetch('/api/v1/admin/topics?'+new URLSearchParams({subjectId:subject.id}),{credentials:'same-origin'}).then(async response=>{
+      if(!response.ok)throw Error('HTTP '+response.status);
+      return response.json() as Promise<{topics:Topic[]}>;
+    }).then(result=>{if(alive)setTopics(result.topics);}).catch(()=>{if(alive)setMessage('Không tải được danh sách chủ đề');});
+    return ()=>{alive=false;};
+  },[subject?.id]);
   async function action(fn:()=>Promise<void>){
     setBusy(true);setMessage('');
     try{await fn();}catch(error){setMessage('Thao tác thất bại: '+String(error));}finally{setBusy(false);}
@@ -43,18 +64,20 @@ export default function AdminPanel(){
   return <section className="panel admin-editor">
     <h1>Quản trị · Biên soạn đề thi</h1>
     <p>Tạo môn học, chủ đề, câu hỏi trắc nghiệm rồi xuất bản đề để học viên làm bài. Các bước được lưu trực tiếp lên máy chủ.</p>
+    <div className="admin-step"><h2>Tiếp tục từ môn học đã lưu</h2><label>Chọn môn học<select value={subject?.id??''} onChange={e=>{const id=e.target.value;setSubject(id?{id}:null);setTopic(null);setExam(null);setVersion(null);setCreatedQuestions([]);}}><option value="">Chọn môn học</option>{subjects.map(item=><option key={item.id} value={item.id}>{item.title}</option>)}</select></label></div>
     <form onSubmit={event=>{event.preventDefault();void action(async()=>{
       const data=await create<{subject:Created}>('subjects',{slug,title:subjectTitle});
-      setSubject(data.subject);setTopic(null);setExam(null);setVersion(null);setCount(0);setMessage('Đã tạo môn học');
+      setSubjects(prev=>[...prev,{...data.subject,slug,title:subjectTitle}]);setSubject(data.subject);setTopic(null);setExam(null);setVersion(null);setCount(0);setMessage('Đã tạo môn học');
     });}}>
       <h2>1. Tạo môn học</h2>
       <label>Tên môn học<input required minLength={2} maxLength={160} value={subjectTitle} onChange={e=>setSubjectTitle(e.target.value)}/></label>
       <label>Mã môn (chữ thường, số, dấu gạch ngang)<input required pattern="[a-z0-9]+(-[a-z0-9]+)*" minLength={2} maxLength={64} value={slug} onChange={e=>setSlug(e.target.value)}/></label>
       <button disabled={busy}>Lưu môn học</button>
     </form>
+    {subject&&<div className="admin-step"><h2>Chủ đề đã lưu</h2><label>Chọn chủ đề<select value={topic?.id??''} onChange={e=>setTopic(e.target.value?{id:e.target.value}:null)}><option value="">Chọn chủ đề</option>{topics.map(item=><option key={item.id} value={item.id}>{item.title}</option>)}</select></label></div>}
     {subject&&<form onSubmit={event=>{event.preventDefault();void action(async()=>{
       const data=await create<{topic:Created}>('topics',{subjectId:subject.id,title:topicTitle});
-      setTopic(data.topic);setMessage('Đã tạo chủ đề');
+      setTopics(prev=>[...prev,{...data.topic,subjectId:subject.id,title:topicTitle}]);setTopic(data.topic);setMessage('Đã tạo chủ đề');
     });}}>
       <h2>2. Tạo chủ đề câu hỏi</h2>
       <label>Tên chủ đề<input required minLength={2} maxLength={160} value={topicTitle} onChange={e=>setTopicTitle(e.target.value)}/></label>
