@@ -3,10 +3,10 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-10-01",
   "workers_dev": true,
-  // Replace placeholder database IDs after creating D1 databases.
-  // Production deployment is intentionally not configured.
+  // Cloudflare D1 database IDs provided by the project owner.
+  // Deploy only after migrations, secrets and end-to-end verification.
   "d1_databases": [
-    { "binding": "EXAM_CORE", "database_name": "exam_core", "database_id": "00000000-0000-0000-0000-000000000000" },
-    { "binding": "EXAM_RESULTS", "database_name": "exam_results", "database_id": "00000000-0000-0000-0000-000000000000" }
+    { "binding": "EXAM_CORE", "database_name": "exam_core", "database_id": "2cb0dbe3-3421-4a6e-9c71-e64d6451647e" },
+    { "binding": "EXAM_RESULTS", "database_name": "exam_results", "database_id": "873c72e9-318d-4d91-b1f3-b9d07cf18aad" }
   ]
 }
