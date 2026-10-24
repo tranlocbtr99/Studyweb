@@ -58,3 +58,8 @@ Updated: 2026-10-24
 - Captures created question IDs for a selection control; no manual UUID entry required for questions created in the current session.
 - Introduced responsive pastel/glass CSS inspired by user-provided LTStudy reference. This is a first styling pass, not a complete reproduction of its sidebar/dashboard/course screens.
 - Web CI and deployment readiness must pass before manual deploy. Production still serves previous deployment until explicitly published.
+
+## Admin dashboard navigation (2026-10-25)
+- Manual production deployment run 40117845200 succeeded for the first authoring UI and pastel design.
+- Added separate admin overview, authoring, and student exam navigation. Overview cards are action links, not fabricated analytics.
+- Responsive dashboard styling added. Await Web checks and deployment readiness before next manual production rollout.
