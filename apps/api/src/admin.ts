@@ -6,6 +6,23 @@ import { examContentHash } from './exam-integrity';
 const admin = new Hono<Env>();
 const schema = z.object({slug:z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).min(2).max(64),title:z.string().trim().min(2).max(160)}).strict();
 admin.use('*',requireSession,requireRole('admin'));
+
+// Read-only authoring catalogs let administrators resume work across browser sessions.
+admin.get('/subjects', async c => {
+  try {
+    const result=await c.env.EXAM_CORE.prepare('SELECT id,slug,title FROM subjects ORDER BY title LIMIT 500').all();
+    return c.json({subjects:result.results});
+  } catch {return c.json({error:{code:'READ_FAILED'}},503);}
+});
+admin.get('/topics', async c => {
+  const subjectId=c.req.query('subjectId');
+  if(!subjectId||!z.string().uuid().safeParse(subjectId).success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+  try {
+    const result=await c.env.EXAM_CORE.prepare('SELECT id,subject_id AS subjectId,title FROM topics WHERE subject_id=? ORDER BY title LIMIT 500').bind(subjectId).all();
+    return c.json({topics:result.results});
+  } catch {return c.json({error:{code:'READ_FAILED'}},503);}
+});
+
 admin.post('/subjects',sameOrigin,async c=>{
  let input:unknown;
  try { input=await c.req.json(); } catch { return c.json({error:{code:'BAD_JSON'}},400); }
