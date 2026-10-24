@@ -38,7 +38,12 @@ jobs:
         run: |
           set -euo pipefail
           for database in exam_core exam_results; do
-            output=$(npx wrangler d1 execute "$database" --remote --json --command="SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'")
+            echo "Checking empty database: $database"
+            if ! output=$(npx wrangler d1 execute "$database" --remote --json --command="SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'" 2>&1); then
+              echo "Cloudflare query failed for $database (check token permissions, account ID, and database binding):"
+              echo "$output" | sed -E 's/(cfut_[A-Za-z0-9_-]+)/[REDACTED]/g'
+              exit 1
+            fi
             echo "$output" | node -e '
               let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
                 const data=JSON.parse(s);
