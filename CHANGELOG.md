@@ -1,11 +1,10 @@
 # Changelog
-## 2026-10-24 — Login/logout and CSRF
-- Added PBKDF2 password verification, secure session cookie issuance, hashed session storage and logout revocation.
-- Enforced Origin matching for state-changing authentication routes and added security tests.
-- Production login rate limiting and account provisioning remain pending.
+## 2026-10-24 — Login rate limits
+- Added exam_core additive login-rate-limits migration and atomic account/IP login throttling.
+- Added fail-closed behavior and focused security tests.
+## 2026-10-24 — Login and logout
+- Added PBKDF2 password handling, secure cookie sessions and origin protection.
 ## 2026-10-24 — Session auth
-- Added session validation and RBAC guards; CI checks passed.
-## 2026-10-24 — API
-- Added Hono read-only endpoints; CI passed.
-## 2026-10-24 — Database
-- Added two D1 migrations and passing CI.
+- Added session validation and RBAC.
+## 2026-10-24 — API/database foundation
+- Added read-only API, CI and two-D1 migrations.

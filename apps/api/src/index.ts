@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 import { requireSession, requireRole, sameOrigin, sha256 } from './auth';
 import { verifyPassword } from './password';
+import { enforceLoginLimit } from './login-limit';
 import type { Env } from './auth';
 const app = new Hono<Env>();
 const error = (code: string, message: string, requestId: string) => ({ error: { code, message, requestId } });
@@ -21,6 +22,11 @@ app.post('/api/v1/auth/login', sameOrigin, async c => {
   const parsed = credentials.safeParse(data);
   if (!parsed.success) return c.json(error('BAD_REQUEST', 'Invalid credentials format', ''), 400);
   const { email, password } = parsed.data;
+  const limit = await enforceLoginLimit(c.env.EXAM_CORE, email.trim().toLowerCase(), c.req.header('CF-Connecting-IP'));
+  if (!limit.allowed) {
+    if (limit.retryAfter) c.header('Retry-After', String(limit.retryAfter));
+    return c.json(error(limit.unavailable ? 'AUTH_UNAVAILABLE' : 'RATE_LIMITED', limit.unavailable ? 'Authentication service unavailable' : 'Too many login attempts', ''), limit.unavailable ? 503 : 429);
+  }
   try {
     const user = await c.env.EXAM_CORE.prepare("SELECT id, password_hash FROM users WHERE email=? AND status='active'")
       .bind(email.trim().toLowerCase()).first<{ id: string; password_hash: string }>();
