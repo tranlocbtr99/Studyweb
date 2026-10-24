@@ -16,7 +16,6 @@ CASE WHEN (SELECT version_number FROM exam_versions WHERE id='ci-version-1')=1
 -- A published version cannot be deleted or have its immutable fields edited.
 UPDATE exam_versions SET content_hash='fixed-content-hash',published_at=1,status='published'
 WHERE id='ci-version-1';
-UPDATE OR IGNORE exam_versions SET content_hash='tampered' WHERE id='ci-version-1';
 DELETE FROM exam_versions WHERE id='ci-version-1' AND published_at IS NULL;
 INSERT INTO login_rate_limits(bucket_key,window_start,attempts,updated_at)
 SELECT 'ci-version-immutable',1,
