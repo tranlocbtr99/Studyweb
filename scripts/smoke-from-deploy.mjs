@@ -1,0 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+const explicit = process.env.STUDYWEB_DEPLOY_URL?.trim();
+const log = readFileSync('worker-deploy.log', 'utf8');
+const urls = [...log.matchAll(/https:\/\/[a-z0-9.-]+\.workers\.dev\/?/gi)].map(match => match[0]);
+const url = explicit || urls.at(-1);
+if (!url) throw new Error('Cannot discover workers.dev URL from Wrangler deployment; set STUDYWEB_DEPLOY_URL GitHub Actions variable');
+const result = spawnSync(process.execPath, ['scripts/smoke-test.mjs', url], { stdio: 'inherit' });
+if (result.error) throw result.error;
+process.exit(result.status ?? 1);
