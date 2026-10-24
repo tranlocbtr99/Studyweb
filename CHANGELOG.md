@@ -1,9 +1,9 @@
 # Changelog
+## 2026-10-24 — Guarded publish API (pre-production)
+- Added admin-only publish endpoint that validates snapshots, computes SHA-256, checks draft status and item count, updates publication state and records audit. Concurrent same-count edits remain a risk pending integration tests.
 ## 2026-10-24 — Exam integrity digest
-- Added canonical SHA-256 digest over public question content and private marking keys, with validation and unit tests. Not yet used by publishing.
+- Canonical SHA-256 over question snapshots and private marking keys; CI passed.
 ## 2026-10-24 — D1 snapshot verification
-- Local D1 snapshot and private-key separation checks passed.
-## 2026-10-24 — Exam authoring
-- Admin subject/topic/question/exam/version/item endpoints and immutable version checks.
+- D1 private-key separation smoke tests passed.
 ## 2026-10-24 — Foundation
-- Two D1 databases, authentication and CI.
+- Two D1 databases, authentication, admin authoring and CI.

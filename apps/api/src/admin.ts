@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { requireSession, requireRole, sameOrigin } from './auth';
 import type { Env } from './auth';
+import { examContentHash } from './exam-integrity';
 const admin = new Hono<Env>();
 const schema = z.object({slug:z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).min(2).max(64),title:z.string().trim().min(2).max(160)}).strict();
 admin.use('*',requireSession,requireRole('admin'));
@@ -173,6 +174,44 @@ admin.post('/exam-items', sameOrigin, async c => {
         .bind(crypto.randomUUID(),c.get('identity').id,'exam_item.created',id,Math.floor(Date.now()/1000))
     ]);
     return c.json({ item: { id, versionId, position, question: JSON.parse(snapshot) } }, 201);
+  } catch {
+    return c.json({ error: { code: 'WRITE_FAILED' } }, 503);
+  }
+});
+
+const publishSchema = z.object({ versionId: z.string().uuid() }).strict();
+admin.post('/publish-exam-version', sameOrigin, async c => {
+  let input: unknown;
+  try { input = await c.req.json(); }
+  catch { return c.json({ error: { code: 'BAD_JSON' } }, 400); }
+  const parsed = publishSchema.safeParse(input);
+  if (!parsed.success) return c.json({ error: { code: 'VALIDATION_FAILED' } }, 400);
+  const { versionId } = parsed.data;
+  try {
+    const version = await c.env.EXAM_CORE.prepare(
+      "SELECT id FROM exam_versions WHERE id=? AND status='draft' AND published_at IS NULL"
+    ).bind(versionId).first();
+    if (!version) return c.json({ error: { code: 'VERSION_NOT_DRAFT' } }, 409);
+    const result = await c.env.EXAM_CORE.prepare(
+      'SELECT position,question_snapshot_json AS questionSnapshotJson,answer_key_private_json AS answerKeyPrivateJson FROM exam_items WHERE exam_version_id=? ORDER BY position'
+    ).bind(versionId).all();
+    const items = result.results as import('./exam-integrity').ExamDigestItem[];
+    let hash: string;
+    try { hash = await examContentHash(items); }
+    catch { return c.json({ error: { code: 'INVALID_EXAM_CONTENT' } }, 409); }
+    const publishedAt = Math.floor(Date.now()/1000);
+    // Conditional UPDATE must affect exactly one row. D1 batch rolls back audit on failure.
+    const writes = await c.env.EXAM_CORE.batch([
+      c.env.EXAM_CORE.prepare(
+        "UPDATE exam_versions SET content_hash=?,published_at=?,status='published' WHERE id=? AND status='draft' AND published_at IS NULL AND (SELECT COUNT(*) FROM exam_items WHERE exam_version_id=?)=?"
+      ).bind(hash,publishedAt,versionId,versionId,items.length),
+      c.env.EXAM_CORE.prepare(
+        "INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) SELECT ?,?,?,?,? WHERE (SELECT status FROM exam_versions WHERE id=?)='published' AND (SELECT content_hash FROM exam_versions WHERE id=?)=?"
+      ).bind(crypto.randomUUID(),c.get('identity').id,'exam_version.published',versionId,publishedAt,versionId,versionId,hash)
+    ]);
+    const changed = (writes[0] as { meta?: { changes?: number } } | undefined)?.meta?.changes;
+    if (changed !== 1) return c.json({ error: { code: 'PUBLISH_CONFLICT' } }, 409);
+    return c.json({ version: { id: versionId, status: 'published', contentHash: hash, publishedAt } }, 200);
   } catch {
     return c.json({ error: { code: 'WRITE_FAILED' } }, 503);
   }

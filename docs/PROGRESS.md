@@ -1,14 +1,14 @@
 # Progress
 Updated: 2026-10-24
 ## Completed
-- D1 core/results, secure auth and admin exam authoring.
-- Local D1 snapshot and database checks passed: https://github.com/tranlocbtr99/Studyweb/actions/runs/40097742030
-- Added deterministic SHA-256 digest helper over public question snapshots AND private answer keys; rejects empty, gapped and malformed versions. API CI pending.
+- D1 core/results, secure auth, admin exam authoring and draft snapshots.
+- SHA-256 digest helper CI passed: https://github.com/tranlocbtr99/Studyweb/actions/runs/40097947641
+- Added admin publish endpoint with draft checks, SHA-256 content validation, conditional D1 update, change-count check and audit. CI pending.
 ## Pending
-- Verify digest CI; integrate digest with guarded publishing and D1 atomicity checks.
-- Attempts/autosave/grading, frontend, load tests and deployment.
+- Verify API CI; add real D1 integration and concurrent modification tests before production use.
+- Student attempts, autosave, grading, frontend, load tests and deployment.
 ## Risks
-- Digest helper is not yet connected to a publishing endpoint; published versions remain unavailable through the API.
-- HTTP-to-D1 rollback and 500-user concurrency are unverified; no production deployment.
+- Publication checks item count but not an atomic database-side content digest; concurrent same-count item replacement could race between read and update. Do not deploy publishing until transaction guard is strengthened.
+- No HTTP-to-D1 rollback proof, no 500-user load test, no production deployment.
 ## Next task
-- Verify digest CI, then implement guarded publish transaction with current D1 snapshot validation.
+- Verify API CI and close publish read/write race with D1-backed integration tests.
