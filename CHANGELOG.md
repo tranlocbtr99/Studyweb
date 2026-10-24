@@ -1,7 +1,9 @@
 # Changelog
+## 2026-10-24 — Student login UI
+- Added email/password login, session status check, logout and conditional exam-room access.
 ## 2026-10-24 — Student web scaffold
-- Created React/Vite exam room with exam load, attempt start, answer selection, save/recovery, submit and result display.
-## 2026-10-24 — Student APIs
-- Added results/history, server grading, idempotent submission, versioned autosave and published exam read.
+- React/Vite exam room, manual save/recovery, submission and score display.
+## 2026-10-24 — Student API
+- Published exam reads, attempts, autosave, grading, result history.
 ## 2026-10-24 — Foundation
-- D1 core/results, auth, admin authoring and publication integrity.
+- D1, authentication, admin authoring and publication integrity.
