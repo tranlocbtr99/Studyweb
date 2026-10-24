@@ -1,11 +1,13 @@
 # Changelog
-## 2026-10-24 — Database verification setup
-- Added GitHub Actions workflow for database TypeScript checks and SQLite migration tests.
-- Expanded tests for published item immutability, stale autosave snapshots, duplicate results and receipts.
-- No production deployment; test execution still requires CI confirmation.
+## 2026-10-24 — Read-only API scaffold
+- Added Hono Worker API, public metadata endpoints, input validation, route tests and CI.
+- Mutating routes intentionally disabled pending secure authentication and grading.
+## 2026-10-24 — Database verification
+- Database CI passed on commit 31366b0.
+- Added CI and integrity tests.
 ## 2026-10-24 — Database module
-- Added initial two-D1 migrations, Drizzle mappings and test sources.
-## 2026-10-24 — Architecture specification v2
-- Adopted two D1 databases and integrity constraints.
+- Added Drizzle mappings and two initial migrations.
+## 2026-10-24 — Architecture v2
+- Adopted two D1 databases.
 ## 2026-10-24 — Bootstrap
-- Created initial project documentation and directory placeholders.
+- Created initial docs and directory placeholders.
