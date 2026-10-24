@@ -1,9 +1,9 @@
 # Changelog
-## 2026-10-24 — D1 CI compatibility
-- Removed unsupported foreign_keys pragma from admin D1 smoke test; Wrangler manages foreign keys.
-## 2026-10-24 — Admin D1 tests
-- Added subject, audit and duplicate slug SQL smoke tests.
-## 2026-10-24 — Admin API
-- Role-guarded subject creation, transactional audit and authorization tests.
+## 2026-10-24 — Admin topics
+- Added topic creation under existing subjects, admin authorization, input validation and transactional audit with tests.
+## 2026-10-24 — D1 admin smoke checks
+- Added local D1 subject/audit and duplicate slug checks; corrected unsupported pragma.
+## 2026-10-24 — Admin subjects
+- Added admin subject creation and access tests.
 ## 2026-10-24 — Foundation
-- Core/results schemas, authentication and CI.
+- Two D1 schemas, auth and CI.

@@ -11,7 +11,7 @@ async function fixture(role = 'admin') {
       const record = { sql, args: [] as unknown[] };
       return {
         bind(...args: unknown[]) { record.args = args; return this; },
-        async first<T = unknown>() { return (sql.includes('FROM sessions') && record.args[0] === hash ? { id: 'admin-user' } : null) as T | null; },
+        async first<T = unknown>() { return (sql.includes('FROM sessions') && record.args[0] === hash ? { id: 'admin-user' } : sql.includes('FROM subjects WHERE id=') ? { id: record.args[0] } : null) as T | null; },
         async all() { return { results: sql.includes('FROM user_roles') ? [{ code: role }] : [] }; },
         async run() { statements.push(record); return {}; }
       };
@@ -60,5 +60,29 @@ describe('admin subjects', () => {
     expect(statements[1].sql).toContain('INSERT INTO core_audit_logs');
     expect(statements[1].args[1]).toBe('admin-user');
     expect(statements[1].args[3]).toBe(result.subject.id);
+  });
+});
+
+describe('admin topics', () => {
+  it('requires authentication', async () => {
+    const res = await app.request('/api/v1/admin/topics', { method:'POST', headers:{ Origin:'http://localhost' }, body:'{}' });
+    expect(res.status).toBe(401);
+  });
+  it('rejects invalid subject identifiers', async () => {
+    const { env, statements } = await fixture();
+    const res = await app.request('/api/v1/admin/topics', request({subjectId:'bad',title:'Demand and supply'}), env);
+    expect(res.status).toBe(400);
+    expect(statements).toHaveLength(0);
+  });
+  it('creates a topic and audit record', async () => {
+    const { env, statements } = await fixture();
+    const subjectId='123e4567-e89b-42d3-a456-426614174000';
+    const res = await app.request('/api/v1/admin/topics', request({subjectId,title:'Demand and supply'}), env);
+    expect(res.status).toBe(201);
+    const data=await res.json();
+    expect(data.topic.subjectId).toBe(subjectId);
+    expect(statements[0].sql).toContain('INSERT INTO topics');
+    expect(statements[1].args[2]).toBe('topic.created');
+    expect(statements[1].args[3]).toBe(data.topic.id);
   });
 });

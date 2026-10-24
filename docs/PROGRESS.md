@@ -1,13 +1,13 @@
 # Progress
 Updated: 2026-10-24
 ## Completed
-- Core/results D1 schemas, auth/RBAC/CSRF, admin subject authoring and API CI.
-- D1 admin smoke check added; corrected unsupported PRAGMA foreign_keys=ON in Wrangler D1 execute script; CI pending.
+- D1 core/results schema, secure auth, subject authoring and admin audit.
+- Added admin topic creation with subject validation, RBAC, CSRF, audit and unit tests; CI pending.
 ## Pending
-- Confirm D1 CI; add request-to-D1 integration tests and transaction rollback checks.
-- Topics/questions/exams, provisioning, attempts/autosave/grading, frontend, load tests and deployment.
+- Confirm D1 smoke CI and new API CI; real D1 batch rollback tests.
+- Question/option authoring, exam publishing, user provisioning, attempts, autosave, grading, frontend, load tests and deployment.
 ## Risks
-- D1 smoke checks do not prove HTTP endpoint or rollback semantics.
-- No production deployment; 500 concurrent users unverified.
+- D1 smoke test is not HTTP integration; production deployment not approved.
+- 500 concurrent users unverified.
 ## Next task
-- Verify corrected D1 CI, then implement topic authoring.
+- Verify CI; implement question draft schema and authoring safely.
