@@ -13,6 +13,9 @@ const kinds = new Set(['Error', 'TypeError', 'RangeError', 'DOMException', 'Oper
   'NotSupportedError', 'QuotaExceededError', 'DataError', 'AbortError', 'unknown']);
 let matched = 0;
 let validEvents = 0;
+let parsedJsonLines = 0;
+let arrayEnvelopeLines = 0;
+let primitiveJsonLines = 0;
 let eventsWithLogs = 0;
 let logEntries = 0;
 let httpResponses = 0;
@@ -23,6 +26,19 @@ const outcomes = new Map();
 for await (const line of readline.createInterface({ input: process.stdin, crlfDelay: Infinity })) {
   let event;
   try { event = JSON.parse(line); } catch { continue; }
+  parsedJsonLines++;
+  if (Array.isArray(event)) {
+    arrayEnvelopeLines++;
+    // Wrangler may emit an array of events in a single JSON line.
+    for (const entry of event) {
+      if (entry && typeof entry === 'object' && !Array.isArray(entry)) inspect(entry);
+    }
+    continue;
+  }
+  if (!event || typeof event !== 'object') { primitiveJsonLines++; continue; }
+  inspect(event);
+}
+function inspect(event) {
   validEvents++;
   const shape = Object.keys(event).filter(key => ['outcome', 'logs', 'event', 'exceptions', 'message'].includes(key)).sort().join(',') || 'other';
   eventShapes.set(shape, (eventShapes.get(shape) ?? 0) + 1);
@@ -61,4 +77,4 @@ for await (const line of readline.createInterface({ input: process.stdin, crlfDe
 }
 console.log(`Filtered authentication diagnostic events: ${matched}`);
 
-console.log(JSON.stringify({ validWorkerEvents: validEvents, eventsWithLogs, logEntries, outcomes: Object.fromEntries(outcomes), httpResponses, statusClasses: Object.fromEntries(statusCounts), methods: Object.fromEntries(methodCounts), eventShapes: Object.fromEntries(eventShapes) }));
+console.log(JSON.stringify({ validWorkerEvents: validEvents, parsedJsonLines, arrayEnvelopeLines, primitiveJsonLines, eventsWithLogs, logEntries, outcomes: Object.fromEntries(outcomes), httpResponses, statusClasses: Object.fromEntries(statusCounts), methods: Object.fromEntries(methodCounts), eventShapes: Object.fromEntries(eventShapes) }));
