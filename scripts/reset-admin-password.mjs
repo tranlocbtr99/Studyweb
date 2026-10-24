@@ -21,7 +21,7 @@ const admins = await query(`SELECT users.id FROM users
   WHERE users.email=? AND users.status='active' AND r.code='admin'`, [email]);
 if (admins.length !== 1) throw new Error('Existing active administrator with this email not found; no changes made');
 const salt = randomBytes(16);
-const hash = `pbkdf2$310000$${salt.toString('hex')}$${pbkdf2Sync(password, salt, 310000, 32, 'sha256').toString('hex')}`;
+const hash = `pbkdf2$100000$${salt.toString('hex')}$${pbkdf2Sync(password, salt, 100000, 32, 'sha256').toString('hex')}`;
 await query("UPDATE users SET password_hash=? WHERE id=? AND email=? AND status='active'",
   [hash, admins[0].id, email]);
 // Invalidate existing sessions only for the target admin.
