@@ -1,0 +1,30 @@
+name: Create initial administrator
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Enter CREATE_FIRST_ADMIN'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: studyweb-admin-bootstrap
+  cancel-in-progress: false
+jobs:
+  bootstrap:
+    if: ${{ inputs.confirmation == 'CREATE_FIRST_ADMIN' }}
+    runs-on: ubuntu-latest
+    environment: production-bootstrap
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Create initial administrator
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          STUDYWEB_ADMIN_EMAIL: ${{ secrets.STUDYWEB_ADMIN_EMAIL }}
+          STUDYWEB_ADMIN_PASSWORD: ${{ secrets.STUDYWEB_ADMIN_PASSWORD }}
+        run: node scripts/bootstrap-admin.mjs
