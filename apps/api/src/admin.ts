@@ -209,7 +209,7 @@ admin.post('/publish-exam-version', sameOrigin, async c => {
         "INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) SELECT ?,?,?,?,? WHERE (SELECT status FROM exam_versions WHERE id=?)='published' AND (SELECT content_hash FROM exam_versions WHERE id=?)=?"
       ).bind(crypto.randomUUID(),c.get('identity').id,'exam_version.published',versionId,publishedAt,versionId,versionId,hash)
     ]);
-    const changed = (writes[0] as { meta?: { changes?: number } } | undefined)?.meta?.changes;
+    const changed = (writes as Array<{ meta?: { changes?: number } }>)[0]?.meta?.changes;
     if (changed !== 1) return c.json({ error: { code: 'PUBLISH_CONFLICT' } }, 409);
     return c.json({ version: { id: versionId, status: 'published', contentHash: hash, publishedAt } }, 200);
   } catch {
