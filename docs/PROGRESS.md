@@ -47,3 +47,8 @@ Updated: 2026-10-24
 - This locates the observed administrator failure before session insertion. Current password code requests 310000 PBKDF2 iterations, matching Cloudflare's documented workerd issue #1346 about the production 100000-iteration ceiling. The exact exception message was deliberately not printed.
 - No authentication algorithm, password, user record, or deployed application was changed in this investigation.
 - Next repair must preserve existing credentials: changing only the creation iteration count cannot verify existing 310000-iteration records. Verify a compatible implementation on deployed Workers before migration or release.
+
+## Root cause and pending rollout (2026-10-25)
+- Production Worker log directly identified login failure stage `password_verification`, exception `NotSupportedError`, HTTP 503. Cloudflare production PBKDF2 caps each derive call at 100000 iterations, while existing Studyweb records use 310000. Local workerd did not enforce this limit.
+- Updated new password hashes and admin reset script to 100000 iterations; tests must pass and Worker must be deployed before login can work.
+- Existing 310000-iteration admin hash is NOT automatically compatible: run protected existing-admin reset workflow after deploying compatible code; this revokes existing admin sessions but does not delete users or exams. Do not claim production fixed until real login succeeds.
