@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import './style.css';
+import AdminPanel from './AdminPanel';
 
 type Question = { body:string; options:Array<{label:string;text:string}> };
 type Exam = { version:{id:string;examId:string};questions:Array<{position:number;question:Question}> };
@@ -13,6 +14,7 @@ const api = async <T,>(path:string,init?:RequestInit):Promise<T> => {
 };
 export default function App(){
   const [accessMode,setAccessMode]=useState<'student'|'admin'|'register'>('student');
+  const [isAdmin,setIsAdmin]=useState(false);
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
   const [signedIn,setSignedIn]=useState<boolean|null>(null);
@@ -96,7 +98,7 @@ export default function App(){
   }
   useEffect(()=>{
     let alive=true;
-    fetch('/api/v1/me',{credentials:'same-origin'}).then(r=>{if(alive)setSignedIn(r.ok);}).catch(()=>{if(alive)setSignedIn(false);});
+    fetch('/api/v1/me',{credentials:'same-origin'}).then(r=>{if(alive)setSignedIn(r.ok);if(r.ok)return fetch('/api/v1/admin/status',{credentials:'same-origin'}).then(admin=>{if(alive)setIsAdmin(admin.ok);});}).catch(()=>{if(alive)setSignedIn(false);});
     return()=>{alive=false;};
   },[]);
   async function login(){
@@ -108,7 +110,7 @@ export default function App(){
         const status=await fetch('/api/v1/admin/status',{credentials:'same-origin'});
         if(!status.ok){await fetch('/api/v1/auth/logout',{method:'POST',credentials:'same-origin'});throw new Error('Tài khoản không có quyền quản trị');}
       }
-      setSignedIn(true);setPassword('');
+      setIsAdmin(accessMode==='admin');setSignedIn(true);setPassword('');
     }catch(e){setMessage(String(e));}finally{setBusy(false);}
   }
   async function register(){
@@ -124,7 +126,7 @@ export default function App(){
     try{
       const res=await fetch('/api/v1/auth/logout',{method:'POST',credentials:'same-origin'});
       if(!res.ok)throw new Error('Đăng xuất thất bại');
-      sessionStorage.removeItem('studyweb_active_attempt');setResumeAvailable(false);setSignedIn(false);setExam(null);setAttempt(null);setAnswers({});savedAnswers.current='{}';setResult(null);
+      sessionStorage.removeItem('studyweb_active_attempt');setResumeAvailable(false);setSignedIn(false);setIsAdmin(false);setExam(null);setAttempt(null);setAnswers({});savedAnswers.current='{}';setResult(null);
     }catch(e){setMessage(String(e));}finally{setBusy(false);}
   }
   useEffect(()=>{
@@ -190,6 +192,7 @@ export default function App(){
       </form></>}
     </section>}
     {signedIn&&<div className="toolbar account"><span>Đã đăng nhập</span><button className="secondary" disabled={busy} onClick={logout}>Đăng xuất</button></div>}
+    {signedIn&&isAdmin&&<AdminPanel/>}
     {signedIn&&resumeAvailable&&!attempt&&<section className="panel"><h2>Bài thi đang làm</h2><p>Khôi phục câu trả lời đã lưu trên máy chủ sau khi tải lại trang.</p><button disabled={busy} onClick={resume}>Tiếp tục bài thi</button></section>}
     {signedIn&&<section className="panel"><h1>Phòng thi trực tuyến</h1><p>Nhập mã phiên bản đề thi đã xuất bản. Bạn có thể tải đề thi bằng mã phiên bản đã xuất bản.</p>
       <div className="toolbar"><button disabled={busy} onClick={showCatalog}>Xem danh sách đề thi</button></div>
