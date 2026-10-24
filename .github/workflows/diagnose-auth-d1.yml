@@ -26,6 +26,6 @@ jobs:
           npx wrangler d1 execute exam_core --remote --command "SELECT 'users' AS table_name, COUNT(*) AS row_count FROM users UNION ALL SELECT 'roles',COUNT(*) FROM roles UNION ALL SELECT 'sessions',COUNT(*) FROM sessions UNION ALL SELECT 'login_rate_limits',COUNT(*) FROM login_rate_limits"
           npx wrangler d1 execute exam_core --remote --command "SELECT code FROM roles ORDER BY code"
           # Aggregate checks only: never select emails, password hashes, tokens, or session IDs.
-          npx wrangler d1 execute exam_core --remote --command "SELECT COUNT(*) AS active_users, SUM(CASE WHEN password_hash LIKE 'pbkdf2$%$%$%' AND LENGTH(password_hash)=115 THEN 0 ELSE 1 END) AS malformed_hashes FROM users WHERE status='active'"
+          npx wrangler d1 execute exam_core --remote --command "SELECT COUNT(*) AS active_users, SUM(CASE WHEN password_hash LIKE 'pbkdf2$%$%$%' AND LENGTH(password_hash)=111 THEN 0 ELSE 1 END) AS malformed_hashes FROM users WHERE status='active'"
           npx wrangler d1 execute exam_core --remote --command "SELECT name, type, \"notnull\" FROM pragma_table_info('sessions') WHERE name IN ('id','user_id','token_hash','expires_at','revoked_at') ORDER BY name"
           npx wrangler d1 execute exam_core --remote --command "SELECT name, type, \"notnull\" FROM pragma_table_info('login_rate_limits') WHERE name IN ('bucket_key','window_start','attempts','updated_at') ORDER BY name"
