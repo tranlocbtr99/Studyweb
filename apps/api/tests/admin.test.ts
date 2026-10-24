@@ -3,7 +3,7 @@ import app from '../src/index';
 import type { ReadDb, ReadQuery } from '../src/auth';
 
 const token = 'a'.repeat(64);
-async function fixture(role = 'admin', snapshotReady = false) {
+async function fixture(role = 'admin', snapshotReady = false, zeroRowInsert = false) {
   const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))), b => b.toString(16).padStart(2, '0')).join('');
   const statements: Array<{ sql: string; args: unknown[] }> = [];
   const core: ReadDb = {
@@ -18,7 +18,7 @@ async function fixture(role = 'admin', snapshotReady = false) {
     },
     async batch(queries: ReadQuery[]) {
       for (const query of queries) await query.run();
-      return [];
+      return queries.map((_, index) => ({ meta: { changes: zeroRowInsert && index === 0 ? 0 : 1 } }));
     }
   };
   return { env: { EXAM_CORE: core, EXAM_RESULTS: core }, statements };
@@ -206,6 +206,12 @@ describe('admin exam item snapshots', () => {
     expect(JSON.parse(statements[0].args[2] as string).options).toHaveLength(4);
     expect(JSON.parse(statements[0].args[3] as string).correctOption).toBe('B');
     expect(statements[1].args[2]).toBe('exam_item.created');
+  });
+  it('returns conflict when conditional item insert writes zero rows', async () => {
+    const {env,statements}=await fixture('admin',true,true);
+    const res=await app.request('/api/v1/admin/exam-items',request(payload),env);
+    expect(res.status).toBe(409);
+    expect(statements[1].sql).toContain('WHERE EXISTS');
   });
   it('rejects unknown draft versions', async () => {
     const {env,statements}=await fixture();

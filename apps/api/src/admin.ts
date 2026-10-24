@@ -165,14 +165,16 @@ admin.post('/exam-items', sameOrigin, async c => {
     const snapshot = JSON.stringify({ questionId, body: question.body, options });
     const privateKey = JSON.stringify({ correctOption: question.correctOption, explanation: question.explanation });
     const id = crypto.randomUUID();
-    // Guard against a version being published between the initial read and the write.
-    await c.env.EXAM_CORE.batch([
+    const writes = await c.env.EXAM_CORE.batch([
       c.env.EXAM_CORE.prepare(
         "INSERT INTO exam_items(id,exam_version_id,position,question_snapshot_json,answer_key_private_json) SELECT ?,id,?,?,? FROM exam_versions WHERE id=? AND status='draft' AND published_at IS NULL"
       ).bind(id,position,snapshot,privateKey,versionId),
-      c.env.EXAM_CORE.prepare('INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) VALUES(?,?,?,?,?)')
-        .bind(crypto.randomUUID(),c.get('identity').id,'exam_item.created',id,Math.floor(Date.now()/1000))
+      c.env.EXAM_CORE.prepare(
+        'INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM exam_items WHERE id=?)'
+      ).bind(crypto.randomUUID(),c.get('identity').id,'exam_item.created',id,Math.floor(Date.now()/1000),id)
     ]);
+    const inserted = (writes as Array<{ meta?: { changes?: number } }>)[0]?.meta?.changes;
+    if (inserted !== 1) return c.json({ error: { code: 'VERSION_NOT_DRAFT' } }, 409);
     return c.json({ item: { id, versionId, position, question: JSON.parse(snapshot) } }, 201);
   } catch {
     return c.json({ error: { code: 'WRITE_FAILED' } }, 503);
