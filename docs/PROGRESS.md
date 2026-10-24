@@ -1,13 +1,12 @@
 # Progress
 Updated: 2026-10-24
 ## Completed
-- D1 core/results schema, secure auth, subject authoring and admin audit.
-- Added admin topic creation with subject validation, RBAC, CSRF, audit and unit tests; CI pending.
+- Core/results D1 schemas, auth/RBAC/CSRF, admin subjects/topics; API CI passed: https://github.com/tranlocbtr99/Studyweb/actions/runs/40097002178
+- Diagnosed D1 smoke failure as unsupported CREATE TEMP TABLE in Wrangler local D1; replaced temporary assertion table with existing constrained login_rate_limits table; new D1 CI pending.
 ## Pending
-- Confirm D1 smoke CI and new API CI; real D1 batch rollback tests.
-- Question/option authoring, exam publishing, user provisioning, attempts, autosave, grading, frontend, load tests and deployment.
+- Verify D1 CI, full request-to-D1 integration tests and rollback behavior.
+- Questions/options/exams, provisioning, attempts/autosave/grading, frontend, load tests, deployment.
 ## Risks
-- D1 smoke test is not HTTP integration; production deployment not approved.
-- 500 concurrent users unverified.
+- Smoke SQL tests constraints but not HTTP integration; 500 concurrent users unverified.
 ## Next task
-- Verify CI; implement question draft schema and authoring safely.
+- Verify corrected D1 CI, then question draft authoring.
