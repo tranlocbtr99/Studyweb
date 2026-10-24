@@ -1,0 +1,37 @@
+name: Studyweb deployment readiness
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'apps/api/**'
+      - 'apps/web/**'
+      - '.github/workflows/deployment-readiness.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install and build web
+        working-directory: apps/web
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npm run build
+      - name: Install and verify API
+        working-directory: apps/api
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npm test
+      - name: Validate Worker bundle without deploying
+        working-directory: apps/api
+        run: npx wrangler deploy --dry-run --outdir ../../.worker-preview
+      - name: Verify static assets included
+        run: |
+          test -f apps/web/dist/index.html
+          test -d .worker-preview
