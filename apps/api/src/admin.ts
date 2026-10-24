@@ -95,6 +95,35 @@ admin.get('/questions', async c => {
   }
 });
 
+
+const updateQuestionSchema=z.object({
+  body:z.string().trim().min(5).max(4000),
+  options:z.array(z.string().trim().min(1).max(1000)).length(4),
+  correctOption:z.enum(['A','B','C','D']),
+  explanation:z.string().trim().max(4000)
+}).strict();
+admin.put('/questions/:id',sameOrigin,async c=>{
+  const id=c.req.param('id');
+  if(!z.string().uuid().safeParse(id).success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+  let input:unknown;
+  try{input=await c.req.json();}catch{return c.json({error:{code:'BAD_JSON'}},400);}
+  const parsed=updateQuestionSchema.safeParse(input);
+  if(!parsed.success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+  try{
+    const existing=await c.env.EXAM_CORE.prepare("SELECT id FROM questions WHERE id=? AND status='draft'").bind(id).first();
+    if(!existing)return c.json({error:{code:'QUESTION_NOT_EDITABLE'}},409);
+    const {body,options,correctOption,explanation}=parsed.data;
+    const labels=['A','B','C','D'];
+    await c.env.EXAM_CORE.batch([
+      c.env.EXAM_CORE.prepare("UPDATE question_drafts SET body=?,correct_option=?,explanation=? WHERE question_id=? AND EXISTS(SELECT 1 FROM questions WHERE id=? AND status='draft')").bind(body,correctOption,explanation,id,id),
+      ...options.map((option,i)=>c.env.EXAM_CORE.prepare("UPDATE question_options SET body=? WHERE question_id=? AND stable_option_id=?").bind(option,id,labels[i])),
+      c.env.EXAM_CORE.prepare("INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) VALUES(?,?,?,?,?)").bind(crypto.randomUUID(),c.get('identity').id,'question.updated',id,Math.floor(Date.now()/1000))
+    ]);
+    // Existing exam_items retain their own immutable snapshots.
+    return c.json({question:{id,body,options:options.map((text,i)=>({label:labels[i],text})),correctOption,explanation}});
+  }catch{return c.json({error:{code:'WRITE_FAILED'}},503);}
+});
+
 const questionSchema = z.object({
   topicId: z.string().uuid(),
   body: z.string().trim().min(5).max(4000),
