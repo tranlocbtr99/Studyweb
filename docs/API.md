@@ -1,0 +1,4 @@
+# API contract (planned)
+Base /api/v1; Hono routes with Zod validation, consistent errors {error:{code,message,requestId}}. Authenticate via secure HttpOnly cookie/session; role checks server-side, CSRF protections for cookie-authenticated mutations; rate limit sensitive endpoints.
+Planned endpoints: POST /auth/login, POST /auth/logout, GET /me; GET /exams, GET /exams/:id; POST /attempts; GET /attempts/:id; PUT /attempts/:id/answers (expectedVersion + changes, returns saveVersion); POST /attempts/:id/submit (idempotency key, stable receipt); GET /attempts/:id/result; admin-only question/exam/version management.
+Public question payloads exclude answer keys and explanations until authorized release. Server owns timers, scoring, eligibility, and publication rules. API implementation deferred.

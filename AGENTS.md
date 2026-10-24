@@ -1,0 +1,4 @@
+# Agent instructions
+Read AGENTS.md and docs/PROGRESS.md first; then only files relevant to the assigned task. Work on one module per turn. Do not expand scope, repeat full repository scans, install dependencies unnecessarily, or deploy without passing relevant tests. After two failed fixes stop and report root-cause findings. Never delete user data or commit secrets. Preserve published exam versions and use additive, reviewed migrations. Update docs/PROGRESS.md and CHANGELOG.md; make one clear commit per task when permitted.
+Stack: React, TypeScript strict, Vite, Tailwind, shadcn/ui; Cloudflare Pages/Workers, Hono, Zod, D1, Drizzle, optional R2; GitHub Actions; Vitest, Playwright, k6.
+Security invariants: server-side grading; answer keys never sent before publication; versioned recoverable autosave; idempotent submission; immutable published exam versions.
