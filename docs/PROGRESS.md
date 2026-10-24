@@ -1,13 +1,14 @@
 # Progress
 Updated: 2026-10-24
 ## Completed
-- D1 core/results, admin authoring, snapshots and SHA-256.
-- Added additive exam item revision migration, D1 SQL revision tests and optimistic publication revision guard. CI pending.
+- Core/results D1, auth, admin authoring, snapshots, SHA-256 and revision-guarded publish API.
+- API, DB and D1 migration CI passed for revision guard commit 7e210c9.
+- Added local D1 SQL regression for stale revision rejection, current revision acceptance and replay rejection; CI pending.
 ## Pending
-- Verify API/D1 CI and test publish transaction with real HTTP-to-D1 integration.
-- Attempts/autosave/grading, frontend, load tests and deployment.
+- Verify D1 conflict CI; test HTTP-to-D1 publish rollback and audit atomicity.
+- Student attempts/autosave/grading, frontend, load tests and deployment.
 ## Risks
-- Optimistic revision check detects concurrent writes but HTTP-to-D1 transaction and rollback are not yet proven.
+- SQL conflict checks do not yet prove HTTP-to-D1 transaction atomicity or content hash validation during concurrent writes.
 - 500 simultaneous users unverified; no production deployment.
 ## Next task
-- Verify revision CI, test publication conflict and rollback end-to-end.
+- Verify conflict CI, add publish endpoint integration and rollback tests.

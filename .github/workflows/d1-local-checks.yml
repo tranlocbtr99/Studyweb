@@ -51,6 +51,8 @@ jobs:
         run: npx wrangler d1 execute exam_core --local --file=../../packages/db/tests/d1-snapshot-check.sql
       - name: Verify item revision guards
         run: npx wrangler d1 execute exam_core --local --file=../../packages/db/tests/d1-revision-check.sql
+      - name: Verify stale revision rejects publication
+        run: npx wrangler d1 execute exam_core --local --file=../../packages/db/tests/d1-publish-conflict-check.sql
       - name: Verify published versions reject modification
         shell: bash
         run: |
