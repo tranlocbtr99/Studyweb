@@ -5,24 +5,8 @@ describe('PBKDF2 authentication compatibility', () => {
   it('creates a hash accepted by the login verifier', async () => {
     const password = 'Studyweb-local-test-2026!@#';
     const hash = await hashPassword(password);
-    expect(hash.split('
-    expect(await verifyPassword(password, hash)).toBe(true);
-    expect(await verifyPassword(password + 'x', hash)).toBe(false);
-  }, 30000);
-  it('rejects malformed records without throwing', async () => {
-    expect(await verifyPassword('some-password', 'bad-record')).toBe(false);
-  });
-});
-)).toHaveLength(4);
-    expect(hash.startsWith('pbkdf2$310000
-    expect(await verifyPassword(password, hash)).toBe(true);
-    expect(await verifyPassword(password + 'x', hash)).toBe(false);
-  }, 30000);
-  it('rejects malformed records without throwing', async () => {
-    expect(await verifyPassword('some-password', 'bad-record')).toBe(false);
-  });
-});
-)).toBe(true);
+    expect(hash.split(String.fromCharCode(36))).toHaveLength(4);
+    expect(hash.startsWith('pbkdf2' + String.fromCharCode(36) + '310000')).toBe(true);
     expect(await verifyPassword(password, hash)).toBe(true);
     expect(await verifyPassword(password + 'x', hash)).toBe(false);
   }, 30000);
