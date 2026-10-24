@@ -4,7 +4,7 @@ import type { ReadDb } from '../src/auth';
 afterEach(() => vi.restoreAllMocks());
 function fakeDb(): ReadDb {
   const values = new Map<string, { start: number; count: number }>();
-  return { prepare(sql: string) {
+  return { batch: async () => [], prepare(sql: string) {
     let args: unknown[] = [];
     return {
       bind(...v: unknown[]) { args = v; return this; },
@@ -40,7 +40,7 @@ describe('login throttling', () => {
     expect((await enforceLoginLimit(db, 'extra@example.com', '1.2.3.4')).allowed).toBe(false);
   });
   it('fails closed on D1 error', async () => {
-    const db = { prepare() { throw new Error('D1 down'); } };
+    const db: ReadDb = { batch: async () => [], prepare() { throw new Error('D1 down'); } };
     expect((await enforceLoginLimit(db, 'u@example.com', '1.2.3.4')).unavailable).toBe(true);
   });
 });

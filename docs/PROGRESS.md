@@ -1,11 +1,13 @@
 # Progress
 Updated: 2026-10-24
 ## Completed
-- Database, authentication and Wrangler D1 checks passed.
-- Added admin-only subject creation with Zod validation, same-origin protection, transactional core audit and additive migration 0003; CI pending.
+- Two D1 databases and Wrangler local checks.
+- Authentication, session RBAC, rate limiting and CSRF defenses.
+- Admin subject creation and transactional core audit migration.
+- Corrected TypeScript test doubles for newly required D1 batch() interface; CI pending.
 ## Pending
-- Verify API and D1 CI; integration test subject creation; topic/question authoring; user provisioning; exam lifecycle; attempts, autosave, grading, frontend and load tests.
+- Verify API and D1 CI; admin integration tests; topics/questions/exams, autosave/grading, frontend, load tests, deployment.
 ## Risks
 - No production deployment; 500 concurrent users unverified.
 ## Next task
-- Verify CI and build subject/topic authoring integration tests.
+- Confirm CI, then add admin integration tests.
