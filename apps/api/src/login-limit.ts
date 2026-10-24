@@ -9,7 +9,10 @@ const MAX_IP_ATTEMPTS = 30;
 // Missing IP fails closed: it is never treated as an unlimited anonymous bucket.
 export async function enforceLoginLimit(db: ReadDb, email: string, connectingIp?: string):
   Promise<{ allowed: boolean; retryAfter?: number; unavailable?: boolean }> {
-  if (!connectingIp || connectingIp.length > 128) return { allowed: false, unavailable: true };
+  if (!connectingIp || connectingIp.length > 128) {
+    console.error('studyweb.auth.rate_limit: missing_or_invalid_client_ip');
+    return { allowed: false, unavailable: true };
+  }
   const now = Math.floor(Date.now() / 1000);
   const windowStart = Math.floor(now / WINDOW_SECONDS) * WINDOW_SECONDS;
   const buckets: Array<[string, number]> = [
@@ -29,7 +32,9 @@ export async function enforceLoginLimit(db: ReadDb, email: string, connectingIp?
       if (!row || row.attempts > limit) return { allowed: false, retryAfter: WINDOW_SECONDS - (now - windowStart) };
     }
     return { allowed: true };
-  } catch {
+  } catch (cause) {
+    // Log the exception class only: never log email, IP, SQL parameters or secrets.
+    console.error('studyweb.auth.rate_limit: storage_failure', cause instanceof Error ? cause.name : 'unknown');
     return { allowed: false, unavailable: true };
   }
 }
