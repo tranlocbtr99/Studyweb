@@ -27,3 +27,6 @@
 
 ## 2026-10-25 — Admin dashboard navigation
 - Separate overview, authoring, and exam workspaces; add responsive action cards without fake statistics.
+
+## 2026-10-25 — Persisted question bank
+- Added admin-only paginated question search endpoint and frontend search/selection for previously saved questions.
