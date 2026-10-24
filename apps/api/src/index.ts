@@ -7,6 +7,7 @@ import { enforceLoginLimit } from './login-limit';
 import type { Env } from './auth';
 import admin from './admin';
 import student from './student';
+import registration from './registration';
 const app = new Hono<Env>();
 const error = (code: string, message: string, requestId: string) => ({ error: { code, message, requestId } });
 app.use('*', async (c, next) => {
@@ -74,6 +75,7 @@ app.get('/api/v1/exams/:id', async c => {
     return c.json({ exam: row });
   } catch { return c.json(error('DB_UNAVAILABLE', 'Database unavailable', ''), 503); }
 });
+app.route('/api/v1/auth/register',registration);
 app.route('/api/v1/admin',admin);
 app.route('/api/v1/student',student);
 app.get('/api/v1/me', requireSession, c => c.json({ user: c.get('identity') }));
