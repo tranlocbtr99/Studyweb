@@ -1,0 +1,27 @@
+name: Diagnose Studyweb D1 authentication (manual)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Read-only authentication schema checks
+        working-directory: apps/api
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npm install --no-audit --no-fund
+          npx wrangler d1 execute exam_core --remote --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('users','roles','user_roles','sessions','login_rate_limits') ORDER BY name"
+          npx wrangler d1 execute exam_core --remote --command "SELECT 'users' AS table_name, COUNT(*) AS row_count FROM users UNION ALL SELECT 'roles',COUNT(*) FROM roles UNION ALL SELECT 'sessions',COUNT(*) FROM sessions UNION ALL SELECT 'login_rate_limits',COUNT(*) FROM login_rate_limits"
+          npx wrangler d1 execute exam_core --remote --command "SELECT code FROM roles ORDER BY code"
