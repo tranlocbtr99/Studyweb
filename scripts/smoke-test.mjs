@@ -27,5 +27,5 @@ const payload = await health.json();
 if (payload.status !== 'ok' || payload.service !== 'studyweb-api') throw new Error('Unexpected API health payload');
 if (health.headers.get('x-content-type-options') !== 'nosniff') throw new Error('Missing API content-type protection');
 const home = await check('/', 'text/html');
-if (!/<div\\s+id=["']root["']/.test(await home.text())) throw new Error('React mount element missing');
+if (!(await home.text()).includes('id="root"')) throw new Error('React mount element missing');
 console.log('HTTPS smoke test passed for API health, security header and React entrypoint');
