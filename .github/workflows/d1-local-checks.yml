@@ -43,5 +43,7 @@ jobs:
         run: npx wrangler d1 execute exam_core --local --file=../../packages/db/tests/d1-admin-check.sql
       - name: Verify question drafts and option constraints
         run: npx wrangler d1 execute exam_core --local --file=../../packages/db/tests/d1-question-check.sql
+      - name: Verify version allocation and immutability
+        run: npx wrangler d1 execute exam_core --local --file=../../packages/db/tests/d1-version-check.sql
       - name: Verify results schema and integrity
         run: npx wrangler d1 execute exam_results --local --file=../../packages/db/tests/d1-results-check.sql
