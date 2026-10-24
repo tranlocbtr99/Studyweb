@@ -3,8 +3,19 @@
 const toHex = (bytes: Uint8Array) => Array.from(bytes, x => x.toString(16).padStart(2, '0')).join('');
 const fromHex = (hex: string) => new Uint8Array(hex.match(/../g)!.map(x => parseInt(x, 16)));
 async function derive(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
-  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
-  return new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: salt as BufferSource, iterations, hash: 'SHA-256' }, key, 256));
+  let key: CryptoKey;
+  try {
+    key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+  } catch (cause) {
+    console.error('studyweb.password.pbkdf2_import_failed', cause instanceof Error ? cause.name : 'unknown');
+    throw cause;
+  }
+  try {
+    return new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: salt as BufferSource, iterations, hash: 'SHA-256' }, key, 256));
+  } catch (cause) {
+    console.error('studyweb.password.pbkdf2_derive_failed', cause instanceof Error ? cause.name : 'unknown');
+    throw cause;
+  }
 }
 export async function hashPassword(password: string): Promise<string> {
   if (password.length < 12 || password.length > 256) throw new Error('Password length invalid');
