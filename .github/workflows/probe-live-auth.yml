@@ -1,0 +1,18 @@
+name: Probe live Studyweb auth paths (manual)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      STUDYWEB_ADMIN_EMAIL: ${{ secrets.STUDYWEB_ADMIN_EMAIL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check live health, D1 read and safe auth boundary
+        run: node scripts/probe-live-auth.mjs
