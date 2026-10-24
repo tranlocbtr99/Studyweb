@@ -47,6 +47,37 @@ admin.post('/topics', sameOrigin, async c => {
   }
 });
 
+
+const listQuestionsSchema = z.object({
+  subjectId: z.string().uuid().optional(),
+  search: z.string().trim().max(120).default(''),
+  limit: z.coerce.number().int().min(1).max(100).default(30),
+  offset: z.coerce.number().int().min(0).max(100000).default(0)
+});
+admin.get('/questions', async c => {
+  const parsed = listQuestionsSchema.safeParse({
+    subjectId: c.req.query('subjectId'),
+    search: c.req.query('search') ?? '',
+    limit: c.req.query('limit') ?? '30',
+    offset: c.req.query('offset') ?? '0'
+  });
+  if (!parsed.success) return c.json({error:{code:'VALIDATION_FAILED'}},400);
+  const {subjectId,search,limit,offset}=parsed.data;
+  try {
+    const where = "WHERE (? IS NULL OR t.subject_id=?) AND (?='' OR instr(lower(d.body),lower(?))>0)";
+    const sql = "SELECT q.id,q.topic_id AS topicId,t.subject_id AS subjectId,q.status,d.body,d.correct_option AS correctOption,d.explanation FROM questions q JOIN question_drafts d ON d.question_id=q.id JOIN topics t ON t.id=q.topic_id "+where+" ORDER BY q.rowid DESC LIMIT ? OFFSET ?";
+    const result = await c.env.EXAM_CORE.prepare(sql).bind(subjectId??null,subjectId??null,search,search,limit,offset).all();
+    const rows = result.results as Array<{id:string;topicId:string;subjectId:string;status:string;body:string;correctOption:string;explanation:string}>;
+    const items = await Promise.all(rows.map(async row=>{
+      const options = await c.env.EXAM_CORE.prepare('SELECT stable_option_id AS label,body AS text FROM question_options WHERE question_id=? ORDER BY stable_option_id').bind(row.id).all();
+      return {...row,options:options.results};
+    }));
+    return c.json({questions:items,limit,offset});
+  } catch {
+    return c.json({error:{code:'READ_FAILED'}},503);
+  }
+});
+
 const questionSchema = z.object({
   topicId: z.string().uuid(),
   body: z.string().trim().min(5).max(4000),
