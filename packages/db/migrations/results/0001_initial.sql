@@ -1,0 +1,14 @@
+PRAGMA foreign_keys=ON;
+CREATE TABLE attempts(id TEXT PRIMARY KEY,user_id TEXT NOT NULL,exam_version_id TEXT NOT NULL,exam_content_hash TEXT NOT NULL,grading_snapshot_json TEXT NOT NULL CHECK(json_valid(grading_snapshot_json)),started_at INTEGER NOT NULL,expires_at INTEGER NOT NULL,status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','submitted','expired')),save_version INTEGER NOT NULL DEFAULT 0 CHECK(save_version>=0),answer_snapshot_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(answer_snapshot_json)),updated_at INTEGER NOT NULL,submitted_at INTEGER,CHECK(expires_at>started_at),CHECK(status<>'submitted' OR submitted_at IS NOT NULL));
+CREATE INDEX attempts_user_started_idx ON attempts(user_id,started_at);
+CREATE INDEX attempts_status_expiry_idx ON attempts(status,expires_at);
+CREATE TABLE attempt_events(id TEXT PRIMARY KEY,attempt_id TEXT NOT NULL REFERENCES attempts(id),kind TEXT NOT NULL,payload_json TEXT NOT NULL CHECK(json_valid(payload_json)),created_at INTEGER NOT NULL);
+CREATE INDEX attempt_events_attempt_idx ON attempt_events(attempt_id,created_at);
+CREATE TABLE scores(id TEXT PRIMARY KEY,attempt_id TEXT NOT NULL UNIQUE REFERENCES attempts(id),points INTEGER NOT NULL CHECK(points>=0),max_points INTEGER NOT NULL CHECK(max_points>=0 AND points<=max_points),graded_at INTEGER NOT NULL,grading_version TEXT NOT NULL);
+CREATE TABLE submission_receipts(id TEXT PRIMARY KEY,attempt_id TEXT NOT NULL UNIQUE REFERENCES attempts(id),idempotency_key TEXT NOT NULL, response_json TEXT NOT NULL CHECK(json_valid(response_json)),created_at INTEGER NOT NULL,UNIQUE(attempt_id,idempotency_key));
+CREATE TABLE audit_logs(id TEXT PRIMARY KEY,actor_id TEXT,action TEXT NOT NULL,target_id TEXT,created_at INTEGER NOT NULL);
+CREATE INDEX audit_logs_created_idx ON audit_logs(created_at);
+CREATE TRIGGER no_score_update BEFORE UPDATE ON scores BEGIN SELECT RAISE(ABORT,'scores immutable'); END;
+CREATE TRIGGER no_score_delete BEFORE DELETE ON scores BEGIN SELECT RAISE(ABORT,'scores immutable'); END;
+CREATE TRIGGER no_receipt_update BEFORE UPDATE ON submission_receipts BEGIN SELECT RAISE(ABORT,'receipt immutable'); END;
+CREATE TRIGGER no_receipt_delete BEFORE DELETE ON submission_receipts BEGIN SELECT RAISE(ABORT,'receipt immutable'); END;

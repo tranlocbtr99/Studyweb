@@ -1,22 +1,21 @@
 # Progress
 Updated: 2026-10-24
 ## Completed
-- Task 1 bootstrap: directory placeholders and documentation; original README retained.
-- Architecture specification updated: two D1 databases, autosave snapshots, stable option IDs, server grading, idempotent submission, load-test acceptance goals.
-## Pending modules
-1. Implement Drizzle schemas and forward-only migrations for exam_core and exam_results, plus migration tests.
-2. Implement Hono/Zod API contracts and tests; define trusted immutable grading snapshot and cross-DB failure recovery.
-3. Implement k6 load scenarios and baseline measurements.
-4. Foundation auth, admin, exam UI, analytics, CI/CD and deployment.
-## Risks / blockers
-- No cross-D1 transaction; must validate durable finalization protocol.
-- 100–500 concurrency, free-tier quota and Worker CPU remain unverified.
-- No runnable code, real databases, backup automation or tests yet.
+- Bootstrap and architecture specification; two D1 database decision.
+- Database module: Drizzle table mappings, two initial forward-only SQL migrations, focused Vitest/sql.js migration and integrity tests (written, NOT executed).
+## Pending
+- Install dependencies and run typecheck/test; resolve any discrepancies.
+- Implement cross-D1 immutable grading snapshot verification and finalization protocol; API; load tests; auth; web; CI/CD; deployment.
+## Risks
+- No cross-D1 transaction; trusted grading snapshot provisioning must be reviewed.
+- SQL migration and Drizzle mappings require integration validation on actual D1.
+- No runtime tests were executed; capacity and Free limits unverified.
 ## Decisions
-- Two D1: exam_core and exam_results. Single-row versioned autosave; immutable published versions; server-only keys; atomic result+receipt in exam_results.
-## Next task (only when explicitly requested)
-- Implement database schema and migrations for both D1 databases with focused tests; no deploy.
+- Published versions guarded by SQL triggers; results scores and receipts immutable.
+- One JSON snapshot per attempt with optimistic version checks; stable option IDs.
+## Next task (explicit instruction required)
+- Verify and harden database module via dependency installation, targeted tests and D1 local migration compatibility; then implement API contract separately.
 ## Relevant files
-- AGENTS.md; docs/ARCHITECTURE.md; docs/DATABASE.md; docs/API.md; docs/TESTING.md; docs/DECISIONS.md; packages/db/.
-## Next task test commands
-- To be defined with package scripts: schema typecheck and migration/integrity tests; no runtime tests available yet.
+- packages/db/src/*.ts; packages/db/migrations/{core,results}/*.sql; packages/db/tests/*.test.ts; docs/DATABASE.md.
+## Commands
+- cd packages/db && npm install && npm run typecheck && npm test

@@ -1,7 +1,8 @@
 # Changelog
+## 2026-10-24 — Database module
+- Added two D1 initial SQL migrations and Drizzle mappings for core and results.
+- Added targeted migration/integrity test source and local package scripts; not executed or deployed.
 ## 2026-10-24 — Architecture specification v2
-- Adopted exam_core + exam_results D1 separation and documented cross-database consistency limitations.
-- Specified stable option IDs, versioned single-row autosave snapshots, durable idempotent submission and test goals.
-- Prioritized schema, API contract and load scenarios. No runtime code or deployment.
+- Adopted two D1 databases and versioned autosave, idempotent submission design.
 ## 2026-10-24 — Bootstrap
-- Created architecture/process docs and project directory placeholders; original README preserved.
+- Created documentation and directory placeholders.
