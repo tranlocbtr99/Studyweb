@@ -1,17 +1,18 @@
 # Progress
 Updated: 2026-10-24
 ## Completed
-- Two-D1 schemas, initial API, secure login/logout, session RBAC and CSRF checks.
-- Login throttle migration and implementation: per-account and per-IP fixed windows.
-- Investigated API CI failure on commit 4f5ca54: test double missing ReadDb.all() and generic first<T>() contract.
-- Corrected test double to satisfy ReadDb structural type; CI rerun pending.
+- Two-D1 schema and passing database CI.
+- API, sessions/RBAC, PBKDF2 login/logout, same-origin checks and account/IP login throttle.
+- API CI passed after fixing test types: https://github.com/tranlocbtr99/Studyweb/actions/runs/40096425853
+- Added local Wrangler D1 migration CI for core 0001/0002 and results 0001 plus smoke SQL; new CI run pending.
 ## Pending
-- Confirm API CI; validate both D1 migrations using Wrangler local.
-- Secure user provisioning, admin CRUD, trusted grading snapshot, autosave, atomic submit/grade, UI, load tests, backups and deployment.
+- Verify actual Wrangler D1 CI run and repair compatibility issues.
+- Secure user provisioning, admin authoring, immutable grading snapshot, attempts/autosave/atomic submission, UI, load tests, backups and deployment.
 ## Risks
-- Login throttling writes consume D1 quotas and can affect shared IPs.
+- Local D1 smoke SQL is not full behavioral integration or remote production validation.
+- Login throttling may affect shared IPs; D1 quota usage unmeasured.
 - No production deployment; 500 simultaneous users not validated.
 ## Next task
-- Confirm CI, then test Wrangler D1 migration compatibility before admin authoring.
+- Confirm D1 local CI and address failures; then implement admin question/exam authoring with RBAC and audit logs.
 ## Relevant files
-- apps/api/tests/login-limit.test.ts; apps/api/src/login-limit.ts; packages/db/migrations/core/0002_login_rate_limits.sql.
+- .github/workflows/d1-local-checks.yml; packages/db/tests/d1-*.sql; packages/db/migrations/.
