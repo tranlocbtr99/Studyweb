@@ -73,3 +73,8 @@ Updated: 2026-10-24
 - Added protected GET /api/v1/admin/subjects and /topics?subjectId=... (bounded to 500 rows each) and UI selectors for existing subjects/topics after reload.
 - Existing question bank search and admin dashboard checks passed; new subject/topic API and UI checks pending. Production remains on prior manually deployed revision.
 - Draft exam resume, editing and full authoring E2E tests are future work.
+
+## Draft exam reopening (2026-10-25)
+- Added protected GET /api/v1/admin/exams listing saved exams and their versions, including question counts; admin editor can reopen a draft and continue at its persisted item count.
+- Existing subject/topic API and web checks passed. New draft-listing CI pending. Production not deployed; still requires manual rollout.
+- The list is capped at 200 rows; question editing, draft item removal, full pagination and E2E authoring remain future work.
