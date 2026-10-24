@@ -9,10 +9,11 @@ jobs:
     timeout-minutes: 3
     env:
       STUDYWEB_ADMIN_EMAIL: ${{ secrets.STUDYWEB_ADMIN_EMAIL }}
+      STUDYWEB_ADMIN_PASSWORD: ${{ secrets.STUDYWEB_ADMIN_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check live health, D1 read and safe auth boundary
+      - name: Check live health, D1 and one protected administrator login
         run: node scripts/probe-live-auth.mjs
