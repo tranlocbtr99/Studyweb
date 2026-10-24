@@ -30,3 +30,6 @@
 
 ## 2026-10-25 — Persisted question bank
 - Added admin-only paginated question search endpoint and frontend search/selection for previously saved questions.
+
+## 2026-10-25 — Resume authoring
+- Added administrator-only subject/topic catalogs and selectors to reuse existing course structure after reload.
