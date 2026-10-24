@@ -52,3 +52,9 @@ Updated: 2026-10-24
 - Production Worker log directly identified login failure stage `password_verification`, exception `NotSupportedError`, HTTP 503. Cloudflare production PBKDF2 caps each derive call at 100000 iterations, while existing Studyweb records use 310000. Local workerd did not enforce this limit.
 - Updated new password hashes and admin reset script to 100000 iterations; tests must pass and Worker must be deployed before login can work.
 - Existing 310000-iteration admin hash is NOT automatically compatible: run protected existing-admin reset workflow after deploying compatible code; this revokes existing admin sessions but does not delete users or exams. Do not claim production fixed until real login succeeds.
+
+## Admin authoring UI and visual design (2026-10-25)
+- Added admin-only authoring panel using existing protected endpoints for subjects, topics, questions, exams, draft versions, question assignment and publishing.
+- Captures created question IDs for a selection control; no manual UUID entry required for questions created in the current session.
+- Introduced responsive pastel/glass CSS inspired by user-provided LTStudy reference. This is a first styling pass, not a complete reproduction of its sidebar/dashboard/course screens.
+- Web CI and deployment readiness must pass before manual deploy. Production still serves previous deployment until explicitly published.
