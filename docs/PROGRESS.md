@@ -3,23 +3,24 @@ Updated: 2026-10-24
 
 ## Verified completed
 - Remote Cloudflare D1 migrations and initial administrator provisioning succeeded.
-- Public Worker URL was deployed: https://studyweb-api.tranlocbtr99.workers.dev (initial deployment run 40105793377).
-- React student/admin login selection and student self-registration form/API are committed.
-- API and frontend checks, including registration boundary tests, passed (runs 40107209759, 40107080404).
-- Remote read-only authentication schema diagnostic succeeded (run 40107481906): users, roles, user_roles, sessions and login_rate_limits tables exist; users=1, roles=1 (admin), sessions=0, login_rate_limits=2.
-- Auth error paths now log only non-sensitive error categories; code not yet deployed.
+- Public Worker and web UI deployed at https://studyweb-api.tranlocbtr99.workers.dev.
+- Login, student self-registration, and sanitized error logging code deployed successfully (deployment run 40110360791).
+- Remote D1 read-only auth schema diagnostic succeeded (run 40107481906): users, roles, user_roles, sessions and login_rate_limits exist.
+- Existing administrator password reset succeeded (run 40109428739); do not reset it again without evidence.
 
-## Known blocker
-- On the previously deployed site, login returned HTTP 503. Schema absence has been ruled out, but actual Worker-side cause is not established.
-- New registration/login UI and sanitized diagnostic logs have not yet been deployed or verified on Cloudflare.
-- Registration is not yet proven with a real D1 insert and student login.
+## Confirmed blocker
+- User reports admin login HTTP 503 and student registration HTTP 503. Admin login also returned 429 after repeated attempts; login rate limit counts every attempt.
+- Three live Cloudflare tail diagnostic runs (40110478403, 40110801089, 40111385415) succeeded as GitHub jobs but did NOT produce usable application logs.
+- In the latest run, parser read 5 JSON values, 0 recognized HTTP responses and 0 console entries; all event shapes were unrecognized. User confirmed attempting login during an earlier capture window.
+- Thus tail instrumentation is NOT a reliable observation source yet; neither a Worker CPU fault nor D1 failure has been proven.
+- Do not ask user to repeat identical tail/login tests. Investigate Cloudflare tail protocol and/or Worker invocation metrics with a distinct, validated diagnostic method before changing authentication security settings.
 
 ## Not yet verified
-- Live end-to-end student/admin login and self-registration.
+- Live end-to-end admin login, student registration and student login.
 - Load testing at 100–500 concurrent students.
-- Complete admin authoring/results UI, production recovery/rollback/backup.
+- Complete admin authoring/results UI and recovery/rollback/backup.
 
 ## Next task
-- Use a single controlled beta deployment after checks pass; inspect Worker logs and test authenticated login, registration and role isolation.
-- If 503 persists, diagnose Worker execution/crypto and D1 binding using sanitized logs; do not guess at root cause.
-- Preserve existing data; do not rerun bootstrap or reset migrations.
+- Diagnose why wrangler tail JSON is not parsed as expected without printing raw sensitive events. Validate parser with fixtures representing actual Cloudflare output.
+- If tail cannot be validated, use Cloudflare invocation/observability API or a safe, isolated read-only Worker health/D1 diagnostic.
+- Preserve data, passwords and existing published exam versions.
