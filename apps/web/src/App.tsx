@@ -111,6 +111,14 @@ export default function App(){
       setSignedIn(true);setPassword('');
     }catch(e){setMessage(String(e));}finally{setBusy(false);}
   }
+  async function register(){
+    setBusy(true);setMessage('');
+    try{
+      const response=await fetch('/api/v1/auth/register',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+      if(!response.ok)throw new Error(response.status===409?'Email đã được sử dụng':response.status===429?'Bạn đã đăng ký quá nhiều lần. Vui lòng thử lại sau':'Đăng ký không thành công ('+response.status+')');
+      setPassword('');setAccessMode('student');setMessage('Đăng ký thành công. Hãy đăng nhập bằng tài khoản vừa tạo.');
+    }catch(e){setMessage(String(e));}finally{setBusy(false);}
+  }
   async function logout(){
     setBusy(true);
     try{
@@ -173,7 +181,7 @@ export default function App(){
         <button type="button" className={accessMode==='admin'?'':'secondary'} aria-pressed={accessMode==='admin'} onClick={()=>{setAccessMode('admin');setMessage('');}}>Đăng nhập quản trị</button>
         <button type="button" className={accessMode==='register'?'':'secondary'} aria-pressed={accessMode==='register'} onClick={()=>{setAccessMode('register');setMessage('');}}>Đăng ký tài khoản</button>
       </nav>
-      {accessMode==='register'?<div className="access-info"><h2>Đăng ký tài khoản học viên</h2><p>Chức năng tự đăng ký đang được hoàn thiện. Chưa thể tạo tài khoản mới cho đến khi API đăng ký được triển khai và kiểm thử.</p></div>:
+      {accessMode==='register'?<div className="access-info"><h2>Đăng ký tài khoản học viên</h2><p>Tạo tài khoản miễn phí để tham gia ôn tập và thi trực tuyến.</p><form className="login" onSubmit={e=>{e.preventDefault();void register();}}><label>Email<input type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label><label>Mật khẩu (tối thiểu 12 ký tự)<input type="password" autoComplete="new-password" minLength={12} required value={password} onChange={e=>setPassword(e.target.value)}/></label><button type="submit" disabled={busy}>Tạo tài khoản học viên</button></form></div>:
       <><h2>{accessMode==='admin'?'Đăng nhập quản trị':'Đăng nhập học viên'}</h2>
       <form className="login" onSubmit={e=>{e.preventDefault();void login();}}>
         <label>Email<input type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)}/></label>
