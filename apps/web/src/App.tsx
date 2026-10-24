@@ -12,6 +12,7 @@ const api = async <T,>(path:string,init?:RequestInit):Promise<T> => {
   return body;
 };
 export default function App(){
+  const [accessMode,setAccessMode]=useState<'student'|'admin'|'register'>('student');
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
   const [signedIn,setSignedIn]=useState<boolean|null>(null);
@@ -103,6 +104,10 @@ export default function App(){
     try{
       const res=await fetch('/api/v1/auth/login',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
       if(!res.ok)throw new Error('Đăng nhập thất bại ('+res.status+')');
+      if(accessMode==='admin'){
+        const status=await fetch('/api/v1/admin/status',{credentials:'same-origin'});
+        if(!status.ok){await fetch('/api/v1/auth/logout',{method:'POST',credentials:'same-origin'});throw new Error('Tài khoản không có quyền quản trị');}
+      }
       setSignedIn(true);setPassword('');
     }catch(e){setMessage(String(e));}finally{setBusy(false);}
   }
@@ -162,12 +167,19 @@ export default function App(){
   }
   return <main className="shell">
     <header><span className="brand">Studyweb</span><span className="subtle">Không gian ôn tập và thi trực tuyến</span></header>
-    {signedIn===false&&<section className="panel"><h1>Đăng nhập học viên</h1><p>Sử dụng tài khoản đã được quản trị viên cấp.</p>
+    {signedIn===false&&<section className="panel"><h1>Chào mừng đến Studyweb</h1><p>Chọn cách truy cập phù hợp với bạn.</p>
+      <nav className="access-modes" aria-label="Lựa chọn truy cập">
+        <button type="button" className={accessMode==='student'?'':'secondary'} aria-pressed={accessMode==='student'} onClick={()=>{setAccessMode('student');setMessage('');}}>Đăng nhập học viên</button>
+        <button type="button" className={accessMode==='admin'?'':'secondary'} aria-pressed={accessMode==='admin'} onClick={()=>{setAccessMode('admin');setMessage('');}}>Đăng nhập quản trị</button>
+        <button type="button" className={accessMode==='register'?'':'secondary'} aria-pressed={accessMode==='register'} onClick={()=>{setAccessMode('register');setMessage('');}}>Đăng ký tài khoản</button>
+      </nav>
+      {accessMode==='register'?<div className="access-info"><h2>Đăng ký tài khoản học viên</h2><p>Chức năng tự đăng ký đang được hoàn thiện. Chưa thể tạo tài khoản mới cho đến khi API đăng ký được triển khai và kiểm thử.</p></div>:
+      <><h2>{accessMode==='admin'?'Đăng nhập quản trị':'Đăng nhập học viên'}</h2>
       <form className="login" onSubmit={e=>{e.preventDefault();void login();}}>
         <label>Email<input type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)}/></label>
         <label>Mật khẩu<input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)}/></label>
         <button disabled={busy} type="submit">Đăng nhập</button>
-      </form>
+      </form></>}
     </section>}
     {signedIn&&<div className="toolbar account"><span>Đã đăng nhập</span><button className="secondary" disabled={busy} onClick={logout}>Đăng xuất</button></div>}
     {signedIn&&resumeAvailable&&!attempt&&<section className="panel"><h2>Bài thi đang làm</h2><p>Khôi phục câu trả lời đã lưu trên máy chủ sau khi tải lại trang.</p><button disabled={busy} onClick={resume}>Tiếp tục bài thi</button></section>}
