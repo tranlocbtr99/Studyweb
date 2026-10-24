@@ -1,9 +1,10 @@
 # Changelog
+## 2026-10-24 — D1 admin smoke checks
+- Added local D1 tests for subject and audit inserts and duplicate slug uniqueness.
+- Updated Wrangler CI to run checks when SQL smoke tests change.
 ## 2026-10-24 — Admin authorization tests
-- Added tests for admin RBAC, CSRF origin, invalid inputs, subject creation and audit record.
+- Added role, origin, validation and audit unit tests; API CI passed.
 ## 2026-10-24 — Admin subjects
-- Added admin subject creation with Zod validation, D1 batch audit and additive migration.
-## 2026-10-24 — D1 validation
-- Local Wrangler migrations and smoke checks passed.
-## 2026-10-24 — Authentication
-- Session RBAC, password login/logout, CSRF and throttling.
+- Added subject authoring, audit migration and D1 transaction.
+## 2026-10-24 — Foundation
+- Two D1 schemas, auth and CI.

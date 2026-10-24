@@ -3,11 +3,13 @@ on:
   push:
     paths:
       - 'packages/db/migrations/**'
+      - 'packages/db/tests/d1-*.sql'
       - 'apps/api/wrangler.jsonc'
       - '.github/workflows/d1-local-checks.yml'
   pull_request:
     paths:
       - 'packages/db/migrations/**'
+      - 'packages/db/tests/d1-*.sql'
       - 'apps/api/wrangler.jsonc'
       - '.github/workflows/d1-local-checks.yml'
 permissions:
@@ -35,5 +37,7 @@ jobs:
         run: npx wrangler d1 execute exam_results --local --file=../../packages/db/migrations/results/0001_initial.sql
       - name: Verify core schema and integrity
         run: npx wrangler d1 execute exam_core --local --file=../../packages/db/tests/d1-core-check.sql
+      - name: Verify admin writes and duplicate slug
+        run: npx wrangler d1 execute exam_core --local --file=../../packages/db/tests/d1-admin-check.sql
       - name: Verify results schema and integrity
         run: npx wrangler d1 execute exam_results --local --file=../../packages/db/tests/d1-results-check.sql

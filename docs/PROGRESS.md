@@ -1,14 +1,14 @@
 # Progress
 Updated: 2026-10-24
 ## Completed
-- Two D1 schemas, Wrangler local migrations, secure auth, RBAC, CSRF and login throttling.
-- Admin subject authoring and transactional audit migration; API CI passed: https://github.com/tranlocbtr99/Studyweb/actions/runs/40096715777
-- Added focused admin authorization, origin, validation, creation and audit unit tests (new CI pending).
+- Two D1 schemas, local Wrangler migration checks, auth, RBAC, CSRF and login throttle.
+- Admin subject authoring with D1 batch audit, migration 0003, and passing API CI: https://github.com/tranlocbtr99/Studyweb/actions/runs/40096784473
+- Added local D1 admin subject/audit/duplicate slug smoke test; new CI pending.
 ## Pending
-- Verify new CI; add real local D1 integration tests for admin writes and duplicate slug handling.
-- Topic/question/exam authoring, user provisioning, immutable grading snapshots, attempts/autosave/submit, frontend, load tests and deployment.
+- Confirm D1 CI and add full Worker request-to-D1 integration tests, including batch rollback and failure handling.
+- Topic/question/exam authoring, user provisioning, grading snapshots, attempts/autosave/submit, frontend, load tests and deployment.
 ## Risks
-- Unit mock checks SQL intent but does not prove D1 batch rollback; real integration test still required.
-- No production deployment; 500 simultaneous users unverified.
+- SQL smoke test verifies schema/data constraints, not API request execution or batch rollback.
+- No production deployment; 500 concurrent users unverified.
 ## Next task
-- Confirm CI and add local D1 integration tests for admin authoring.
+- Verify CI, then add topic/question authoring with version safety.
