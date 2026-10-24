@@ -34,11 +34,15 @@ app.post('/api/v1/auth/login', sameOrigin, async c => {
     if (limit.retryAfter) c.header('Retry-After', String(limit.retryAfter));
     return c.json(error(limit.unavailable ? 'AUTH_UNAVAILABLE' : 'RATE_LIMITED', limit.unavailable ? 'Authentication service unavailable' : 'Too many login attempts', ''), limit.unavailable ? 503 : 429);
   }
+  let authStage = 'user_lookup';
   try {
     const user = await c.env.EXAM_CORE.prepare("SELECT id, password_hash FROM users WHERE email=? AND status='active'")
       .bind(email.trim().toLowerCase()).first<{ id: string; password_hash: string }>();
-    if (!user || !(await verifyPassword(password, user.password_hash)))
+    if (!user) return c.json(error('INVALID_CREDENTIALS', 'Invalid email or password', ''), 401);
+    authStage = 'password_verification';
+    if (!(await verifyPassword(password, user.password_hash)))
       return c.json(error('INVALID_CREDENTIALS', 'Invalid email or password', ''), 401);
+    authStage = 'session_creation';
     const token = Array.from(crypto.getRandomValues(new Uint8Array(32)), b => b.toString(16).padStart(2, '0')).join('');
     const now = Math.floor(Date.now() / 1000);
     await c.env.EXAM_CORE.prepare('INSERT INTO sessions(id,user_id,token_hash,expires_at,revoked_at) VALUES(?,?,?,?,NULL)')
@@ -46,7 +50,7 @@ app.post('/api/v1/auth/login', sameOrigin, async c => {
     setCookie(c, 'studyweb_session', token, { httpOnly: true, secure: true, sameSite: 'Strict', path: '/', maxAge: 86400 });
     return c.json({ status: 'authenticated' });
   } catch (cause) {
-    console.error('studyweb.auth.login: storage_or_crypto_failure', cause instanceof Error ? cause.name : 'unknown');
+    console.error('studyweb.auth.login: storage_or_crypto_failure', authStage, cause instanceof Error ? cause.name : 'unknown');
     return c.json(error('AUTH_UNAVAILABLE', 'Authentication service unavailable', ''), 503);
   }
 });
