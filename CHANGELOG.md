@@ -24,3 +24,6 @@
 ## 2026-10-25 — Admin authoring and visual design
 - Added administrator exam creation UI, question selection for draft assembly, and responsive pastel/glass styling inspired by the supplied design reference.
 - Production deployment remains manual and requires CI success.
+
+## 2026-10-25 — Admin dashboard navigation
+- Separate overview, authoring, and exam workspaces; add responsive action cards without fake statistics.
