@@ -70,4 +70,54 @@ student.post('/attempts', sameOrigin, async c => {
     return c.json({ error: { code: 'WRITE_FAILED' } }, 503);
   }
 });
+
+const saveSchema = z.object({
+  saveVersion: z.number().int().min(0),
+  answers: z.record(z.string().regex(/^(0|[1-9][0-9]{0,3})$/), z.enum(['A','B','C','D'])).refine(a=>Object.keys(a).length<=1000)
+}).strict();
+student.put('/attempts/:attemptId/answers', sameOrigin, async c => {
+  const id = versionId.safeParse(c.req.param('attemptId'));
+  if (!id.success) return c.json({ error: { code: 'VALIDATION_FAILED' } }, 400);
+  let input: unknown;
+  try { input = await c.req.json(); }
+  catch { return c.json({ error: { code: 'BAD_JSON' } }, 400); }
+  const parsed = saveSchema.safeParse(input);
+  if (!parsed.success) return c.json({ error: { code: 'VALIDATION_FAILED' } }, 400);
+  try {
+    const userId = c.get('identity').id;
+    const attempt = await c.env.EXAM_RESULTS.prepare(
+      'SELECT id,save_version AS saveVersion,answer_snapshot_json AS answerSnapshotJson,grading_snapshot_json AS gradingSnapshotJson,expires_at AS expiresAt,status FROM attempts WHERE id=? AND user_id=?'
+    ).bind(id.data,userId).first<{id:string;saveVersion:number;answerSnapshotJson:string;gradingSnapshotJson:string;expiresAt:number;status:string}>();
+    if (!attempt) return c.json({ error: { code: 'NOT_FOUND' } }, 404);
+    const now = Math.floor(Date.now()/1000);
+    if (attempt.status !== 'active' || attempt.expiresAt <= now)
+      return c.json({ error: { code: 'ATTEMPT_CLOSED' } }, 409);
+    const positions = new Set((JSON.parse(attempt.gradingSnapshotJson) as Array<{position:number}>).map(item=>String(item.position)));
+    if (Object.keys(parsed.data.answers).some(key=>!positions.has(key)))
+      return c.json({ error: { code: 'INVALID_ANSWER_POSITION' } }, 400);
+    if (parsed.data.saveVersion !== attempt.saveVersion)
+      return c.json({ error: { code: 'SAVE_CONFLICT', currentVersion: attempt.saveVersion } }, 409);
+    const saved = await c.env.EXAM_RESULTS.prepare(
+      "UPDATE attempts SET answer_snapshot_json=?,save_version=save_version+1,updated_at=? WHERE id=? AND user_id=? AND save_version=? AND status='active' AND expires_at>?"
+    ).bind(JSON.stringify(parsed.data.answers),now,id.data,userId,parsed.data.saveVersion,now).run() as {meta?:{changes?:number}};
+    if (saved.meta?.changes !== 1)
+      return c.json({ error: { code: 'SAVE_CONFLICT' } }, 409);
+    return c.json({ attemptId: id.data, saveVersion: parsed.data.saveVersion+1, savedAt: now });
+  } catch {
+    return c.json({ error: { code: 'WRITE_FAILED' } }, 503);
+  }
+});
+student.get('/attempts/:attemptId/answers', async c => {
+  const id = versionId.safeParse(c.req.param('attemptId'));
+  if (!id.success) return c.json({ error: { code: 'VALIDATION_FAILED' } }, 400);
+  try {
+    const attempt = await c.env.EXAM_RESULTS.prepare(
+      'SELECT id,save_version AS saveVersion,answer_snapshot_json AS answerSnapshotJson,expires_at AS expiresAt,status FROM attempts WHERE id=? AND user_id=?'
+    ).bind(id.data,c.get('identity').id).first<{id:string;saveVersion:number;answerSnapshotJson:string;expiresAt:number;status:string}>();
+    if (!attempt) return c.json({ error: { code: 'NOT_FOUND' } }, 404);
+    return c.json({ attempt: { id: attempt.id, saveVersion: attempt.saveVersion, answers: JSON.parse(attempt.answerSnapshotJson), expiresAt: attempt.expiresAt, status: attempt.status } });
+  } catch {
+    return c.json({ error: { code: 'DB_UNAVAILABLE' } }, 503);
+  }
+});
 export default student;

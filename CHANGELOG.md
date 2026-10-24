@@ -1,9 +1,9 @@
 # Changelog
+## 2026-10-24 — Versioned autosave
+- Added PUT/GET student attempt answers, CAS save_version, ownership, expiry and answer position validation.
 ## 2026-10-24 — Student attempt creation
-- Added authenticated POST /api/v1/student/attempts with trusted SHA-256 verification, private grading snapshot, 90-minute expiry and result-DB audit; focused tests.
-## 2026-10-24 — Student published exam read
-- Public snapshot read API, without answer keys.
-## 2026-10-24 — Publication safeguards
-- Revision CAS, SHA-256, D1 published-item guard.
+- Trusted private grading snapshot, SHA-256 and 90-minute expiry.
+## 2026-10-24 — Student read API
+- Published public snapshots only.
 ## 2026-10-24 — Foundation
-- D1 core/results, auth and admin authoring.
+- D1 core/results, authentication, admin authoring and publication safeguards.
