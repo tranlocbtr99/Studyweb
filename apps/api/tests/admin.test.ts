@@ -11,7 +11,7 @@ async function fixture(role = 'admin') {
       const record = { sql, args: [] as unknown[] };
       return {
         bind(...args: unknown[]) { record.args = args; return this; },
-        async first<T = unknown>() { return (sql.includes('FROM sessions') && record.args[0] === hash ? { id: 'admin-user' } : (sql.includes('FROM subjects WHERE id=') || sql.includes('FROM topics WHERE id=')) ? { id: record.args[0] } : null) as T | null; },
+        async first<T = unknown>() { return (sql.includes('FROM sessions') && record.args[0] === hash ? { id: 'admin-user' } : (sql.includes('FROM subjects WHERE id=') || sql.includes('FROM topics WHERE id=') || sql.includes('FROM exams WHERE id=')) ? { id: record.args[0] } : null) as T | null; },
         async all() { return { results: sql.includes('FROM user_roles') ? [{ code: role }] : [] }; },
         async run() { statements.push(record); return {}; }
       };
@@ -147,5 +147,34 @@ describe('admin exam drafts', () => {
     expect(statements[1].args[2]).toBe('exam.created');
     expect(statements[1].args[3]).toBe(data.exam.id);
     expect(statements.every(s => !s.sql.includes('exam_versions'))).toBe(true);
+  });
+});
+
+describe('admin exam versions', () => {
+  const examId='123e4567-e89b-42d3-a456-426614174000';
+  it('requires admin role', async () => {
+    const { env, statements }=await fixture('student');
+    const res=await app.request('/api/v1/admin/exam-versions',request({examId}),env);
+    expect(res.status).toBe(403);
+    expect(statements).toHaveLength(0);
+  });
+  it('rejects invalid exam identifiers', async () => {
+    const { env, statements }=await fixture();
+    const res=await app.request('/api/v1/admin/exam-versions',request({examId:'invalid'}),env);
+    expect(res.status).toBe(400);
+    expect(statements).toHaveLength(0);
+  });
+  it('creates a draft version with atomic SQL numbering and audit', async () => {
+    const { env, statements }=await fixture();
+    const res=await app.request('/api/v1/admin/exam-versions',request({examId}),env);
+    expect(res.status).toBe(201);
+    const data=await res.json();
+    expect(data.version.status).toBe('draft');
+    expect(data.version.examId).toBe(examId);
+    expect(statements).toHaveLength(2);
+    expect(statements[0].sql).toContain('COALESCE(MAX(version_number),0)+1');
+    expect(statements[0].args[1]).toBe(examId);
+    expect(statements[1].args[2]).toBe('exam_version.created');
+    expect(statements[1].args[3]).toBe(data.version.id);
   });
 });

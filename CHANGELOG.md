@@ -1,9 +1,11 @@
 # Changelog
+## 2026-10-24 — Draft exam versions
+- Added admin-only creation of empty draft versions with SQLite-side numbering and audit. No publishing enabled.
 ## 2026-10-24 — Exam containers
-- Added admin-only exam creation under existing subjects with transactional audit and authorization tests; does not publish exams.
+- Added admin-only exam creation with authorization and audit; API CI passed.
 ## 2026-10-24 — Question integrity
-- D1 smoke checks passed for draft questions, four options and private answer metadata.
+- D1 question integrity smoke checks passed.
 ## 2026-10-24 — Admin authoring
-- Subjects, topics and question drafts with role checks and audit.
+- Subjects, topics, question drafts and secure audit.
 ## 2026-10-24 — Foundation
-- Two D1 databases, authentication and CI.
+- Two D1 schemas, authentication and CI.

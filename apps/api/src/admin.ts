@@ -107,4 +107,30 @@ admin.post('/exams', sameOrigin, async c => {
     return c.json({ error: { code: 'WRITE_FAILED' } }, 503);
   }
 });
+
+const versionSchema = z.object({ examId: z.string().uuid() }).strict();
+admin.post('/exam-versions', sameOrigin, async c => {
+  let input: unknown;
+  try { input = await c.req.json(); }
+  catch { return c.json({ error: { code: 'BAD_JSON' } }, 400); }
+  const parsed = versionSchema.safeParse(input);
+  if (!parsed.success) return c.json({ error: { code: 'VALIDATION_FAILED' } }, 400);
+  const { examId } = parsed.data;
+  try {
+    const exam = await c.env.EXAM_CORE.prepare('SELECT id FROM exams WHERE id=?').bind(examId).first();
+    if (!exam) return c.json({ error: { code: 'EXAM_NOT_FOUND' } }, 404);
+    const id = crypto.randomUUID();
+    // Version allocation happens inside SQLite to avoid a read-then-write race.
+    await c.env.EXAM_CORE.batch([
+      c.env.EXAM_CORE.prepare(
+        "INSERT INTO exam_versions(id,exam_id,version_number,content_hash,status) SELECT ?,?,COALESCE(MAX(version_number),0)+1,?,'draft' FROM exam_versions WHERE exam_id=?"
+      ).bind(id,examId,'',examId),
+      c.env.EXAM_CORE.prepare('INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) VALUES(?,?,?,?,?)')
+        .bind(crypto.randomUUID(),c.get('identity').id,'exam_version.created',id,Math.floor(Date.now()/1000))
+    ]);
+    return c.json({ version: { id, examId, status: 'draft' } }, 201);
+  } catch {
+    return c.json({ error: { code: 'WRITE_FAILED' } }, 503);
+  }
+});
 export default admin;
