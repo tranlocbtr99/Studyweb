@@ -11,6 +11,8 @@ Updated: 2026-10-24
 - Independent live HTTP probe run 40112023101: health=200, subjects D1 read=200, malformed login=400, duplicate admin registration=409. All checks passed.
 - Independent live HTTP probe run 40112116955: real administrator login returned HTTP 503 AUTH_UNAVAILABLE; other four boundary checks passed. This reproduces the failure outside the browser.
 
+- Independent live HTTP probe run 40112499097: unknown-user login=401 INVALID_CREDENTIALS (rate limiter and user lookup succeed for that request); real admin login=503 AUTH_UNAVAILABLE; duplicate registration=429 due registration rate limit. Workflow correctly failed due one unexpected status.
+
 ## Confirmed blocker
 - User reports admin login HTTP 503 and student registration HTTP 503. Admin login also returned 429 after repeated attempts; login rate limit counts every attempt.
 - Three live Cloudflare tail diagnostic runs (40110478403, 40110801089, 40111385415) succeeded as GitHub jobs but did NOT produce usable application logs.
@@ -24,6 +26,6 @@ Updated: 2026-10-24
 - Complete admin authoring/results UI and recovery/rollback/backup.
 
 ## Next task
-- Diagnose why wrangler tail JSON is not parsed as expected without printing raw sensitive events. Validate parser with fixtures representing actual Cloudflare output.
-- If tail cannot be validated, use Cloudflare invocation/observability API or a safe, isolated read-only Worker health/D1 diagnostic.
+- Investigate admin-specific authentication after user lookup: password verification (PBKDF2 WebCrypto) and session insertion. Do not claim either is the cause without stage-level evidence.
+- Stop repeating the same live login probe; a different diagnostic is required. Avoid extra login attempts that consume rate-limit budget.
 - Preserve data, passwords and existing published exam versions.
