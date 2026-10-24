@@ -33,3 +33,6 @@
 
 ## 2026-10-25 — Resume authoring
 - Added administrator-only subject/topic catalogs and selectors to reuse existing course structure after reload.
+
+## 2026-10-25 — Reopen draft exams
+- Added admin-only saved exam/version listing and draft reopening with persisted question positions.
