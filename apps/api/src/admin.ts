@@ -131,6 +131,17 @@ admin.post('/questions', sameOrigin, async c => {
   }
 });
 
+
+const listExamsSchema=z.object({subjectId:z.string().uuid().optional()});
+admin.get('/exams',async c=>{
+  const parsed=listExamsSchema.safeParse({subjectId:c.req.query('subjectId')});
+  if(!parsed.success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+  try{
+    const result=await c.env.EXAM_CORE.prepare("SELECT e.id,e.subject_id AS subjectId,e.title,v.id AS versionId,v.version_number AS versionNumber,v.status,(SELECT COUNT(*) FROM exam_items i WHERE i.exam_version_id=v.id) AS questionCount FROM exams e LEFT JOIN exam_versions v ON v.exam_id=e.id WHERE (? IS NULL OR e.subject_id=?) ORDER BY e.rowid DESC,v.version_number DESC LIMIT 200").bind(parsed.data.subjectId??null,parsed.data.subjectId??null).all();
+    return c.json({exams:result.results});
+  }catch{return c.json({error:{code:'READ_FAILED'}},503);}
+});
+
 const examSchema = z.object({
   subjectId: z.string().uuid(),
   title: z.string().trim().min(3).max(160)
