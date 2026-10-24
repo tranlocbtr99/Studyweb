@@ -36,3 +36,6 @@
 
 ## 2026-10-25 — Reopen draft exams
 - Added admin-only saved exam/version listing and draft reopening with persisted question positions.
+
+## 2026-10-25 — Draft question editing
+- Added protected editing of draft question bank entries and UI forms, without changing published exam snapshots.
