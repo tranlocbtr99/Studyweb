@@ -68,3 +68,8 @@ Updated: 2026-10-24
 - Added admin-protected GET /api/v1/admin/questions with bounded search, offset/limit pagination and draft option details. This endpoint is never mounted for student access.
 - Admin editor can search persisted questions and select them for exam assembly. New frontend and backend CI are pending; production not deployed.
 - Editing existing questions, subject/topic browse, draft resume and end-to-end production authoring verification remain outstanding.
+
+## Resume subject/topic authoring (2026-10-25)
+- Added protected GET /api/v1/admin/subjects and /topics?subjectId=... (bounded to 500 rows each) and UI selectors for existing subjects/topics after reload.
+- Existing question bank search and admin dashboard checks passed; new subject/topic API and UI checks pending. Production remains on prior manually deployed revision.
+- Draft exam resume, editing and full authoring E2E tests are future work.
