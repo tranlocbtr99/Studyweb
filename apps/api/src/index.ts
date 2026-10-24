@@ -74,7 +74,7 @@ app.route('/api/v1/admin',admin);
 app.route('/api/v1/student',student);
 app.get('/api/v1/me', requireSession, c => c.json({ user: c.get('identity') }));
 app.get('/api/v1/admin/status', requireSession, requireRole('admin'), c => c.json({ status: 'authorized' }));
-// No exam mutation endpoints until trusted grading snapshots and atomic finalization.
+// Student attempts store trusted private grading snapshots in EXAM_RESULTS; submission remains disabled until atomic finalization.
 app.notFound(c => c.json(error('NOT_FOUND', 'Route not found', ''), 404));
 app.onError((_, c) => c.json(error('INTERNAL_ERROR', 'Internal server error', ''), 500));
 export default app;

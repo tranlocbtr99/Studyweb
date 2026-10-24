@@ -1,14 +1,15 @@
 # Progress
 Updated: 2026-10-24
 ## Completed
-- Core/results D1, auth, admin authoring and publication safeguards.
-- D1 published-item rejection CI passed (c3a4496).
-- Added authenticated student read-only published exam endpoint, excludes private answer columns; unit tests added, CI pending.
+- Core/results D1, auth, admin authoring and guarded published versions.
+- Student published exam read API CI passed (1669c5f).
+- Added student attempt start endpoint: authenticated, CSRF-protected, published-only, verifies SHA-256 content, stores private grading snapshot in EXAM_RESULTS and returns 90-minute timing metadata; focused tests added.
 ## Pending
-- Student attempt lifecycle, autosave, grading and results; frontend, load tests and deployment.
-- Defer full HTTP-to-D1 integration and comprehensive regression until module milestones, with critical security checks retained.
+- Autosave with optimistic version, idempotent submit/server grading, results history, frontend, load tests and deployment.
+- Defer full regression and HTTP-to-D1 integration to milestone; preserve targeted security checks.
 ## Risks
-- No proven 500-user concurrency or production deployment.
-- Public snapshots must remain validated at authoring; private answer keys are not selected by student endpoint.
+- Attempt start currently creates a new attempt for each request; client retries may duplicate attempts until idempotency is added.
+- 90-minute duration is a temporary default pending exam configuration.
+- 500-user capacity unverified; no production deployment.
 ## Next task
-- Implement attempt creation with server-side trusted grading snapshot and expiry.
+- Implement versioned autosave with ownership and expiry checks.
