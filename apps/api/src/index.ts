@@ -13,6 +13,10 @@ app.use('*', async (c, next) => {
   const requestId = crypto.randomUUID();
   c.header('X-Request-ID', requestId);
   c.header('X-Content-Type-Options', 'nosniff');
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  c.header('X-Frame-Options', 'DENY');
+  c.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  c.header('Strict-Transport-Security', 'max-age=31536000');
   c.header('Cache-Control', 'no-store');
   await next();
 });
