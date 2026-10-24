@@ -3,3 +3,21 @@
 .login{display:grid;gap:16px;max-width:440px}.login label{display:grid;gap:7px;font-weight:600}.login input{width:100%}.account{justify-content:flex-end;margin-bottom:14px}
 
 .access-modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:20px 0 24px}.access-modes button{min-height:56px}.access-info{padding:12px 0}.access-info h2{margin-top:0}@media(max-width:600px){.access-modes{grid-template-columns:1fr}.access-modes button{width:100%}}
+
+/* LTStudy-inspired pastel dashboard and glass surfaces */
+:root{color:#182844;background:linear-gradient(135deg,#d5e9ff 0%,#e9e8ff 45%,#f5f8ff 100%)}
+body{min-height:100vh;background:radial-gradient(circle at 5% 15%,#c7e6ff 0,transparent 34%),radial-gradient(circle at 90% 5%,#dcd8ff 0,transparent 37%),#edf3ff}
+.shell{max-width:1320px;padding:24px clamp(16px,3vw,44px) 80px}
+header{padding:12px 0 24px}.brand{color:#1764d7;letter-spacing:-.04em}
+.panel{background:rgba(255,255,255,.83);border:1px solid rgba(255,255,255,.85);border-radius:22px;box-shadow:0 12px 34px rgba(55,85,151,.10);backdrop-filter:blur(18px)}
+button{background:linear-gradient(130deg,#2784f3,#315adf);box-shadow:0 4px 12px #3469d41c}
+button:hover:not(:disabled){filter:brightness(1.04)}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #83b9ff;outline-offset:2px}
+.secondary{background:#edf3ff;box-shadow:none;color:#2454a8}
+.admin-editor{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.admin-editor>h1,.admin-editor>p,.admin-editor>.notice{grid-column:1/-1}
+.admin-editor form,.admin-editor .admin-step{display:flex;flex-direction:column;gap:12px;background:#ffffffbd;border:1px solid #e5edfa;border-radius:17px;padding:20px;min-width:0}
+.admin-editor h2{margin:0 0 5px}.admin-editor label{display:flex;flex-direction:column;gap:7px;font-weight:600}
+.admin-editor textarea,.admin-editor select{width:100%;border:1px solid #ccd6e6;border-radius:11px;padding:12px;font:inherit;background:white}
+.admin-editor textarea{min-height:92px}.admin-editor input:not([type=radio]){min-width:0;width:100%}
+.admin-editor button{align-self:flex-start}
+@media(max-width:760px){.admin-editor{grid-template-columns:1fr}.shell{padding:16px 12px 50px}.panel{padding:18px}}
