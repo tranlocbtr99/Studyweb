@@ -8,6 +8,19 @@ const student = new Hono<Env>();
 student.use('*', requireSession);
 const versionId = z.string().uuid();
 
+student.get('/exam-catalog', async c => {
+  const limit = Number(c.req.query('limit') ?? 20);
+  const offset = Number(c.req.query('offset') ?? 0);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 50 || !Number.isInteger(offset) || offset < 0 || offset > 10000)
+    return c.json({ error: { code: 'VALIDATION_FAILED' } }, 400);
+  try {
+    const rows = await c.env.EXAM_CORE.prepare(
+      "SELECT v.id AS versionId, e.title, s.title AS subject, v.version_number AS versionNumber, (SELECT COUNT(*) FROM exam_items i WHERE i.exam_version_id=v.id) AS questionCount FROM exam_versions v JOIN exams e ON e.id=v.exam_id JOIN subjects s ON s.id=e.subject_id WHERE v.status='published' AND v.published_at IS NOT NULL ORDER BY v.published_at DESC, v.id DESC LIMIT ? OFFSET ?"
+    ).bind(limit, offset).all();
+    return c.json({ exams: rows.results, pagination: { limit, offset } });
+  } catch { return c.json({ error: { code: 'DB_UNAVAILABLE' } }, 503); }
+});
+
 // Student-facing read model. Never select answer_key_private_json.
 student.get('/exam-versions/:versionId', async c => {
   const parsed = versionId.safeParse(c.req.param('versionId'));
