@@ -1,9 +1,9 @@
 # Changelog
+## 2026-10-24 — Question D1 integrity tests
+- Added Wrangler local D1 smoke tests for question drafts, A-D options, answer metadata and duplicate option labels.
 ## 2026-10-24 — Draft question authoring
-- Added admin-only question draft creation, four A–D options, private answer/explanation storage, additive migration and tests.
-## 2026-10-24 — D1 checks
-- Fixed Wrangler smoke assertions; D1 CI passed.
+- Added admin-only draft questions, private answer storage and migration 0004; API and D1 CI passed.
 ## 2026-10-24 — Admin authoring
-- Added subject and topic creation with audit, RBAC and CSRF.
+- Added subject/topic management with audit and tests.
 ## 2026-10-24 — Foundation
-- Two D1 schemas, authentication and CI.
+- Two D1 databases, authentication and CI.
