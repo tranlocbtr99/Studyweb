@@ -31,6 +31,7 @@ export default function AdminPanel(){
   const [bank,setBank]=useState<Array<{id:string;body:string;topicId:string;subjectId:string}>>([]);
   const [search,setSearch]=useState('');
   const [offset,setOffset]=useState(0);
+  const [savedExams,setSavedExams]=useState<Array<{id:string;subjectId:string;title:string;versionId:string|null;versionNumber:number|null;status:string|null;questionCount:number}>>([]);
   useEffect(()=>{
     let alive=true;
     fetch('/api/v1/admin/subjects',{credentials:'same-origin'}).then(async response=>{
@@ -51,6 +52,15 @@ export default function AdminPanel(){
   async function action(fn:()=>Promise<void>){
     setBusy(true);setMessage('');
     try{await fn();}catch(error){setMessage('Thao tác thất bại: '+String(error));}finally{setBusy(false);}
+  }
+  async function loadExams(){
+    setBusy(true);setMessage('');
+    try{
+      const response=await fetch('/api/v1/admin/exams',{credentials:'same-origin'});
+      if(!response.ok)throw Error('HTTP '+response.status);
+      const data=await response.json() as {exams:Array<{id:string;subjectId:string;title:string;versionId:string|null;versionNumber:number|null;status:string|null;questionCount:number}>};
+      setSavedExams(data.exams);
+    }catch(error){setMessage('Không tải được danh sách đề thi: '+String(error));}finally{setBusy(false);}
   }
   async function loadBank(nextOffset=0){
     setBusy(true);setMessage('');
@@ -95,6 +105,18 @@ export default function AdminPanel(){
       <label>Giải thích<textarea maxLength={4000} value={explanation} onChange={e=>setExplanation(e.target.value)}/></label>
       <button disabled={busy}>Lưu câu hỏi</button>
     </form>}
+    <div className="admin-step">
+      <h2>Đề thi và bản nháp đã lưu</h2>
+      <p>Mở lại phiên bản nháp để tiếp tục thêm câu hỏi. Đề đã xuất bản chỉ hiển thị để tham khảo.</p>
+      <button className="secondary" disabled={busy} onClick={()=>void loadExams()}>Tải danh sách đề thi</button>
+      {savedExams.map(item=><div key={item.id+':'+(item.versionId??'')} className="bank-question">
+        <strong>{item.title}</strong>
+        <small>{item.versionId?'Phiên bản '+item.versionNumber+' · '+item.status+' · '+item.questionCount+' câu':'Chưa có phiên bản'}</small>
+        {item.status==='draft'&&item.versionId&&<button className="secondary" disabled={busy} onClick={()=>{
+          setSubject({id:item.subjectId});setTopic(null);setExam({id:item.id});setVersion({id:item.versionId!});setCount(item.questionCount);setMessage('Đã mở bản nháp: '+item.title);
+        }}>Tiếp tục biên soạn</button>}
+      </div>)}
+    </div>
     {subject&&<form onSubmit={event=>{event.preventDefault();void action(async()=>{
       const data=await create<{exam:Created}>('exams',{subjectId:subject.id,title:examTitle});
       setExam(data.exam);setVersion(null);setCount(0);setMessage('Đã tạo đề thi');
