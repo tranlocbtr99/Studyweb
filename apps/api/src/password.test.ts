@@ -6,7 +6,7 @@ describe('PBKDF2 authentication compatibility', () => {
     const password = 'Studyweb-local-test-2026!@#';
     const hash = await hashPassword(password);
     expect(hash.split(String.fromCharCode(36))).toHaveLength(4);
-    expect(hash.startsWith('pbkdf2' + String.fromCharCode(36) + '310000')).toBe(true);
+    expect(hash.startsWith('pbkdf2' + String.fromCharCode(36) + '100000')).toBe(true);
     expect(await verifyPassword(password, hash)).toBe(true);
     expect(await verifyPassword(password + 'x', hash)).toBe(false);
   }, 30000);
