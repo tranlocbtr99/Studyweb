@@ -45,10 +45,11 @@ jobs:
         run: npx wrangler deploy --dry-run --outdir ../../.worker-preview
       - name: Deploy Worker and static assets
         working-directory: apps/api
-        run: npx wrangler deploy
+        shell: bash
+        run: |
+          set -o pipefail
+          npx wrangler deploy 2>&1 | tee ../../worker-deploy.log
       - name: Post-deploy HTTPS smoke test
         env:
           STUDYWEB_DEPLOY_URL: ${{ vars.STUDYWEB_DEPLOY_URL }}
-        run: |
-          test -n "$STUDYWEB_DEPLOY_URL" || { echo 'Set STUDYWEB_DEPLOY_URL repository variable before deploying'; exit 1; }
-          node scripts/smoke-test.mjs "$STUDYWEB_DEPLOY_URL"
+        run: node scripts/smoke-from-deploy.mjs
