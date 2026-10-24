@@ -11,7 +11,7 @@ async function fixture(role = 'admin') {
       const record = { sql, args: [] as unknown[] };
       return {
         bind(...args: unknown[]) { record.args = args; return this; },
-        async first<T = unknown>() { return (sql.includes('FROM sessions') && record.args[0] === hash ? { id: 'admin-user' } : sql.includes('FROM subjects WHERE id=') ? { id: record.args[0] } : null) as T | null; },
+        async first<T = unknown>() { return (sql.includes('FROM sessions') && record.args[0] === hash ? { id: 'admin-user' } : (sql.includes('FROM subjects WHERE id=') || sql.includes('FROM topics WHERE id=')) ? { id: record.args[0] } : null) as T | null; },
         async all() { return { results: sql.includes('FROM user_roles') ? [{ code: role }] : [] }; },
         async run() { statements.push(record); return {}; }
       };
@@ -84,5 +84,40 @@ describe('admin topics', () => {
     expect(statements[0].sql).toContain('INSERT INTO topics');
     expect(statements[1].args[2]).toBe('topic.created');
     expect(statements[1].args[3]).toBe(data.topic.id);
+  });
+});
+
+describe('admin question drafts', () => {
+  const payload = {
+    topicId: '123e4567-e89b-42d3-a456-426614174000',
+    body: 'What does demand mean in economics?',
+    options: ['Supply','Demand','Revenue','Profit'],
+    correctOption: 'B',
+    explanation: 'Demand is willingness and ability to purchase.'
+  };
+  it('rejects malformed option sets', async () => {
+    const { env, statements } = await fixture();
+    const res = await app.request('/api/v1/admin/questions', request({...payload,options:['A','B']}),env);
+    expect(res.status).toBe(400);
+    expect(statements).toHaveLength(0);
+  });
+  it('rejects non-admin writes', async () => {
+    const { env, statements } = await fixture('student');
+    const res = await app.request('/api/v1/admin/questions',request(payload),env);
+    expect(res.status).toBe(403);
+    expect(statements).toHaveLength(0);
+  });
+  it('stores answer privately and excludes it from response', async () => {
+    const { env, statements } = await fixture();
+    const res = await app.request('/api/v1/admin/questions',request(payload),env);
+    expect(res.status).toBe(201);
+    const data=await res.json();
+    expect(data.question.status).toBe('draft');
+    expect(JSON.stringify(data)).not.toContain('correctOption');
+    expect(JSON.stringify(data)).not.toContain(payload.explanation);
+    expect(statements).toHaveLength(7);
+    expect(statements[1].sql).toContain('INSERT INTO question_drafts');
+    expect(statements[1].args[2]).toBe('B');
+    expect(statements[6].args[2]).toBe('question.created');
   });
 });

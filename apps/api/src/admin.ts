@@ -45,4 +45,40 @@ admin.post('/topics', sameOrigin, async c => {
     return c.json({ error: { code: 'WRITE_FAILED' } }, 503);
   }
 });
+
+const questionSchema = z.object({
+  topicId: z.string().uuid(),
+  body: z.string().trim().min(5).max(4000),
+  options: z.array(z.string().trim().min(1).max(1000)).length(4),
+  correctOption: z.enum(['A','B','C','D']),
+  explanation: z.string().trim().max(4000).default('')
+}).strict();
+admin.post('/questions', sameOrigin, async c => {
+  let input: unknown;
+  try { input = await c.req.json(); }
+  catch { return c.json({ error: { code: 'BAD_JSON' } }, 400); }
+  const parsed = questionSchema.safeParse(input);
+  if (!parsed.success) return c.json({ error: { code: 'VALIDATION_FAILED' } }, 400);
+  const { topicId, body, options, correctOption, explanation } = parsed.data;
+  try {
+    const topic = await c.env.EXAM_CORE.prepare('SELECT id FROM topics WHERE id=?').bind(topicId).first();
+    if (!topic) return c.json({ error: { code: 'TOPIC_NOT_FOUND' } }, 404);
+    const id = crypto.randomUUID();
+    const labels = ['A','B','C','D'] as const;
+    await c.env.EXAM_CORE.batch([
+      c.env.EXAM_CORE.prepare("INSERT INTO questions(id,topic_id,status) VALUES(?,?,'draft')").bind(id,topicId),
+      c.env.EXAM_CORE.prepare('INSERT INTO question_drafts(question_id,body,correct_option,explanation) VALUES(?,?,?,?)')
+        .bind(id,body,correctOption,explanation),
+      ...options.map((option,index) =>
+        c.env.EXAM_CORE.prepare('INSERT INTO question_options(id,question_id,stable_option_id,body) VALUES(?,?,?,?)')
+          .bind(crypto.randomUUID(),id,labels[index],option)),
+      c.env.EXAM_CORE.prepare('INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) VALUES(?,?,?,?,?)')
+        .bind(crypto.randomUUID(),c.get('identity').id,'question.created',id,Math.floor(Date.now()/1000))
+    ]);
+    // Never include correctOption or explanation in student-facing responses.
+    return c.json({ question: { id, topicId, body, options: options.map((text,index)=>({label:labels[index],text})), status:'draft' } }, 201);
+  } catch {
+    return c.json({ error: { code: 'WRITE_FAILED' } }, 503);
+  }
+});
 export default admin;
