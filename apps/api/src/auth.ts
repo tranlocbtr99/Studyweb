@@ -2,7 +2,7 @@ import { createMiddleware } from 'hono/factory';
 import type { Context } from 'hono';
 import { getCookie } from 'hono/cookie';
 export type ReadQuery = { bind(...args: unknown[]): ReadQuery; all(): Promise<{ results: unknown[] }>; first<T = unknown>(): Promise<T | null>; run(): Promise<unknown> };
-export type ReadDb = { prepare(query: string): ReadQuery };
+export type ReadDb = { prepare(query: string): ReadQuery; batch(queries: ReadQuery[]): Promise<unknown> };
 export type Env = {
   Bindings: { EXAM_CORE: ReadDb; EXAM_RESULTS: ReadDb };
   Variables: { identity: { id: string; roles: string[] } };

@@ -29,6 +29,8 @@ jobs:
         run: npx wrangler d1 execute exam_core --local --file=../../packages/db/migrations/core/0001_initial.sql
       - name: Apply login rate limit migration
         run: npx wrangler d1 execute exam_core --local --file=../../packages/db/migrations/core/0002_login_rate_limits.sql
+      - name: Apply admin audit migration
+        run: npx wrangler d1 execute exam_core --local --file=../../packages/db/migrations/core/0003_admin_audit.sql
       - name: Apply results baseline
         run: npx wrangler d1 execute exam_results --local --file=../../packages/db/migrations/results/0001_initial.sql
       - name: Verify core schema and integrity
