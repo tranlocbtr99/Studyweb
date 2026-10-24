@@ -63,3 +63,8 @@ Updated: 2026-10-24
 - Manual production deployment run 40117845200 succeeded for the first authoring UI and pastel design.
 - Added separate admin overview, authoring, and student exam navigation. Overview cards are action links, not fabricated analytics.
 - Responsive dashboard styling added. Await Web checks and deployment readiness before next manual production rollout.
+
+## Persisted question bank (2026-10-25)
+- Added admin-protected GET /api/v1/admin/questions with bounded search, offset/limit pagination and draft option details. This endpoint is never mounted for student access.
+- Admin editor can search persisted questions and select them for exam assembly. New frontend and backend CI are pending; production not deployed.
+- Editing existing questions, subject/topic browse, draft resume and end-to-end production authoring verification remain outstanding.
