@@ -20,3 +20,7 @@
 - Identified HTTP 503 cause from live Worker log: `NotSupportedError` at password verification, due to production 100000 PBKDF2 iteration limit.
 - Use 100000 iterations for new password records and protected administrator password reset; existing 310000 records require a controlled password reset/migration.
 - Production rollout and real login verification pending.
+
+## 2026-10-25 — Admin authoring and visual design
+- Added administrator exam creation UI, question selection for draft assembly, and responsive pastel/glass styling inspired by the supplied design reference.
+- Production deployment remains manual and requires CI success.
