@@ -9,6 +9,8 @@ const cases = [
   { name: 'subjects_d1_read', path: '/api/v1/subjects', method: 'GET', expected: [200] },
   { name: 'login_validation', path: '/api/v1/auth/login', method: 'POST',
     body: { email: 'invalid-email', password: 'placeholder' }, expected: [400] },
+  { name: 'unknown_user_login', path: '/api/v1/auth/login', method: 'POST',
+    body: { email: `studyweb-diagnostic-${crypto.randomUUID()}@example.invalid`, password: 'diagnostic-only-no-real-account' }, expected: [401, 429] },
   { name: 'admin_login_real', path: '/api/v1/auth/login', method: 'POST',
     body: { email: adminEmail, password: adminPassword }, expected: [200, 429] },
   { name: 'register_existing_admin', path: '/api/v1/auth/register', method: 'POST',
@@ -43,4 +45,5 @@ for (const item of cases) {
     console.log(JSON.stringify({ check: item.name, networkError: err?.name === 'TimeoutError' ? 'timeout' : 'request_failed' }));
   }
 }
+if (unexpected) process.exitCode = 1;
 console.log(JSON.stringify({ unexpectedChecks: unexpected, note: 'No credentials, raw response bodies or account identifiers printed' }));
