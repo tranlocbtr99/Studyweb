@@ -15,6 +15,8 @@ Updated: 2026-10-24
 
 - CI run 40114122560 (API checks) and 40114122527 (deployment readiness) passed on commit 916f134; PBKDF2 hash/verify roundtrip test passed in Node test runtime, not yet confirmed in deployed Cloudflare runtime.
 
+- Isolated Cloudflare Workers local-runtime PBKDF2 test run 40114669470 succeeded: HTTP 200, 310000 iterations, 32 ms measured in that run. This rules out a basic lack of PBKDF2 support in local workerd, but not production CPU limits, password mismatch or session-write failure.
+
 ## Confirmed blocker
 - User reports admin login HTTP 503 and student registration HTTP 503. Admin login also returned 429 after repeated attempts; login rate limit counts every attempt.
 - Three live Cloudflare tail diagnostic runs (40110478403, 40110801089, 40111385415) succeeded as GitHub jobs but did NOT produce usable application logs.
@@ -28,6 +30,6 @@ Updated: 2026-10-24
 - Complete admin authoring/results UI and recovery/rollback/backup.
 
 ## Next task
-- Investigate admin-specific authentication after user lookup: password verification (PBKDF2 WebCrypto) and session insertion. Do not claim either is the cause without stage-level evidence.
+- Investigate admin-specific authentication after user lookup: distinguish production PBKDF2 failure from session INSERT failure using stage-level evidence; the local workerd synthetic PBKDF2 probe passed. Do not claim either is the cause without stage-level evidence.
 - Stop repeating the same live login probe; a different diagnostic is required. Avoid extra login attempts that consume rate-limit budget.
 - Preserve data, passwords and existing published exam versions.
