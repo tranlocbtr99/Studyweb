@@ -53,6 +53,25 @@ jobs:
         run: npx wrangler d1 execute exam_core --local --file=../../packages/db/tests/d1-revision-check.sql
       - name: Verify stale revision rejects publication
         run: npx wrangler d1 execute exam_core --local --file=../../packages/db/tests/d1-publish-conflict-check.sql
+      - name: Verify published item insertion is rejected
+        shell: bash
+        run: |
+          set +e
+          output=$(npx wrangler d1 execute exam_core --local --file=../../packages/db/tests/d1-published-item-reject.sql 2>&1)
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo "ERROR: Published exam accepted a new item"
+            exit 1
+          fi
+          if ! grep -q "published items immutable" <<< "$output"; then
+            echo "$output"
+            echo "ERROR: Unexpected database error"
+            exit 1
+          fi
+          echo "Published item insertion correctly rejected"
+      - name: Verify rejected item has no audit entry
+        run: npx wrangler d1 execute exam_core --local --file=../../packages/db/tests/d1-published-item-assert.sql
       - name: Verify published versions reject modification
         shell: bash
         run: |
