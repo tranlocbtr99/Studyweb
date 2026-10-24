@@ -184,4 +184,39 @@ student.post('/attempts/:attemptId/submit', sameOrigin, async c => {
     return c.json({ error: { code: 'SUBMISSION_UNAVAILABLE' } }, 503);
   }
 });
+
+const historyQuery = z.object({
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+  offset: z.coerce.number().int().min(0).max(10000).default(0)
+});
+student.get('/attempts', async c => {
+  const parsed = historyQuery.safeParse({limit:c.req.query('limit'),offset:c.req.query('offset')});
+  // Undefined query values should receive defaults, not NaN.
+  const limit = c.req.query('limit') === undefined ? 20 : parsed.success ? parsed.data.limit : null;
+  const offset = c.req.query('offset') === undefined ? 0 : parsed.success ? parsed.data.offset : null;
+  if (limit === null || offset === null) return c.json({ error: { code: 'VALIDATION_FAILED' } }, 400);
+  try {
+    const rows = await c.env.EXAM_RESULTS.prepare(
+      'SELECT a.id,a.exam_version_id AS versionId,a.started_at AS startedAt,a.expires_at AS expiresAt,a.status,a.submitted_at AS submittedAt,s.points,s.max_points AS maxPoints FROM attempts a LEFT JOIN scores s ON s.attempt_id=a.id WHERE a.user_id=? ORDER BY a.started_at DESC,a.id DESC LIMIT ? OFFSET ?'
+    ).bind(c.get('identity').id,limit,offset).all();
+    return c.json({ attempts: rows.results, pagination: {limit,offset} });
+  } catch {
+    return c.json({ error: { code: 'DB_UNAVAILABLE' } }, 503);
+  }
+});
+student.get('/attempts/:attemptId/result', async c => {
+  const id = versionId.safeParse(c.req.param('attemptId'));
+  if (!id.success) return c.json({ error: { code: 'VALIDATION_FAILED' } }, 400);
+  try {
+    const row = await c.env.EXAM_RESULTS.prepare(
+      'SELECT a.id AS attemptId,a.exam_version_id AS versionId,a.status,a.started_at AS startedAt,a.submitted_at AS submittedAt,s.points,s.max_points AS maxPoints,s.graded_at AS gradedAt FROM attempts a LEFT JOIN scores s ON s.attempt_id=a.id WHERE a.id=? AND a.user_id=?'
+    ).bind(id.data,c.get('identity').id).first<{attemptId:string;status:string;points:number|null;maxPoints:number|null}>();
+    if (!row) return c.json({ error: { code: 'NOT_FOUND' } }, 404);
+    if (row.status !== 'submitted' || row.points === null || row.maxPoints === null)
+      return c.json({ error: { code: 'RESULT_NOT_READY' } }, 409);
+    return c.json({ result: row });
+  } catch {
+    return c.json({ error: { code: 'DB_UNAVAILABLE' } }, 503);
+  }
+});
 export default student;

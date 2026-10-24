@@ -1,7 +1,9 @@
 # Changelog
-## 2026-10-24 — Atomic submission and server grading
-- Added POST /student/attempts/:id/submit with saved-answer grading, expiry and save-version checks, immutable scores and idempotent receipt replay.
-## 2026-10-24 — Autosave and attempt start
-- Versioned answer recovery and trusted private grading snapshots.
+## 2026-10-24 — Student results and history
+- Added paginated GET /student/attempts and owned GET /student/attempts/:id/result with no private grading columns.
+## 2026-10-24 — Submission and grading
+- Idempotent server-graded submission and receipt storage.
+## 2026-10-24 — Student attempts
+- Published exam reads, trusted start, versioned autosave and recovery.
 ## 2026-10-24 — Foundation
-- Published exam reads, D1 core/results, authentication, admin authoring and publication integrity.
+- D1 core/results, authentication, admin authoring and publication integrity.
