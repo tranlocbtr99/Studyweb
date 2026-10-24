@@ -83,3 +83,7 @@ Updated: 2026-10-24
 - Added admin-only PUT /api/v1/admin/questions/:id with strict validation, same-origin protection, audit trail and draft-only status gate.
 - Question bank now exposes editing body, four options, answer key and explanation. Existing exam item snapshots are not rewritten, preserving published content.
 - API and Web CI are pending; production rollout not performed. Next: API tests for authorization/immutability and end-to-end authoring flow.
+
+## Admin edit security regression tests (2026-10-25)
+- Added API regression coverage for session and role guards, cross-origin edit rejection, invalid option count, draft-only editing, and non-mutation of exam item snapshots.
+- Test workflow 40118934848 is pending; no production deployment initiated.
