@@ -1,7 +1,9 @@
 # Changelog
-## 2026-10-24 — Admin CI fix
-- Updated login-limit test mock for new D1 batch() interface.
+## 2026-10-24 — Admin authorization tests
+- Added tests for admin RBAC, CSRF origin, invalid inputs, subject creation and audit record.
 ## 2026-10-24 — Admin subjects
-- Added role-guarded subject creation, input validation, audit migration and Wrangler CI.
-## 2026-10-24 — Foundation
-- Two D1 schemas, API, session auth, throttling and CI.
+- Added admin subject creation with Zod validation, D1 batch audit and additive migration.
+## 2026-10-24 — D1 validation
+- Local Wrangler migrations and smoke checks passed.
+## 2026-10-24 — Authentication
+- Session RBAC, password login/logout, CSRF and throttling.
