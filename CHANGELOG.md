@@ -1,13 +1,11 @@
 # Changelog
-## 2026-10-24 — Session authentication and roles
-- Added SHA-256 hashed session-token lookup with expiry/revocation and active-user checks.
-- Added protected /me and admin role check; no login issuance or mutation endpoints yet.
-- Added authentication unit tests; CI verification pending.
-## 2026-10-24 — API CI repair
-- Repaired unavailable dependency; API CI passed.
-## 2026-10-24 — Read-only API
-- Added Hono Worker API and tests.
+## 2026-10-24 — Login/logout and CSRF
+- Added PBKDF2 password verification, secure session cookie issuance, hashed session storage and logout revocation.
+- Enforced Origin matching for state-changing authentication routes and added security tests.
+- Production login rate limiting and account provisioning remain pending.
+## 2026-10-24 — Session auth
+- Added session validation and RBAC guards; CI checks passed.
+## 2026-10-24 — API
+- Added Hono read-only endpoints; CI passed.
 ## 2026-10-24 — Database
-- Added two D1 migrations, Drizzle mappings and passing CI.
-## 2026-10-24 — Architecture
-- Adopted two D1 databases and initial documentation.
+- Added two D1 migrations and passing CI.

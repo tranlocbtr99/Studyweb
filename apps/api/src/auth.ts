@@ -1,23 +1,30 @@
 import { createMiddleware } from 'hono/factory';
 import type { Context } from 'hono';
 import { getCookie } from 'hono/cookie';
-export type ReadQuery = { bind(...args: unknown[]): ReadQuery; all(): Promise<{ results: unknown[] }>; first<T = unknown>(): Promise<T | null> };
+export type ReadQuery = { bind(...args: unknown[]): ReadQuery; all(): Promise<{ results: unknown[] }>; first<T = unknown>(): Promise<T | null>; run(): Promise<unknown> };
 export type ReadDb = { prepare(query: string): ReadQuery };
 export type Env = {
   Bindings: { EXAM_CORE: ReadDb; EXAM_RESULTS: ReadDb };
   Variables: { identity: { id: string; roles: string[] } };
 };
-const unauthorized = (c: Context<Env>, code: string, status: 401 | 403) =>
+export const sha256 = async (token: string) =>
+  Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token)))).map(b => b.toString(16).padStart(2, '0')).join('');
+export const unauthorized = (c: Context<Env>, code: string, status: 401 | 403) =>
   c.json({ error: { code, message: status === 401 ? 'Authentication required' : 'Permission denied', requestId: c.res.headers.get('X-Request-ID') ?? '' } }, status);
+export const sameOrigin = createMiddleware<Env>(async (c, next) => {
+  const origin = c.req.header('Origin');
+  // Cookie-authenticated writes must carry a browser Origin header.
+  if (!origin || origin !== new URL(c.req.url).origin)
+    return c.json({ error: { code: 'CSRF_REJECTED', message: 'Origin check failed' } }, 403);
+  await next();
+});
 export const requireSession = createMiddleware<Env>(async (c, next) => {
   const token = getCookie(c, 'studyweb_session');
   if (!token || !/^[a-f0-9]{64}$/.test(token)) return unauthorized(c, 'UNAUTHENTICATED', 401);
-  const bytes = new TextEncoder().encode(token);
-  const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))).map(b => b.toString(16).padStart(2, '0')).join('');
   try {
     const row = await c.env.EXAM_CORE.prepare(
       "SELECT users.id AS id FROM sessions JOIN users ON users.id=sessions.user_id WHERE sessions.token_hash=? AND sessions.revoked_at IS NULL AND sessions.expires_at>? AND users.status='active'"
-    ).bind(hash, Math.floor(Date.now() / 1000)).first<{ id: string }>();
+    ).bind(await sha256(token), Math.floor(Date.now() / 1000)).first<{ id: string }>();
     if (!row) return unauthorized(c, 'UNAUTHENTICATED', 401);
     const roles = await c.env.EXAM_CORE.prepare(
       'SELECT roles.code AS code FROM user_roles JOIN roles ON roles.id=user_roles.role_id WHERE user_roles.user_id=?'
@@ -25,7 +32,7 @@ export const requireSession = createMiddleware<Env>(async (c, next) => {
     c.set('identity', { id: row.id, roles: roles.results.map(r => (r as { code: string }).code) });
     await next();
   } catch {
-    return c.json({ error: { code: 'AUTH_UNAVAILABLE', message: 'Authentication service unavailable', requestId: c.res.headers.get('X-Request-ID') ?? '' } }, 503);
+    return c.json({ error: { code: 'AUTH_UNAVAILABLE', message: 'Authentication service unavailable' } }, 503);
   }
 });
 export const requireRole = (role: string) => createMiddleware<Env>(async (c, next) => {

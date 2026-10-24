@@ -1,17 +1,20 @@
 # Progress
 Updated: 2026-10-24
 ## Completed
-- Architecture and two-D1 schemas; database CI passed.
-- Read-only Hono API; API CI passed after dependency repair: https://github.com/tranlocbtr99/Studyweb/actions/runs/40096031161
-- Session validation middleware, hashed cookie token lookup, expiry/revocation and active-user checks, role guards, /me and protected admin status, focused tests (new CI pending).
+- Two-D1 schemas and passing database CI.
+- Hono read-only API and passing API CI.
+- Session authorization and RBAC CI steps passed in run 40096155379.
+- Added password PBKDF2-SHA256 hash/verify helpers, same-origin write protection, secure HttpOnly SameSite=Strict login cookies, hashed token persistence, logout revocation, targeted tests. New CI pending.
 ## Pending
-- Verify auth CI.
-- Secure login/password verification, token issuance, logout and CSRF defenses.
-- Admin authoring, trusted grading snapshot, attempts/autosave/submit, frontend, Cloudflare D1 integration, load tests, backups and deployment.
+- Confirm latest auth/login CI; add login rate limiting, lockout monitoring and abuse controls before public release.
+- Provision users securely (no public registration), admin CRUD, trusted grading snapshot, attempts/autosave/submit, UI, Cloudflare D1 validation, backups, load tests and deployment.
+## Security
+- No plaintext passwords/session tokens stored; cookie-authenticated write requests require matching Origin.
+- Login uses PBKDF2 with random salt; production abuse/rate controls not yet implemented.
+- Exam mutation routes remain disabled.
 ## Risks
-- No cross-D1 transactions; do not enable write routes without reviewed atomic protocol.
-- No production deployment; 500-user target unverified.
+- No cross-D1 transaction; grading integrity and 500-user target unverified.
 ## Next task
-- Verify CI and implement secure login/logout + CSRF with tests.
+- Verify auth/login CI and add login rate limiting plus abuse safeguards.
 ## Relevant files
-- apps/api/src/auth.ts; apps/api/src/index.ts; apps/api/tests/auth.test.ts.
+- apps/api/src/auth.ts; apps/api/src/password.ts; apps/api/src/index.ts; apps/api/tests/login.test.ts.
