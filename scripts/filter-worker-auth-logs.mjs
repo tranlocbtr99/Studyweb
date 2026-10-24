@@ -15,11 +15,27 @@ let matched = 0;
 let validEvents = 0;
 let eventsWithLogs = 0;
 let logEntries = 0;
+let httpResponses = 0;
+const statusCounts = new Map();
+const methodCounts = new Map();
+const eventShapes = new Map();
 const outcomes = new Map();
 for await (const line of readline.createInterface({ input: process.stdin, crlfDelay: Infinity })) {
   let event;
   try { event = JSON.parse(line); } catch { continue; }
   validEvents++;
+  const shape = Object.keys(event).filter(key => ['outcome', 'logs', 'event', 'exceptions', 'message'].includes(key)).sort().join(',') || 'other';
+  eventShapes.set(shape, (eventShapes.get(shape) ?? 0) + 1);
+  const request = event.event?.request;
+  const response = event.event?.response;
+  const method = request?.method;
+  if (method === 'POST' || method === 'GET') methodCounts.set(method, (methodCounts.get(method) ?? 0) + 1);
+  const status = response?.status;
+  if (Number.isInteger(status) && status >= 100 && status <= 599) {
+    httpResponses++;
+    const statusClass = String(Math.floor(status / 100)) + 'xx';
+    statusCounts.set(statusClass, (statusCounts.get(statusClass) ?? 0) + 1);
+  }
   const outcome = String(event.outcome ?? 'unknown');
   const safeOutcome = ['ok', 'exception', 'exceededCpu', 'canceled', 'unknown'].includes(outcome) ? outcome : 'other';
   outcomes.set(safeOutcome, (outcomes.get(safeOutcome) ?? 0) + 1);
@@ -45,4 +61,4 @@ for await (const line of readline.createInterface({ input: process.stdin, crlfDe
 }
 console.log(`Filtered authentication diagnostic events: ${matched}`);
 
-console.log(JSON.stringify({ validWorkerEvents: validEvents, eventsWithLogs, logEntries, outcomes: Object.fromEntries(outcomes) }));
+console.log(JSON.stringify({ validWorkerEvents: validEvents, eventsWithLogs, logEntries, outcomes: Object.fromEntries(outcomes), httpResponses, statusClasses: Object.fromEntries(statusCounts), methods: Object.fromEntries(methodCounts), eventShapes: Object.fromEntries(eventShapes) }));
