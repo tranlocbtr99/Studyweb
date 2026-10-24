@@ -2,21 +2,24 @@
 Updated: 2026-10-24
 
 ## Verified completed
-- Cloudflare D1 exam_core and exam_results initialized remotely; baseline migrations applied successfully.
-- First administrator created successfully via GitHub Actions run 40104002188. Credentials are stored as GitHub Secrets, not committed.
-- API supports session authentication, admin exam authoring, published exam reads, student attempts, versioned autosave, recovery and grading.
-- React/Vite student UI includes login, exam catalog, exam room and debounced autosave.
-- Same-origin Worker static assets and /api/* Worker-first routing configured.
-- GitHub Actions deployment-readiness run 40103410558 passed: frontend build, API typecheck/tests, Worker dry-run.
+- Remote Cloudflare D1 migrations and initial administrator provisioning succeeded.
+- Public Worker URL was deployed: https://studyweb-api.tranlocbtr99.workers.dev (initial deployment run 40105793377).
+- React student/admin login selection and student self-registration form/API are committed.
+- API and frontend checks, including registration boundary tests, passed (runs 40107209759, 40107080404).
+- Remote read-only authentication schema diagnostic succeeded (run 40107481906): users, roles, user_roles, sessions and login_rate_limits tables exist; users=1, roles=1 (admin), sessions=0, login_rate_limits=2.
+- Auth error paths now log only non-sensitive error categories; code not yet deployed.
+
+## Known blocker
+- On the previously deployed site, login returned HTTP 503. Schema absence has been ruled out, but actual Worker-side cause is not established.
+- New registration/login UI and sanitized diagnostic logs have not yet been deployed or verified on Cloudflare.
+- Registration is not yet proven with a real D1 insert and student login.
 
 ## Not yet verified
-- No public or staging URL confirmed deployed.
-- No real-browser end-to-end test on Cloudflare HTTPS.
-- No 100–500 concurrent user load test; capacity cannot yet be claimed.
-- Admin authoring UI and complete results history UI not confirmed.
-- Production recovery, rollback and backup procedures not validated.
+- Live end-to-end student/admin login and self-registration.
+- Load testing at 100–500 concurrent students.
+- Complete admin authoring/results UI, production recovery/rollback/backup.
 
 ## Next task
-- Prepare a staging deployment with separate data from production where feasible; run HTTPS smoke tests and end-to-end student/admin flows.
-- Verify load and security before production publication.
-- Never rerun initial D1 migration or bootstrap the first admin after success.
+- Use a single controlled beta deployment after checks pass; inspect Worker logs and test authenticated login, registration and role isolation.
+- If 503 persists, diagnose Worker execution/crypto and D1 binding using sanitized logs; do not guess at root cause.
+- Preserve existing data; do not rerun bootstrap or reset migrations.
