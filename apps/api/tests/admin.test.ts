@@ -178,3 +178,25 @@ describe('admin exam versions', () => {
     expect(statements[1].args[3]).toBe(data.version.id);
   });
 });
+
+describe('admin exam item snapshots', () => {
+  const payload={versionId:'123e4567-e89b-42d3-a456-426614174000',questionId:'123e4567-e89b-42d3-a456-426614174001',position:0};
+  it('rejects invalid positions without writing', async () => {
+    const {env,statements}=await fixture();
+    const res=await app.request('/api/v1/admin/exam-items',request({...payload,position:-1}),env);
+    expect(res.status).toBe(400);
+    expect(statements).toHaveLength(0);
+  });
+  it('denies non-admin users', async () => {
+    const {env,statements}=await fixture('student');
+    const res=await app.request('/api/v1/admin/exam-items',request(payload),env);
+    expect(res.status).toBe(403);
+    expect(statements).toHaveLength(0);
+  });
+  it('rejects unknown draft versions', async () => {
+    const {env,statements}=await fixture();
+    const res=await app.request('/api/v1/admin/exam-items',request(payload),env);
+    expect(res.status).toBe(409);
+    expect(statements).toHaveLength(0);
+  });
+});

@@ -133,4 +133,48 @@ admin.post('/exam-versions', sameOrigin, async c => {
     return c.json({ error: { code: 'WRITE_FAILED' } }, 503);
   }
 });
+
+const examItemSchema = z.object({
+  versionId: z.string().uuid(),
+  questionId: z.string().uuid(),
+  position: z.number().int().min(0).max(999)
+}).strict();
+admin.post('/exam-items', sameOrigin, async c => {
+  let input: unknown;
+  try { input = await c.req.json(); }
+  catch { return c.json({ error: { code: 'BAD_JSON' } }, 400); }
+  const parsed = examItemSchema.safeParse(input);
+  if (!parsed.success) return c.json({ error: { code: 'VALIDATION_FAILED' } }, 400);
+  const { versionId, questionId, position } = parsed.data;
+  try {
+    const version = await c.env.EXAM_CORE.prepare(
+      "SELECT v.id, e.subject_id AS subjectId FROM exam_versions v JOIN exams e ON e.id=v.exam_id WHERE v.id=? AND v.status='draft' AND v.published_at IS NULL"
+    ).bind(versionId).first<{ id: string; subjectId: string }>();
+    if (!version) return c.json({ error: { code: 'VERSION_NOT_DRAFT' } }, 409);
+    const question = await c.env.EXAM_CORE.prepare(
+      "SELECT q.id, d.body, d.correct_option AS correctOption, d.explanation FROM questions q JOIN question_drafts d ON d.question_id=q.id JOIN topics t ON t.id=q.topic_id WHERE q.id=? AND t.subject_id=? AND q.status IN ('draft','active')"
+    ).bind(questionId,version.subjectId).first<{ id: string; body: string; correctOption: string; explanation: string }>();
+    if (!question) return c.json({ error: { code: 'QUESTION_NOT_FOUND' } }, 404);
+    const optionRows = await c.env.EXAM_CORE.prepare(
+      'SELECT stable_option_id AS label, body AS text FROM question_options WHERE question_id=? ORDER BY stable_option_id'
+    ).bind(questionId).all();
+    const options = optionRows.results as Array<{label:string;text:string}>;
+    if (options.length !== 4 || options.some((o,i)=>o.label !== ['A','B','C','D'][i]))
+      return c.json({ error: { code: 'INCOMPLETE_QUESTION' } }, 409);
+    const snapshot = JSON.stringify({ questionId, body: question.body, options });
+    const privateKey = JSON.stringify({ correctOption: question.correctOption, explanation: question.explanation });
+    const id = crypto.randomUUID();
+    // Guard against a version being published between the initial read and the write.
+    await c.env.EXAM_CORE.batch([
+      c.env.EXAM_CORE.prepare(
+        "INSERT INTO exam_items(id,exam_version_id,position,question_snapshot_json,answer_key_private_json) SELECT ?,id,?,?,? FROM exam_versions WHERE id=? AND status='draft' AND published_at IS NULL"
+      ).bind(id,position,snapshot,privateKey,versionId),
+      c.env.EXAM_CORE.prepare('INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) VALUES(?,?,?,?,?)')
+        .bind(crypto.randomUUID(),c.get('identity').id,'exam_item.created',id,Math.floor(Date.now()/1000))
+    ]);
+    return c.json({ item: { id, versionId, position, question: JSON.parse(snapshot) } }, 201);
+  } catch {
+    return c.json({ error: { code: 'WRITE_FAILED' } }, 503);
+  }
+});
 export default admin;
