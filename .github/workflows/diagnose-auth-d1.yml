@@ -29,3 +29,9 @@ jobs:
           npx wrangler d1 execute exam_core --remote --command "SELECT COUNT(*) AS active_users, SUM(CASE WHEN password_hash LIKE 'pbkdf2$%$%$%' AND LENGTH(password_hash)=111 THEN 0 ELSE 1 END) AS malformed_hashes FROM users WHERE status='active'"
           npx wrangler d1 execute exam_core --remote --command "SELECT name, type, \"notnull\" FROM pragma_table_info('sessions') WHERE name IN ('id','user_id','token_hash','expires_at','revoked_at') ORDER BY name"
           npx wrangler d1 execute exam_core --remote --command "SELECT name, type, \"notnull\" FROM pragma_table_info('login_rate_limits') WHERE name IN ('bucket_key','window_start','attempts','updated_at') ORDER BY name"
+          # Read-only checks for failures after password verification; do not print identifiers.
+          npx wrangler d1 execute exam_core --remote --command "PRAGMA foreign_key_check"
+          npx wrangler d1 execute exam_core --remote --command "SELECT COUNT(*) AS orphan_sessions FROM sessions s LEFT JOIN users u ON s.user_id=u.id WHERE u.id IS NULL"
+          npx wrangler d1 execute exam_core --remote --command "SELECT COUNT(*) AS active_admins FROM users u JOIN user_roles ur ON ur.user_id=u.id JOIN roles r ON r.id=ur.role_id WHERE u.status='active' AND r.code='admin'"
+          npx wrangler d1 execute exam_core --remote --command "SELECT COUNT(*) AS session_insert_triggers FROM sqlite_master WHERE type='trigger' AND tbl_name='sessions' AND sql LIKE '%INSERT%'"
+          npx wrangler d1 execute exam_core --remote --command "SELECT COUNT(*) AS session_indexes FROM sqlite_master WHERE type='index' AND tbl_name='sessions'"
