@@ -1,24 +1,22 @@
 # Progress
 Updated: 2026-10-24
 ## Completed
-- Repository inspection: main initially contained README.md only.
-- Task 1: bootstrap directory placeholders and architecture/process documentation.
-## Not completed
-- Dependency setup and runnable web/API applications.
-- Authentication, question bank, exam versions, attempts/autosave, grading, analytics, administration.
-- Database migrations, CI/CD, deployment, load verification.
-## Known issues / risks
-- Free-tier capacity for 100–500 concurrent users is unverified.
-- No application tests can run before application scaffolding exists.
+- Task 1 bootstrap: directory placeholders and documentation; original README retained.
+- Architecture specification updated: two D1 databases, autosave snapshots, stable option IDs, server grading, idempotent submission, load-test acceptance goals.
+## Pending modules
+1. Implement Drizzle schemas and forward-only migrations for exam_core and exam_results, plus migration tests.
+2. Implement Hono/Zod API contracts and tests; define trusted immutable grading snapshot and cross-DB failure recovery.
+3. Implement k6 load scenarios and baseline measurements.
+4. Foundation auth, admin, exam UI, analytics, CI/CD and deployment.
+## Risks / blockers
+- No cross-D1 transaction; must validate durable finalization protocol.
+- 100–500 concurrency, free-tier quota and Worker CPU remain unverified.
+- No runnable code, real databases, backup automation or tests yet.
 ## Decisions
-- Fixed stack documented in AGENTS.md and ARCHITECTURE.md.
-- No production deployment or infrastructure provisioning during bootstrap.
-- Published exam snapshots immutable; grading server-side; autosave versioned; submission idempotent.
-## Next task (requires explicit instruction)
-- Scaffold apps/web, apps/api, packages/shared and packages/db with strict TypeScript and minimal local build/test scripts; no production deployment.
+- Two D1: exam_core and exam_results. Single-row versioned autosave; immutable published versions; server-only keys; atomic result+receipt in exam_results.
+## Next task (only when explicitly requested)
+- Implement database schema and migrations for both D1 databases with focused tests; no deploy.
 ## Relevant files
-- AGENTS.md; docs/ARCHITECTURE.md; docs/DATABASE.md; docs/API.md; docs/DECISIONS.md; docs/TESTING.md; package layout placeholders.
-## Tests for next task
-- npm run typecheck; npm run test; npm run build (after scripts and dependencies exist).
-## Current task acceptance
-- Confirm required docs and placeholders exist; verify README preserved; one commit; no deployment.
+- AGENTS.md; docs/ARCHITECTURE.md; docs/DATABASE.md; docs/API.md; docs/TESTING.md; docs/DECISIONS.md; packages/db/.
+## Next task test commands
+- To be defined with package scripts: schema typecheck and migration/integrity tests; no runtime tests available yet.

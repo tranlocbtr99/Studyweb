@@ -1,4 +1,6 @@
-# Testing strategy
-Bootstrap acceptance: inspect Git tree for required docs and placeholder directories, check internal consistency, confirm existing README unchanged and no secrets committed. No runtime test claim for docs-only bootstrap.
-Future targeted tests: Vitest for Zod schemas, grading, deadline and version conflicts; Playwright for login/exam/resume/submit and answer visibility; D1 integration tests for migrations and idempotency; k6 staged 100/250/500 virtual users with realistic autosave intervals. Record p95 latency, failure rate, D1 write volume, and Cloudflare plan limits. Do not certify 500 concurrent users without evidence.
-CI will run typecheck, targeted tests and build; deployment must be gated by passing checks and approval. No CI workflow installed yet.
+# Testing and acceptance plan (not executed)
+Vitest: schema constraints, shuffled stable IDs, no answer-key leakage, scoring fixtures (100% exact), deadline boundaries, version CAS conflicts, repeat submissions and durable receipts, malformed payloads, session expiry.
+Playwright: mobile and desktop login, 60-question session, offline local recovery, reconnect merge, tab background/return, expiry, duplicate submit, result-release policy.
+D1 integration: isolated migrations for exam_core and exam_results, indexes/FKs within each DB, cross-DB failure injection, final atomic receipt+score, restore backup, upgrade retaining old grades and attempts.
+k6: staged 100/250/500 concurrent virtual users; one start, 60 jittered dirty-only snapshots across 60 min, one submit, one result; separately burst-start, burst-submit, retries and disconnects. Capture Worker CPU time, p95 API latency, success rate, D1 read/write consumption and storage. Targets: p95 <1s, >=99.9% successful requests in representative test, no duplicate scores, zero scoring fixture mismatches. These are unverified goals.
+Daily automated backups with periodic verified restoration required before real exams. Validate current Cloudflare free limits and alert at 70% of measured budgets; document contingency for exhausted quotas. GitHub Actions CI and deployment gates not implemented.

@@ -1,7 +1,9 @@
-# Architecture decision log
-## ADR-001: Fixed platform (2026-10-24)
-Accepted: React/TS/Vite/Tailwind/shadcn UI; Cloudflare Pages/Workers/Hono/Zod/D1/Drizzle; optional R2; GitHub Actions/Vitest/Playwright/k6. Rationale: edge hosting and modular implementation. Reconsider only with measured technical evidence.
-## ADR-002: Data correctness (2026-10-24)
-Accepted: server-side scoring and deadlines; no early answer disclosure; immutable published exam versions; optimistic versioned autosave; idempotent submission; forward-only migration discipline.
-## ADR-003: Deployment boundary (2026-10-24)
-Accepted: bootstrap is documentation and directories only. No account provisioning, billing, production deployment, or unmeasured free-tier claims.
+# Architecture decisions
+## ADR-001 — Stack (accepted 2026-10-24)
+React + TypeScript strict + Vite, Tailwind, shadcn/ui, Cloudflare Pages/Workers, Hono, Zod, Drizzle, D1, optional R2, GitHub Actions, Vitest, Playwright, k6. Mobile-first.
+## ADR-002 — Two D1 databases (accepted 2026-10-24)
+exam_core contains identities, catalog and immutable published exams; exam_results contains attempts, snapshots, scores and audit. Cross-database transactions and foreign keys do not exist: use application verification, immutable version identifiers/digests and a single-database atomic submission receipt+score.
+## ADR-003 — Write efficiency and integrity (accepted 2026-10-24)
+Serve questions once without answer keys. Local answers, dirty-only ~60-second jittered snapshot saves, optimistic versioning, bounded retries and server-authoritative deadlines. One snapshot row per attempt; durable server confirmation; idempotent grading and submit. Preserve historical data on upgrades.
+## ADR-004 — Capacity and spending (accepted 2026-10-24)
+100–500 concurrent users is a test target, not a guarantee. Prefer free tier, no paid provisioning without approval, budget alerts at 70% of verified limits, load tests and recovery drills before production.

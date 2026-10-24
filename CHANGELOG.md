@@ -1,4 +1,7 @@
 # Changelog
+## 2026-10-24 — Architecture specification v2
+- Adopted exam_core + exam_results D1 separation and documented cross-database consistency limitations.
+- Specified stable option IDs, versioned single-row autosave snapshots, durable idempotent submission and test goals.
+- Prioritized schema, API contract and load scenarios. No runtime code or deployment.
 ## 2026-10-24 — Bootstrap
-- Documented architecture, proposed database/API contracts, testing, decisions, agent rules and progress.
-- Added directory placeholders only; no application logic, dependency install, database or production deployment.
+- Created architecture/process docs and project directory placeholders; original README preserved.
