@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { enforceLoginLimit } from '../src/login-limit';
+import type { ReadDb } from '../src/auth';
 afterEach(() => vi.restoreAllMocks());
-function fakeDb() {
+function fakeDb(): ReadDb {
   const values = new Map<string, { start: number; count: number }>();
   return { prepare(sql: string) {
     let args: unknown[] = [];
@@ -13,10 +14,11 @@ function fakeDb() {
         const old = values.get(key);
         values.set(key, { start, count: old?.start === start ? old.count + 1 : 1 });
       },
-      async first() {
+      async all() { return { results: [] }; },
+      async first<T = unknown>(): Promise<T | null> {
         const [key, start] = args as [string, number];
         const entry = values.get(key);
-        return entry?.start === start ? { attempts: entry.count } : null;
+        return (entry?.start === start ? { attempts: entry.count } : null) as T | null;
       }
     };
   } };

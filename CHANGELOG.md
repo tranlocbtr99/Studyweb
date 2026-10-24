@@ -1,10 +1,10 @@
 # Changelog
+## 2026-10-24 — Fix login-limit test types
+- Fixed CI TypeScript failure by matching ReadDb mock all() and first<T>() signatures.
+- No production deployment.
 ## 2026-10-24 — Login rate limits
-- Added exam_core additive login-rate-limits migration and atomic account/IP login throttling.
-- Added fail-closed behavior and focused security tests.
-## 2026-10-24 — Login and logout
-- Added PBKDF2 password handling, secure cookie sessions and origin protection.
-## 2026-10-24 — Session auth
-- Added session validation and RBAC.
-## 2026-10-24 — API/database foundation
-- Added read-only API, CI and two-D1 migrations.
+- Added per-account and per-IP D1 throttling with tests.
+## 2026-10-24 — Authentication
+- Added login/logout, PBKDF2, session RBAC and CSRF protections.
+## 2026-10-24 — Foundation
+- Added API, two D1 schemas and CI.
