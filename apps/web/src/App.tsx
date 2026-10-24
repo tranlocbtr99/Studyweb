@@ -24,6 +24,7 @@ export default function App(){
   const [message,setMessage]=useState('');
   const [busy,setBusy]=useState(false);
   const [remaining,setRemaining]=useState(0);
+  const [resumeAvailable,setResumeAvailable]=useState(false);
   const [saveState,setSaveState]=useState<'idle'|'pending'|'saving'|'saved'|'error'>('idle');
   const savedAnswers=useRef('{}');
   const latestAnswers=useRef(answers);
@@ -60,6 +61,39 @@ export default function App(){
   },[answers,attempt?.id,result,remaining>0]);
 
   useEffect(()=>{
+    if(signedIn!==true)return;
+    setResumeAvailable(Boolean(sessionStorage.getItem('studyweb_active_attempt')));
+  },[signedIn]);
+  useEffect(()=>{
+    const onBeforeUnload=(event:BeforeUnloadEvent)=>{
+      if(attempt&&!result&&JSON.stringify(latestAnswers.current)!==savedAnswers.current){
+        event.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload',onBeforeUnload);
+    return()=>window.removeEventListener('beforeunload',onBeforeUnload);
+  },[attempt,result]);
+  async function resume(){
+    const raw=sessionStorage.getItem('studyweb_active_attempt');
+    if(!raw)return;
+    setBusy(true);setMessage('');
+    try{
+      const record=JSON.parse(raw) as {attemptId:string;versionId:string;expiresAt:number};
+      if(!/^[0-9a-f-]{36}$/i.test(record.attemptId)||!/^[0-9a-f-]{36}$/i.test(record.versionId))throw new Error('Invalid saved attempt');
+      const [examData,saveData]=await Promise.all([
+        api<Exam>('/exam-versions/'+record.versionId),
+        api<{attempt:{id:string;saveVersion:number;answers:Record<string,string>;expiresAt:number;status:string}}>('/attempts/'+record.attemptId+'/answers')
+      ]);
+      if(saveData.attempt.status!=='active')throw new Error('Lượt thi không còn hoạt động');
+      const next={id:record.attemptId,expiresAt:saveData.attempt.expiresAt,saveVersion:saveData.attempt.saveVersion};
+      setExam(examData);setVersionId(record.versionId);setAnswers(saveData.attempt.answers);
+      savedAnswers.current=JSON.stringify(saveData.attempt.answers);
+      latestAttempt.current=next;setAttempt(next);setResult(null);setSaveState('saved');
+      setMessage('Đã khôi phục bài thi từ máy chủ');
+    }catch(e){setMessage('Không thể tiếp tục bài thi: '+String(e));}
+    finally{setBusy(false);}
+  }
+  useEffect(()=>{
     let alive=true;
     fetch('/api/v1/me',{credentials:'same-origin'}).then(r=>{if(alive)setSignedIn(r.ok);}).catch(()=>{if(alive)setSignedIn(false);});
     return()=>{alive=false;};
@@ -77,7 +111,7 @@ export default function App(){
     try{
       const res=await fetch('/api/v1/auth/logout',{method:'POST',credentials:'same-origin'});
       if(!res.ok)throw new Error('Đăng xuất thất bại');
-      setSignedIn(false);setExam(null);setAttempt(null);setAnswers({});savedAnswers.current='{}';setResult(null);
+      sessionStorage.removeItem('studyweb_active_attempt');setResumeAvailable(false);setSignedIn(false);setExam(null);setAttempt(null);setAnswers({});savedAnswers.current='{}';setResult(null);
     }catch(e){setMessage(String(e));}finally{setBusy(false);}
   }
   useEffect(()=>{
@@ -101,7 +135,7 @@ export default function App(){
     if(!exam)return;setBusy(true);setMessage('');
     try{
       const data=await api<{attempt:Attempt}>('/attempts',{method:'POST',body:JSON.stringify({versionId:exam.version.id})});
-      setAttempt(data.attempt);latestAttempt.current=data.attempt;savedAnswers.current='{}';setAnswers({});setSaveState('idle');setResult(null);
+      sessionStorage.setItem('studyweb_active_attempt',JSON.stringify({attemptId:data.attempt.id,versionId:exam.version.id,expiresAt:data.attempt.expiresAt}));setResumeAvailable(true);setAttempt(data.attempt);latestAttempt.current=data.attempt;savedAnswers.current='{}';setAnswers({});setSaveState('idle');setResult(null);
     }catch(e){setMessage(String(e));}finally{setBusy(false);}
   }
   async function recover(){
@@ -123,7 +157,7 @@ export default function App(){
       const current=latestAttempt.current;
       if(!current)throw new Error('Không tìm thấy lượt thi');
       const data=await api<{result:Result}>('/attempts/'+current.id+'/submit',{method:'POST',body:JSON.stringify({saveVersion:current.saveVersion,idempotencyKey:key})});
-      setResult(data.result);
+      setResult(data.result);sessionStorage.removeItem('studyweb_active_attempt');setResumeAvailable(false);
     }catch(e){setMessage(String(e)+' — Bài chưa được xác nhận nộp. Kiểm tra trạng thái lưu và kết quả trước khi thử lại.');}finally{setBusy(false);}
   }
   return <main className="shell">
@@ -136,6 +170,7 @@ export default function App(){
       </form>
     </section>}
     {signedIn&&<div className="toolbar account"><span>Đã đăng nhập</span><button className="secondary" disabled={busy} onClick={logout}>Đăng xuất</button></div>}
+    {signedIn&&resumeAvailable&&!attempt&&<section className="panel"><h2>Bài thi đang làm</h2><p>Khôi phục câu trả lời đã lưu trên máy chủ sau khi tải lại trang.</p><button disabled={busy} onClick={resume}>Tiếp tục bài thi</button></section>}
     {signedIn&&<section className="panel"><h1>Phòng thi trực tuyến</h1><p>Nhập mã phiên bản đề thi đã xuất bản. Bạn có thể tải đề thi bằng mã phiên bản đã xuất bản.</p>
       <div className="toolbar"><button disabled={busy} onClick={showCatalog}>Xem danh sách đề thi</button></div>
       {catalog.map(item=><button key={item.versionId} className="secondary" disabled={busy} onClick={()=>setVersionId(item.versionId)}>{item.subject} — {item.title} ({item.questionCount} câu)</button>)}
