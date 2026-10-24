@@ -17,6 +17,8 @@ Updated: 2026-10-24
 
 - Isolated Cloudflare Workers local-runtime PBKDF2 test run 40114669470 succeeded: HTTP 200, 310000 iterations, 32 ms measured in that run. This rules out a basic lack of PBKDF2 support in local workerd, but not production CPU limits, password mismatch or session-write failure.
 
+- Remote D1 session-integrity workflow 40115045183 passed: PRAGMA foreign_key_check returned no violations, orphan_sessions=0, active_admins=1, session_insert_triggers=0, session_indexes=3. This is read-only structural evidence, not proof that live session INSERT succeeds.
+
 ## Confirmed blocker
 - User reports admin login HTTP 503 and student registration HTTP 503. Admin login also returned 429 after repeated attempts; login rate limit counts every attempt.
 - Three live Cloudflare tail diagnostic runs (40110478403, 40110801089, 40111385415) succeeded as GitHub jobs but did NOT produce usable application logs.
@@ -30,6 +32,6 @@ Updated: 2026-10-24
 - Complete admin authoring/results UI and recovery/rollback/backup.
 
 ## Next task
-- Investigate admin-specific authentication after user lookup: distinguish production PBKDF2 failure from session INSERT failure using stage-level evidence; the local workerd synthetic PBKDF2 probe passed. Do not claim either is the cause without stage-level evidence.
+- Investigate production login's exact failure stage with trusted runtime telemetry. Local PBKDF2 and mocked session INSERT passed; D1 schema and integrity checks passed. Do not conclude production session INSERT succeeds without a real write-path test. Do not claim either is the cause without stage-level evidence.
 - Stop repeating the same live login probe; a different diagnostic is required. Avoid extra login attempts that consume rate-limit budget.
 - Preserve data, passwords and existing published exam versions.
