@@ -43,6 +43,8 @@ jobs:
         run: npx wrangler d1 execute exam_core --local --file=../../packages/db/migrations/core/0007_learning_content.sql
       - name: Apply learning community migration
         run: npx wrangler d1 execute exam_core --local --file=../../packages/db/migrations/core/0008_learning_community.sql
+      - name: Apply account removal and exam import migration
+        run: npx wrangler d1 execute exam_core --local --file=../../packages/db/migrations/core/0009_admin_exam_import.sql
       - name: Apply results baseline
         run: npx wrangler d1 execute exam_results --local --file=../../packages/db/migrations/results/0001_initial.sql
       - name: Apply leaderboard query index
@@ -103,3 +105,4 @@ jobs:
         run: npx wrangler d1 execute exam_core --local --file=../../packages/db/tests/d1-community-check.sql
       - name: Verify leaderboard query index
         run: npx wrangler d1 execute exam_results --local --file=../../packages/db/tests/d1-community-results-check.sql
+

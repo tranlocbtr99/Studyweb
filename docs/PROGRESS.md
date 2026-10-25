@@ -285,3 +285,12 @@ Updated: 2026-10-24
 - The unique synthetic student was disabled and its sessions revoked. No exam attempts/content or existing user data were created/rewritten by the live smoke tests.
 - Independently opened the hosted page in the browser: LTStudy title, completed login UI and exact release meta match; desktop document width equals viewport width.
 - Remaining acceptance boundaries: 100–500 concurrent-candidate load, mobile viewport QA and owner-admin/full live exam-authoring E2E are not certified. Recovery metadata is retained with the successful release run.
+
+
+## Student removal and subject-based exam imports (2026-10-25)
+- Administrators can remove student-only accounts from the active directory, revoke sessions and block login. Removed accounts can be restored; original disabled status, results and learning history are retained. Administrator/teacher accounts and self-removal are protected.
+- Subject creation accepts a name and generates its internal slug. Learning authoring accepts a subject name. Exam authoring selects an existing subject, accepts manual questions or DOCX/PDF files, and provides editable review before draft save and separate publication.
+- Workers AI extracts existing questions; grounded source text and explicit answer keys are required. Missing answers require administrator review. Documents are limited to 10 MB, text to 180,000 characters and exams to 200 questions; legacy .doc must be saved as .docx. Scanned documents depend on the conversion service.
+- Imports atomically create exam drafts and subject question-bank entries, with idempotency receipts and subject-scoped deduplication. Editing bank content does not mutate published exam snapshots.
+- Validation: API typecheck and 115 tests passed; production frontend build passed; five nonempty upgrade/native Wrangler checks passed. Migration 0009 adds recoverable-removal columns and import metadata. Release includes an isolated actual Workers AI extraction/conversion probe before production changes.
+- Browser visual review of this update was blocked by the browser URL security policy; no workaround attempted. Full interactive file-upload E2E remains unverified. Deployment pending source CI and release checks.

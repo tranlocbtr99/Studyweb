@@ -4,7 +4,7 @@ import { getCookie } from 'hono/cookie';
 export type ReadQuery = { bind(...args: unknown[]): ReadQuery; all(): Promise<{ results: unknown[] }>; first<T = unknown>(): Promise<T | null>; run(): Promise<unknown> };
 export type ReadDb = { prepare(query: string): ReadQuery; batch(queries: ReadQuery[]): Promise<unknown> };
 export type Env = {
-  Bindings: { EXAM_CORE: ReadDb; EXAM_RESULTS: ReadDb; RELEASE_SHA?: string };
+  Bindings: { EXAM_CORE: ReadDb; EXAM_RESULTS: ReadDb; AI?: {run(model:string,input:Record<string,unknown>):Promise<unknown>;toMarkdown?(file:{name:string;blob:Blob}):Promise<{format?:string;data?:string}|Array<{format?:string;data?:string}>>}; RELEASE_SHA?: string };
   Variables: { identity: { id: string; roles: string[] } };
 };
 export const sha256 = async (token: string) =>
@@ -23,7 +23,7 @@ export const requireSession = createMiddleware<Env>(async (c, next) => {
   if (!token || !/^[a-f0-9]{64}$/.test(token)) return unauthorized(c, 'UNAUTHENTICATED', 401);
   try {
     const row = await c.env.EXAM_CORE.prepare(
-      "SELECT users.id AS id FROM sessions JOIN users ON users.id=sessions.user_id WHERE sessions.token_hash=? AND sessions.revoked_at IS NULL AND sessions.expires_at>? AND users.status='active'"
+      "SELECT users.id AS id FROM sessions JOIN users ON users.id=sessions.user_id WHERE sessions.token_hash=? AND sessions.revoked_at IS NULL AND sessions.expires_at>? AND users.status='active' AND users.deleted_at IS NULL"
     ).bind(await sha256(token), Math.floor(Date.now() / 1000)).first<{ id: string }>();
     if (!row) return unauthorized(c, 'UNAUTHENTICATED', 401);
     const roles = await c.env.EXAM_CORE.prepare(

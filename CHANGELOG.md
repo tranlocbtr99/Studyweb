@@ -149,3 +149,10 @@
 ## 2026-10-25 — Hosted release published
 - Published frontend/API ea18fe4 and additive D1 upgrades to the existing LTStudy origin.
 - Verified live student authentication, role/CSRF boundaries, assets and exact version; existing credentials/data preserved.
+
+
+## 2026-10-25 — Subject-based exam imports and student removal
+- Added administrator student removal and restoration, session revocation, protected staff accounts and retained learning/results history.
+- Simplified subject creation to a name and added a unified manual or Word/PDF exam studio with answer review and separate publication.
+- Added Workers AI document/question extraction, source grounding, explicit-answer checks, subject-filtered question banks, transactional imports and duplicate-question reuse.
+- Added additive migration 0009, import/removal integration coverage and a synthetic live AI binding probe.

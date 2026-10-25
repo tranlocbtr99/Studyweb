@@ -9,6 +9,7 @@ import admin from './admin';
 import student from './student';
 import registration from './registration';
 import community from './community';
+import imports from './imports';
 const app = new Hono<Env>();
 const error = (code: string, message: string, requestId: string) => ({ error: { code, message, requestId } });
 app.use('*', async (c, next) => {
@@ -37,7 +38,7 @@ app.post('/api/v1/auth/login', sameOrigin, async c => {
   }
   let authStage = 'user_lookup';
   try {
-    const user = await c.env.EXAM_CORE.prepare("SELECT id, password_hash FROM users WHERE email=? AND status='active'")
+    const user = await c.env.EXAM_CORE.prepare("SELECT id, password_hash FROM users WHERE email=? AND status='active' AND deleted_at IS NULL")
       .bind(email.trim().toLowerCase()).first<{ id: string; password_hash: string }>();
     if (!user) return c.json(error('INVALID_CREDENTIALS', 'Invalid email or password', ''), 401);
     authStage = 'password_verification';
@@ -83,6 +84,7 @@ app.get('/api/v1/exams/:id', async c => {
 });
 app.route('/api/v1/auth/register',registration);
 app.route('/api/v1/admin',admin);
+app.route('/api/v1/admin/imports',imports);
 app.route('/api/v1/student',student);
 app.route('/api/v1/community',community);
 app.get('/api/v1/me', requireSession, c => c.json({ user: c.get('identity') }));

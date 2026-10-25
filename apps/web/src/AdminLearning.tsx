@@ -21,6 +21,7 @@ export default function AdminLearning(){
  const [listError,setListError]=useState('');
  const [subjects,setSubjects]=useState<Subject[]>([]);
  const [subjectId,setSubjectId]=useState('');
+ const [subjectName,setSubjectName]=useState('');
  const [kind,setKind]=useState<'lesson'|'material'>('lesson');
  const [title,setTitle]=useState('');
  const [body,setBody]=useState('');
@@ -91,7 +92,8 @@ export default function AdminLearning(){
   <h2>Biên soạn bài học và tài liệu</h2><p>Chọn môn học, nhập nội dung và quyết định lưu nháp hoặc xuất bản cho học viên.</p>
   {editingId&&<p role="status">Đang chỉnh sửa: {title}</p>}
   <form ref={editorRef} onSubmit={event=>void save(event)} className="admin-learning-form"><fieldset disabled={busy} style={{border:0,padding:0,margin:0,display:'contents'}}>
-   <label>Môn học<select required value={subjectId} disabled={!!editingId} onChange={e=>{if(!discardChanges())return;setSubjectId(e.target.value);setOffset(0);setPendingStatus(null);resetEditor()}}><option value="">Chọn môn học</option>{subjects.map(s=><option key={s.id} value={s.id}>{s.title}</option>)}</select></label>
+   <label>Nhập tên môn học<input list="learning-subject-names" required maxLength={160} value={subjectName} disabled={!!editingId} onChange={event=>{if(!discardChanges())return;setSubjectName(event.target.value);setSubjectId(subjects.find(subject=>subject.title===event.target.value)?.id??'');setOffset(0);setPendingStatus(null);resetEditor()}} placeholder="Nhập tên môn học"/><datalist id="learning-subject-names">{subjects.map(subject=><option key={subject.id} value={subject.title}/>)}</datalist></label>
+   {!subjectId&&<button type="button" className="secondary" disabled={busy||subjectName.trim().length<2} onClick={()=>{setBusy(true);setMessage('');void fetch('/api/v1/admin/subjects',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:subjectName})}).then(async response=>{if(!response.ok)throw Error();return response.json() as Promise<{subject:Subject}>}).then(data=>{setSubjects(previous=>[...previous.filter(subject=>subject.id!==data.subject.id),data.subject]);setSubjectId(data.subject.id);setSubjectName(data.subject.title);setMessage('Đã lưu môn học.')}).catch(()=>setMessage('Không thể lưu môn học.')).finally(()=>setBusy(false))}}>Lưu môn học</button>}
    <label>Loại nội dung<select value={kind} disabled={!!editingId} onChange={e=>{if(!discardChanges())return;setPendingStatus(null);setKind(e.target.value as 'lesson'|'material');setOffset(0);resetEditor()}}><option value="lesson">Bài học</option><option value="material">Tài liệu</option></select></label>
    <label>Tiêu đề<input ref={titleRef} required minLength={2} maxLength={160} value={title} onChange={e=>setTitle(e.target.value)}/></label>
    <label>{kind==='lesson'?'Nội dung bài học':'Mô tả tài liệu'}<textarea rows={6} maxLength={kind==='lesson'?30000:2000} value={body} onChange={e=>setBody(e.target.value)}/></label>

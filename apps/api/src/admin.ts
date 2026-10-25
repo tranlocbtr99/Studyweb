@@ -4,7 +4,7 @@ import { requireSession, requireRole, sameOrigin } from './auth';
 import type { Env } from './auth';
 import { examContentHash } from './exam-integrity';
 const admin = new Hono<Env>();
-const schema = z.object({slug:z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).min(2).max(64),title:z.string().trim().min(2).max(160)}).strict();
+const schema = z.object({slug:z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).min(2).max(64).optional(),title:z.string().trim().min(2).max(160)}).strict();
 admin.use('*',requireSession,requireRole('admin'));
 
 
@@ -131,15 +131,42 @@ admin.get('/users',async c=>{
  const search=(c.req.query('search')??'').trim();
  const offset=Number(c.req.query('offset')??0);
  const status=c.req.query('status')??'all';
+ const removed=c.req.query('removed')==='true';
  const order=c.req.query('order')??'newest';
  if(search.length>120||!['all','active','disabled'].includes(status)||!['newest','oldest'].includes(order)||!Number.isInteger(offset)||offset<0||offset>100000)return c.json({error:{code:'VALIDATION_FAILED'}},400);
  try{
-  const filter=" WHERE (?='' OR instr(lower(email),lower(?))>0) AND (?='all' OR status=?)";
+  const filter=" WHERE deleted_at IS "+(removed?'NOT NULL':'NULL')+" AND (?='' OR instr(lower(email),lower(?))>0) AND (?='all' OR status=?)";
   const ordering=order==='newest'?'DESC':'ASC';
-  const rows=await c.env.EXAM_CORE.prepare("SELECT id,email,status,created_at AS createdAt,(SELECT GROUP_CONCAT(r.code,',') FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=users.id) AS roles FROM users"+filter+" ORDER BY created_at "+ordering+",id "+ordering+" LIMIT 20 OFFSET ?").bind(search,search,status,status,offset).all();
+  const rows=await c.env.EXAM_CORE.prepare("SELECT id,email,status,deleted_at AS deletedAt,created_at AS createdAt,(SELECT GROUP_CONCAT(r.code,',') FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=users.id) AS roles FROM users"+filter+" ORDER BY created_at "+ordering+",id "+ordering+" LIMIT 20 OFFSET ?").bind(search,search,status,status,offset).all();
   const count=await c.env.EXAM_CORE.prepare("SELECT COUNT(*) AS total FROM users"+filter).bind(search,search,status,status).first<{total:number}>();
   return c.json({users:rows.results,offset,total:count?.total??0});
  }catch{return c.json({error:{code:'READ_FAILED'}},503);}
+});
+
+// Removal is recoverable and immediately blocks new and existing sessions.
+admin.delete('/users/:id',sameOrigin,async c=>{
+ const id=c.req.param('id');if(!z.string().uuid().safeParse(id).success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+ if(id===c.get('identity').id)return c.json({error:{code:'CANNOT_REMOVE_SELF'}},409);
+ const now=Math.floor(Date.now()/1000);
+ try{
+  const target=await c.env.EXAM_CORE.prepare("SELECT u.id FROM users u WHERE u.id=? AND u.deleted_at IS NULL AND EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=u.id AND r.code='student') AND NOT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=u.id AND r.code<>'student')").bind(id).first();
+  if(!target)return c.json({error:{code:'STUDENT_NOT_REMOVABLE'}},409);
+  const writes=await c.env.EXAM_CORE.batch([
+   c.env.EXAM_CORE.prepare("UPDATE users SET deleted_at=?,deleted_previous_status=status,status='disabled' WHERE id=? AND deleted_at IS NULL AND EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=users.id AND r.code='student') AND NOT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=users.id AND r.code<>'student')").bind(now,id),
+   c.env.EXAM_CORE.prepare("INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) SELECT ?,?,'student.removed',?,? WHERE changes()=1").bind(crypto.randomUUID(),c.get('identity').id,id,now),
+   c.env.EXAM_CORE.prepare('UPDATE sessions SET revoked_at=? WHERE user_id=? AND revoked_at IS NULL AND EXISTS(SELECT 1 FROM users WHERE id=? AND deleted_at IS NOT NULL)').bind(now,id,id)
+  ]);
+  if((writes as Array<{meta?:{changes?:number}}>)[0]?.meta?.changes!==1)return c.json({error:{code:'STUDENT_NOT_REMOVABLE'}},409);
+  return c.json({removed:true,recoverable:true});
+ }catch{return c.json({error:{code:'WRITE_FAILED'}},503);}
+});
+admin.post('/users/:id/restore',sameOrigin,async c=>{
+ const id=c.req.param('id');if(!z.string().uuid().safeParse(id).success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+ try{const writes=await c.env.EXAM_CORE.batch([
+ c.env.EXAM_CORE.prepare("UPDATE users SET deleted_at=NULL,status=COALESCE(deleted_previous_status,'disabled'),deleted_previous_status=NULL WHERE id=? AND deleted_at IS NOT NULL AND EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=users.id AND r.code='student') AND NOT EXISTS(SELECT 1 FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=users.id AND r.code<>'student')").bind(id),
+ c.env.EXAM_CORE.prepare("INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) SELECT ?,?,'student.restored',?,? WHERE changes()=1").bind(crypto.randomUUID(),c.get('identity').id,id,Math.floor(Date.now()/1000))]);
+ if((writes as Array<{meta?:{changes?:number}}>)[0]?.meta?.changes!==1)return c.json({error:{code:'STUDENT_NOT_RESTORABLE'}},409);return c.json({restored:true});
+ }catch{return c.json({error:{code:'WRITE_FAILED'}},503);}
 });
 
 // Read-only authoring catalogs let administrators resume work across browser sessions.
@@ -163,9 +190,11 @@ admin.post('/subjects',sameOrigin,async c=>{
  try { input=await c.req.json(); } catch { return c.json({error:{code:'BAD_JSON'}},400); }
  const parsed=schema.safeParse(input);
  if(!parsed.success) return c.json({error:{code:'VALIDATION_FAILED'}},400);
- const {slug,title}=parsed.data;
+ const {title}=parsed.data;
  const id=crypto.randomUUID();
+ const slug=parsed.data.slug??((title.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[đĐ]/g,'d').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,45)||'mon-hoc')+'-'+id.slice(0,8));
  try {
+  if(!parsed.data.slug){const existing=await c.env.EXAM_CORE.prepare('SELECT id,slug,title FROM subjects WHERE title=? COLLATE NOCASE LIMIT 1').bind(title).first();if(existing)return c.json({subject:existing},200)}
   await c.env.EXAM_CORE.batch([
    c.env.EXAM_CORE.prepare('INSERT INTO subjects(id,slug,title) VALUES(?,?,?)').bind(id,slug,title),
    c.env.EXAM_CORE.prepare('INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) VALUES(?,?,?,?,?)').bind(crypto.randomUUID(),c.get('identity').id,'subject.created',id,Math.floor(Date.now()/1000))
@@ -217,7 +246,7 @@ admin.get('/questions', async c => {
   const {subjectId,search,limit,offset}=parsed.data;
   try {
     const where = "WHERE (? IS NULL OR t.subject_id=?) AND (?='' OR instr(lower(d.body),lower(?))>0)";
-    const sql = "SELECT q.id,q.topic_id AS topicId,t.subject_id AS subjectId,q.status,d.body,d.correct_option AS correctOption,d.explanation FROM questions q JOIN question_drafts d ON d.question_id=q.id JOIN topics t ON t.id=q.topic_id "+where+" ORDER BY q.rowid DESC LIMIT ? OFFSET ?";
+    const sql = "SELECT q.id,q.topic_id AS topicId,t.subject_id AS subjectId,q.status,t.title AS topicTitle,d.body,d.correct_option AS correctOption,d.explanation FROM questions q JOIN question_drafts d ON d.question_id=q.id JOIN topics t ON t.id=q.topic_id "+where+" ORDER BY q.rowid DESC LIMIT ? OFFSET ?";
     const result = await c.env.EXAM_CORE.prepare(sql).bind(subjectId??null,subjectId??null,search,search,limit,offset).all();
     const rows = result.results as Array<{id:string;topicId:string;subjectId:string;status:string;body:string;correctOption:string;explanation:string}>;
     const items = await Promise.all(rows.map(async row=>{

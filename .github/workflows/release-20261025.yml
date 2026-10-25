@@ -63,6 +63,8 @@ jobs:
           npm test
           node --test ../../scripts/migrate-release.test.mjs
           npx wrangler deploy --dry-run --outdir ../../.worker-preview
+      - name: Verify actual AI extraction and document conversion
+        run: node scripts/probe-import-ai.mjs
       - name: Capture recovery bookmarks and previous Worker version
         working-directory: apps/api
         run: |
