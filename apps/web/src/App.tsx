@@ -24,6 +24,7 @@ export default function App(){
   const [exam,setExam]=useState<Exam|null>(null);
   const [attempt,setAttempt]=useState<Attempt|null>(null);
   const [answers,setAnswers]=useState<Record<string,string>>({});
+  const [currentQuestion,setCurrentQuestion]=useState(0);
   const [result,setResult]=useState<Result|null>(null);
   const [message,setMessage]=useState('');
   const [busy,setBusy]=useState(false);
@@ -90,7 +91,7 @@ export default function App(){
       ]);
       if(saveData.attempt.status!=='active')throw new Error('Lượt thi không còn hoạt động');
       const next={id:record.attemptId,expiresAt:saveData.attempt.expiresAt,saveVersion:saveData.attempt.saveVersion};
-      setExam(examData);setVersionId(record.versionId);setAnswers(saveData.attempt.answers);
+      setExam(examData);setCurrentQuestion(0);setVersionId(record.versionId);setAnswers(saveData.attempt.answers);
       savedAnswers.current=JSON.stringify(saveData.attempt.answers);
       latestAttempt.current=next;setAttempt(next);setResult(null);setSaveState('saved');
       setMessage('Đã khôi phục bài thi từ máy chủ');
@@ -144,14 +145,14 @@ export default function App(){
   }
   async function loadExam(){
     setBusy(true);setMessage('');
-    try{const data=await api<{version:Exam['version'];questions:Exam['questions']}>('/exam-versions/'+encodeURIComponent(versionId));setExam(data);setAttempt(null);setAnswers({});setResult(null);}
+    try{const data=await api<{version:Exam['version'];questions:Exam['questions']}>('/exam-versions/'+encodeURIComponent(versionId));setExam(data);setCurrentQuestion(0);setAttempt(null);setAnswers({});setResult(null);}
     catch(e){setMessage(String(e));}finally{setBusy(false);}
   }
   async function start(){
     if(!exam)return;setBusy(true);setMessage('');
     try{
       const data=await api<{attempt:Attempt}>('/attempts',{method:'POST',body:JSON.stringify({versionId:exam.version.id})});
-      sessionStorage.setItem('studyweb_active_attempt',JSON.stringify({attemptId:data.attempt.id,versionId:exam.version.id,expiresAt:data.attempt.expiresAt}));setResumeAvailable(true);setAttempt(data.attempt);latestAttempt.current=data.attempt;savedAnswers.current='{}';setAnswers({});setSaveState('idle');setResult(null);
+      sessionStorage.setItem('studyweb_active_attempt',JSON.stringify({attemptId:data.attempt.id,versionId:exam.version.id,expiresAt:data.attempt.expiresAt}));setResumeAvailable(true);setCurrentQuestion(0);setAttempt(data.attempt);latestAttempt.current=data.attempt;savedAnswers.current='{}';setAnswers({});setSaveState('idle');setResult(null);
     }catch(e){setMessage(String(e));}finally{setBusy(false);}
   }
   async function recover(){
@@ -215,8 +216,13 @@ export default function App(){
     </section>}
     {signedIn&&(!isAdmin||workspace==='exams')&&exam&&<section className="panel"><div className="toolbar"><h2>Đề thi · {exam.questions.length} câu</h2>{!attempt&&<button disabled={busy} onClick={start}>Bắt đầu làm bài</button>}</div>
       {attempt&&<div className="status"><span>Thời gian còn lại: <strong>{Math.floor(remaining/60)}:{String(remaining%60).padStart(2,'0')}</strong></span><span>Phiên bản lưu: {attempt.saveVersion} · {({idle:'Chưa thay đổi',pending:'Chờ lưu',saving:'Đang lưu',saved:'Đã lưu',error:'Lưu thất bại'} as const)[saveState]}</span></div>}
-      {exam.questions.map(({position,question})=><article className="question" key={position}><h3>Câu {position+1}. {question.body}</h3>
+      <div className="exam-progress" aria-live="polite"><strong>Đã trả lời {exam.questions.filter(({position})=>Boolean(answers[String(position)])).length}/{exam.questions.length} câu</strong><span>Đang xem câu {Math.min(currentQuestion+1,exam.questions.length)}/{exam.questions.length}</span></div>
+      <nav className="question-navigation" aria-label="Chọn câu hỏi">
+        {exam.questions.map(({position},index)=><button key={position} type="button" aria-current={index===currentQuestion?'step':undefined} aria-label={'Câu '+(position+1)+(answers[String(position)]?' đã trả lời':' chưa trả lời')} className={index===currentQuestion?'question-current':answers[String(position)]?'question-answered':'secondary'} onClick={()=>setCurrentQuestion(index)}>{position+1}</button>)}
+      </nav>
+      {exam.questions.filter((_,index)=>index===currentQuestion).map(({position,question})=><article className="question" key={position}><h3>Câu {position+1}. {question.body}</h3>
         {question.options.map(option=><label className="option" key={option.label}><input type="radio" name={'q'+position} disabled={!attempt||!!result||remaining===0} checked={answers[String(position)]===option.label} onChange={()=>setAnswers(prev=>({...prev,[String(position)]:option.label}))}/><span>{option.label}. {option.text}</span></label>)}</article>)}
+      <div className="toolbar question-controls"><button className="secondary" disabled={currentQuestion===0} onClick={()=>setCurrentQuestion(index=>Math.max(0,index-1))}>Câu trước</button><button className="secondary" disabled={currentQuestion>=exam.questions.length-1} onClick={()=>setCurrentQuestion(index=>Math.min(exam.questions.length-1,index+1))}>Câu tiếp</button></div>
       {attempt&&!result&&<div className="toolbar"><button className="secondary" disabled={busy} onClick={recover}>Khôi phục đáp án</button><button disabled={busy||remaining===0} onClick={save}>Lưu bài</button><button className="danger" disabled={busy||remaining===0} onClick={submit}>Nộp bài</button></div>}
     </section>}
     {signedIn&&(!isAdmin||workspace==='exams')&&result&&<section className="panel"><h2>Kết quả bài thi</h2><p className="score">{result.points} / {result.maxPoints}</p><p>Đã nộp: {new Date(result.submittedAt*1000).toLocaleString('vi-VN')}</p></section>}
