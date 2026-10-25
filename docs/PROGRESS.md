@@ -167,3 +167,8 @@ Updated: 2026-10-24
 - Added admin-only read-only /overview endpoint aggregating counts of users, subjects, questions, exams and published versions from EXAM_CORE.
 - Admin overview UI fetches those counts and displays responsive pastel metric cards. No invented activity charts or course completion numbers.
 - Awaiting CI for the new changes; not deployed.
+
+## Admin dashboard CI repair (2026-10-25)
+- API checks and deployment readiness passed for the new read-only overview endpoint at d4719e6.
+- Web checks failed for dashboard App.tsx because overview useEffect referenced signedIn before its declaration (TS2448/TS2454).
+- Moved signedIn state declaration above the effect; pending next CI run. No production deployment.
