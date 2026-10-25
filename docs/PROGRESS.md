@@ -254,3 +254,8 @@ Updated: 2026-10-24
 - Browser QA used the actual bundled Hono API with isolated in-memory SQLite seeded test accounts/content: verified marking a lesson complete and updating course cards, creating/reading discussion, unread-to-read transition, administrator announcement publication, moderation hide/restore control, and selecting a version to render its ranking. Fixed an ambiguous created_at column found in the moderator query and added its integration assertion.
 - Validation: frontend production build, API typecheck, all 95 tests (including 19 real SQLite integration cases) and Worker dry-run passed. QA-only authentication injection and middleware are not in the source commit or production build.
 - Production remains unchanged. Required migration checks/applications before rollout: core 0006/0007/0008 and results 0002. Live authentication, deployed E2E, mobile browser validation and load at 100–500 concurrent users remain unverified. Account-role/status mutations remain outside this community feature batch.
+
+## Native D1 community CI coverage (2026-10-25)
+- Community feature commit eb18f41 passed Web, API, database and deployment-readiness CI.
+- Extended the local D1 workflow beyond its previous core-0005 baseline to apply core 0006/0007/0008 and results 0002, with native D1 assertions for progress/read-receipt upserts, moderation and query index presence.
+- This workflow uses local ephemeral D1 only. No production migrations or deployment.

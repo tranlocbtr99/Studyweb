@@ -37,8 +37,16 @@ jobs:
         run: npx wrangler d1 execute exam_core --local --file=../../packages/db/migrations/core/0004_question_drafts.sql
       - name: Apply item revision migration
         run: npx wrangler d1 execute exam_core --local --file=../../packages/db/migrations/core/0005_exam_item_revisions.sql
+      - name: Apply exam duration migration
+        run: npx wrangler d1 execute exam_core --local --file=../../packages/db/migrations/core/0006_exam_duration.sql
+      - name: Apply learning content migration
+        run: npx wrangler d1 execute exam_core --local --file=../../packages/db/migrations/core/0007_learning_content.sql
+      - name: Apply learning community migration
+        run: npx wrangler d1 execute exam_core --local --file=../../packages/db/migrations/core/0008_learning_community.sql
       - name: Apply results baseline
         run: npx wrangler d1 execute exam_results --local --file=../../packages/db/migrations/results/0001_initial.sql
+      - name: Apply leaderboard query index
+        run: npx wrangler d1 execute exam_results --local --file=../../packages/db/migrations/results/0002_leaderboard_index.sql
       - name: Verify core schema and integrity
         run: npx wrangler d1 execute exam_core --local --file=../../packages/db/tests/d1-core-check.sql
       - name: Verify admin writes and duplicate slug
@@ -91,3 +99,7 @@ jobs:
           echo "Published version modification correctly rejected"
       - name: Verify results schema and integrity
         run: npx wrangler d1 execute exam_results --local --file=../../packages/db/tests/d1-results-check.sql
+      - name: Verify real D1 progress and community writes
+        run: npx wrangler d1 execute exam_core --local --file=../../packages/db/tests/d1-community-check.sql
+      - name: Verify leaderboard query index
+        run: npx wrangler d1 execute exam_results --local --file=../../packages/db/tests/d1-community-results-check.sql

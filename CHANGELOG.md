@@ -134,3 +134,6 @@
 - Add in-app announcements with administrator publishing/archive/restore and per-user unread/read state.
 - Add an anonymous best-attempt leaderboard per published exam version.
 - Add core community tables/results query index and SQLite integration coverage. All 95 tests, frontend build, typechecks and Worker packaging passed; production rollout pending.
+
+## 2026-10-25 — Native D1 community checks
+- Apply the new learning/community migrations and leaderboard index in local D1 CI and verify their write paths with SQL assertions.
