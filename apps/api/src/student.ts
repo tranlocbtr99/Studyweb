@@ -15,7 +15,7 @@ student.get('/exam-catalog', async c => {
     return c.json({ error: { code: 'VALIDATION_FAILED' } }, 400);
   try {
     const rows = await c.env.EXAM_CORE.prepare(
-      "SELECT v.id AS versionId, e.title, s.title AS subject, v.version_number AS versionNumber, (SELECT COUNT(*) FROM exam_items i WHERE i.exam_version_id=v.id) AS questionCount FROM exam_versions v JOIN exams e ON e.id=v.exam_id JOIN subjects s ON s.id=e.subject_id WHERE v.status='published' AND v.published_at IS NOT NULL ORDER BY v.published_at DESC, v.id DESC LIMIT ? OFFSET ?"
+      "SELECT v.id AS versionId, e.title, s.title AS subject, v.version_number AS versionNumber, v.duration_minutes AS durationMinutes, (SELECT COUNT(*) FROM exam_items i WHERE i.exam_version_id=v.id) AS questionCount FROM exam_versions v JOIN exams e ON e.id=v.exam_id JOIN subjects s ON s.id=e.subject_id WHERE v.status='published' AND v.published_at IS NOT NULL ORDER BY v.published_at DESC, v.id DESC LIMIT ? OFFSET ?"
     ).bind(limit, offset).all();
     return c.json({ exams: rows.results, pagination: { limit, offset } });
   } catch { return c.json({ error: { code: 'DB_UNAVAILABLE' } }, 503); }
@@ -27,7 +27,7 @@ student.get('/exam-versions/:versionId', async c => {
   if (!parsed.success) return c.json({ error: { code: 'VALIDATION_FAILED' } }, 400);
   try {
     const version = await c.env.EXAM_CORE.prepare(
-      "SELECT id,exam_id AS examId,version_number AS versionNumber,content_hash AS contentHash FROM exam_versions WHERE id=? AND status='published' AND published_at IS NOT NULL"
+      "SELECT id,exam_id AS examId,version_number AS versionNumber,content_hash AS contentHash,duration_minutes AS durationMinutes FROM exam_versions WHERE id=? AND status='published' AND published_at IS NOT NULL"
     ).bind(parsed.data).first();
     if (!version) return c.json({ error: { code: 'NOT_FOUND' } }, 404);
     const rows = await c.env.EXAM_CORE.prepare(
@@ -44,7 +44,6 @@ student.get('/exam-versions/:versionId', async c => {
 });
 
 const startSchema = z.object({ versionId: z.string().uuid() }).strict();
-const attemptDurationSeconds = 90 * 60;
 student.post('/attempts', sameOrigin, async c => {
   let input: unknown;
   try { input = await c.req.json(); }
@@ -53,8 +52,8 @@ student.post('/attempts', sameOrigin, async c => {
   if (!parsed.success) return c.json({ error: { code: 'VALIDATION_FAILED' } }, 400);
   try {
     const version = await c.env.EXAM_CORE.prepare(
-      "SELECT id,content_hash AS contentHash,items_revision AS itemsRevision FROM exam_versions WHERE id=? AND status='published' AND published_at IS NOT NULL"
-    ).bind(parsed.data.versionId).first<{id:string;contentHash:string;itemsRevision:number}>();
+      "SELECT id,content_hash AS contentHash,items_revision AS itemsRevision,duration_minutes AS durationMinutes FROM exam_versions WHERE id=? AND status='published' AND published_at IS NOT NULL"
+    ).bind(parsed.data.versionId).first<{id:string;contentHash:string;itemsRevision:number;durationMinutes:number}>();
     if (!version) return c.json({ error: { code: 'NOT_FOUND' } }, 404);
     const rows = await c.env.EXAM_CORE.prepare(
       'SELECT position,question_snapshot_json AS questionSnapshotJson,answer_key_private_json AS answerKeyPrivateJson FROM exam_items WHERE exam_version_id=? ORDER BY position'
@@ -73,7 +72,7 @@ student.post('/attempts', sameOrigin, async c => {
     await c.env.EXAM_RESULTS.batch([
       c.env.EXAM_RESULTS.prepare(
         "INSERT INTO attempts(id,user_id,exam_version_id,exam_content_hash,grading_snapshot_json,started_at,expires_at,status,save_version,answer_snapshot_json,updated_at) VALUES(?,?,?,?,?,?,?,'active',0,'{}',?)"
-      ).bind(attemptId,c.get('identity').id,version.id,digest,JSON.stringify(grading),now,now+attemptDurationSeconds,now),
+      ).bind(attemptId,c.get('identity').id,version.id,digest,JSON.stringify(grading),now,now+version.durationMinutes*60,now),
       c.env.EXAM_RESULTS.prepare(
         'INSERT INTO audit_logs(id,actor_id,action,target_id,created_at) VALUES(?,?,?,?,?)'
       ).bind(crypto.randomUUID(),c.get('identity').id,'attempt.started',attemptId,now)
