@@ -94,3 +94,6 @@
 
 ## 2026-10-25 — Admin distribution visualization
 - Added responsive, labeled bars comparing real subject, exam and question totals from the administrator overview API.
+
+## 2026-10-25 — Subject detail repair and search
+- Corrected the onClose callback type in SubjectDetail and added a search field for published exams by title.
