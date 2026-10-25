@@ -157,3 +157,7 @@ Updated: 2026-10-24
 - Exam start response previously referenced undefined attemptDurationSeconds, blocking API typecheck in workflow run 40162966050.
 - Define attemptDurationSeconds from published exam version duration_minutes, and use consistently for persisted expires_at and response expiresAt.
 - No migration or data changes; awaiting fresh GitHub Actions verification before any deployment.
+
+## CI attempt-start fixture repair (2026-10-25)
+- Latest deployment readiness API typecheck passed after attemptDurationSeconds fix, but one attempt-start test failed because its mock published exam version omitted durationMinutes.
+- Updated fixture to include durationMinutes=90, matching expected 5400-second expiry; production logic unchanged. Await new CI run; do not deploy before checks pass.
