@@ -7,6 +7,17 @@ const admin = new Hono<Env>();
 const schema = z.object({slug:z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).min(2).max(64),title:z.string().trim().min(2).max(160)}).strict();
 admin.use('*',requireSession,requireRole('admin'));
 
+
+admin.get('/users',async c=>{
+ const search=(c.req.query('search')??'').trim().slice(0,120);
+ const offset=Number(c.req.query('offset')??0);
+ if(!Number.isInteger(offset)||offset<0||offset>100000)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+ try{
+  const rows=await c.env.EXAM_CORE.prepare("SELECT id,email,status,created_at AS createdAt FROM users WHERE (?='' OR instr(lower(email),lower(?))>0) ORDER BY created_at DESC LIMIT 20 OFFSET ?").bind(search,search,offset).all();
+  return c.json({users:rows.results,offset});
+ }catch{return c.json({error:{code:'READ_FAILED'}},503);}
+});
+
 // Read-only authoring catalogs let administrators resume work across browser sessions.
 admin.get('/subjects', async c => {
   try {
