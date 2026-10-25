@@ -17,7 +17,7 @@ async function fixture(published=true, validDigest=true) {
         bind(...values:unknown[]){args=values;return this;},
         async first<T=unknown>(){
           if(sql.includes('FROM sessions'))return (args[0]===hash?{id:'student-user'}:null) as T|null;
-          if(sql.includes('FROM exam_versions'))return (published?{id:versionId,contentHash:validDigest?digest:'bad-digest',itemsRevision:1}:null) as T|null;
+          if(sql.includes('FROM exam_versions'))return (published?{id:versionId,contentHash:validDigest?digest:'bad-digest',itemsRevision:1,durationMinutes:90}:null) as T|null;
           return null;
         },
         async all(){
