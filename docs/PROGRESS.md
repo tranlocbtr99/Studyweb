@@ -87,3 +87,7 @@ Updated: 2026-10-24
 ## Admin edit security regression tests (2026-10-25)
 - Added API regression coverage for session and role guards, cross-origin edit rejection, invalid option count, draft-only editing, and non-mutation of exam item snapshots.
 - Test workflow 40118934848 is pending; no production deployment initiated.
+
+## Exam integrity regression coverage (2026-10-25)
+- Added nine automated tests for empty exams, missing/duplicate positions, incomplete options, accidental answer-key exposure, invalid answer keys, deterministic ordering, and hash changes for public/private content edits.
+- Tests target existing server-side examContentHash validation; no production data or schema changed. API CI 40158373119 pending. Deployment not initiated.
