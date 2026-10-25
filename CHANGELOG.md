@@ -57,3 +57,6 @@
 
 ## 2026-10-25 — Review flagged questions
 - Student exams now support marking questions for review, restoring flags in the same browser session, and jumping to flagged questions.
+
+## 2026-10-25 — Pre-submit review
+- Added an unanswered-question review and explicit confirmation before submitting a student exam.
