@@ -141,3 +141,7 @@
 ## 2026-10-25 — Authorized release preparation
 - Add idempotent existing-database upgrades with row/content preservation checks and SQLite tests.
 - Add release fingerprints, recovery metadata, version verification and bounded live authentication smoke tests for the user-authorized deployment.
+
+## 2026-10-25 — Deployment SQL argument repair
+- Fix real Wrangler parsing of comment-leading migration SQL and cover it with a native CLI regression.
+- Retry only read-only release fingerprint checks while deployment propagates.

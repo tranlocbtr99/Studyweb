@@ -268,3 +268,10 @@ Updated: 2026-10-24
 - Workflow records D1 Time Travel bookmarks/previous Worker metadata, verifies/tests/builds before mutation, upgrades additive schemas, stamps frontend/API with the exact commit, deploys and runs live registration/login/read/CSRF/role/logout checks.
 - Live checks create only a unique synthetic student and disable it/revoke its sessions afterwards. Existing accounts/passwords and exam content are never reset. Worker rollback is attempted if post-deploy verification fails; D1 is never automatically rewound over newer user activity.
 - Not deployed yet in this preparation commit. Capacity at 100–500 simultaneous exam takers is not certified.
+
+## Confirmed CLI migration argument defect and repair (2026-10-25)
+- Release run 40204198375 stopped before publication while passing the comment-leading core-0006 SQL as a separate --command argument.
+- Reproduced with the real Wrangler CLI: it interprets the leading SQL comment as an unknown command-line argument. The ALTER never reached D1; baseline schema validation and recovery metadata capture had already succeeded.
+- Pass SQL using the single --command=SQL argument and add a real local Wrangler regression preserving an existing row/default duration. All five upgrade tests passed.
+- Live fingerprint reads now retry within a bounded propagation window; registration/writes are never automatically retried.
+- Existing production Worker and credentials remain unchanged pending the repaired release run.

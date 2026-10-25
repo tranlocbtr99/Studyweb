@@ -6,8 +6,12 @@ if(url.protocol!=='https:'||url.hostname!=='studyweb-api.tranlocbtr99.workers.de
 if(!/^[a-f0-9]{40}$/.test(sha??''))throw Error('Missing release SHA');
 const origin=url.origin;
 async function call(path,expected,init={}){const response=await fetch(origin+path,{...init,redirect:'error',signal:AbortSignal.timeout(30000),headers:{'Cache-Control':'no-cache',...init.headers}});if(response.status!==expected)throw Error(path+' returned '+response.status+', expected '+expected);return response}
-const health=await (await call('/api/v1/health',200)).json();if(health.status!=='ok'||health.release!==sha)throw Error('Worker release fingerprint mismatch');
-const html=await (await call('/',200)).text();if(!html.includes('name="ltstudy-release" content="'+sha+'"'))throw Error('Static frontend fingerprint mismatch');
+let html='',versionReady=false;
+for(let attempt=0;attempt<6;attempt++){
+ try{const health=await (await call('/api/v1/health',200)).json();html=await (await call('/',200)).text();if(health.status==='ok'&&health.release===sha&&html.includes('name="ltstudy-release" content="'+sha+'"')){versionReady=true;break}}catch{/* Read-only propagation retry. No registration/write is retried. */}
+ if(attempt<5)await new Promise(resolve=>setTimeout(resolve,2000));
+}
+if(!versionReady)throw Error('Exact frontend/API release did not become ready within the bounded verification window');
 const assets=[...html.matchAll(/(?:src|href)="(\/assets\/[^" ]+\.(?:js|css))"/g)].map(match=>match[1]);if(assets.length<2)throw Error('Missing built frontend assets');for(const asset of assets)await call(asset,200);
 for(const path of ['/api/v1/student/subjects','/api/v1/community/announcements','/api/v1/admin/status','/api/v1/admin/results'])await call(path,401);
 const email='release-'+sha.slice(0,12)+'-'+randomBytes(4).toString('hex')+'@example.invalid',password=randomBytes(32).toString('hex');
