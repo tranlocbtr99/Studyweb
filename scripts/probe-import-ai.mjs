@@ -10,9 +10,12 @@ let attempted=false;console.log('Temporary AI probe: '+name);
 try{
  const entry=resolve(directory,'entry.ts'),bundle=resolve(directory,'worker.mjs'),config=resolve(directory,'wrangler.json');
  writeFileSync(entry,`import {analyzeExamText} from ${JSON.stringify(resolve(api,'src/imports.ts'))};
+ import {suggestExamAnswers} from ${JSON.stringify(resolve(api,'src/answer-suggestions.ts'))};
  export default {async fetch(req,env){if(req.headers.get('X-LTStudy-Probe')!==env.PROBE_TOKEN)return new Response('Not found',{status:404});
  const text=${JSON.stringify('Câu 1: Which number is equal to one plus one?\nA. Two\nB. Three\nC. Four\nD. Five\nĐáp án: A')};
  const result=await analyzeExamText(env.AI,text);if(result.questions.length!==1||result.questions[0].correctOption!=='A')return Response.json({ok:false},{status:502});
+ const suggestions=await suggestExamAnswers(env.AI,[{body:'Which number is equal to one plus one?',options:['Two','Three','Four','Five'],correctOption:null}],'Arithmetic');
+ if(suggestions.suggestions.length!==1||suggestions.suggestions[0].correctOption!=='A'||suggestions.suggestions[0].reason.length<12)return Response.json({ok:false,stage:'answer-suggestion'},{status:502});
  const conversion=await env.AI.toMarkdown({name:'synthetic-exam.html',blob:new Blob(['<h1>Question</h1><p>Testing document conversion only.</p>'],{type:'text/html'})});
  const item=Array.isArray(conversion)?conversion[0]:conversion;
  return Response.json({ok:true,questions:result.questions.length,conversion:typeof item?.data==='string'&&item.data.includes('Testing')});}};`);
@@ -20,5 +23,5 @@ try{
  writeFileSync(config,JSON.stringify({name,main:bundle,compatibility_date:'2026-10-01',workers_dev:true,ai:{binding:'AI'},vars:{PROBE_TOKEN:token}}));
  attempted=true;const deployment=run(['wrangler','deploy','--config',config]);if(deployment.status!==0){console.log(deployment.stderr.replaceAll(token,'[MASKED]').slice(-3000));throw Error('AI binding probe deployment failed')}
  const urls=[...deployment.stdout.matchAll(/https:\/\/[a-z0-9.-]+\.workers\.dev\/?/gi)];const url=urls.at(-1)?.[0];if(!url)throw Error('Cannot identify temporary probe URL');
- console.log('Probe URL: '+url);let response;for(let attempt=0;attempt<8;attempt++){response=await fetch(url,{headers:{'X-LTStudy-Probe':token},redirect:'error',signal:AbortSignal.timeout(120000)});if(response.status!==404)break;await new Promise(resolve=>setTimeout(resolve,5000))}if(!response.ok)throw Error('AI extraction probe returned HTTP '+response.status+': '+(await response.text()).replaceAll(token,'[MASKED]').slice(0,160));const data=await response.json();if(!data.ok||!data.conversion)throw Error('AI extraction/conversion probe failed');console.log('Actual Workers AI extraction and document conversion verified with synthetic content.');
+ console.log('Probe URL: '+url);let response;for(let attempt=0;attempt<8;attempt++){response=await fetch(url,{headers:{'X-LTStudy-Probe':token},redirect:'error',signal:AbortSignal.timeout(120000)});if(response.status!==404)break;await new Promise(resolve=>setTimeout(resolve,5000))}if(!response.ok)throw Error('AI extraction probe returned HTTP '+response.status+': '+(await response.text()).replaceAll(token,'[MASKED]').slice(0,160));const data=await response.json();if(!data.ok||!data.conversion)throw Error('AI extraction/conversion probe failed');console.log('Actual Workers AI extraction, missing-answer solving and document conversion verified with synthetic content.');
 }finally{if(attempted){await cloudflare('/workers/scripts/'+name,'DELETE');console.log('Temporary AI probe removed.')}rmSync(directory,{recursive:true,force:true})}

@@ -162,3 +162,10 @@
 - Verified live secure administrator sign-in and AI extraction of Vietnamese DOCX and text PDF through browser uploads.
 - Verified recoverable synthetic-student removal/restoration and original disabled-state preservation on the hosted UI.
 - Passed 39 focused parser/API/integration checks. No application code or production exam content changed; uploaded QA content was not saved/published.
+
+
+## 2026-10-26 — AI assistance for missing exam answers
+- Add optional missing-answer suggestions with Vietnamese justification, visible AI provenance, qualitative confidence and administrator review.
+- Preserve explicit source keys and abstain when context is insufficient or confidence low; never publish automatically.
+- Recover parser-grounded questions omitted by extraction AI, protect option ordering and read Markdown headings/key tables.
+- API typecheck, frontend build and 126 tests passed; production rollout pending.

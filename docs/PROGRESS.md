@@ -310,3 +310,11 @@ Updated: 2026-10-24
 - Exercised recoverable removal on the existing synthetic release smoke-test student only: directory count 5 to 4, removed-directory count 1; restored it and confirmed count 5 and its original disabled status. No real student account was removed and no password was reset.
 - Re-ran focused API/integration/parser checks: 39/39 passed. These cover subject-name creation, atomic draft/bank import, per-subject deduplication, missing-answer rejection and removal protections.
 - Synthetic uploaded questions were not saved or published to production. Thus the hosted save/publication click path remains outside this browser verification; persistence has automated real-SQL coverage. Scanned-PDF/OCR, long real-world files and 100–500 concurrent candidates are not certified by these checks.
+
+
+## Missing-answer AI assistance (2026-10-26)
+- Added a separate admin/session/origin-protected, rate-limited answer-suggestion endpoint. It solves only missing answers, preserves supplied keys, returns concise Vietnamese justifications and qualitative self-assessed confidence, and abstains for low-confidence or unjustified output. Duplicate/out-of-range indices and invalid answer labels cannot silently replace answers.
+- Exam Studio can automatically suggest missing answers after document extraction, or explicitly analyze missing answers in a manually entered/parsed exam. Administrator review remains mandatory; proposed answers and explanations carry an AI label through saved explanations. Inference never directly publishes an exam.
+- Improved extraction recovery: parser-grounded questions omitted by AI are retained, reordered options cannot inherit source keys, Markdown headings and simple Markdown answer-key tables are parsed. Full-document keys are applied before solving, including keys in a later chunk. AI failure preserves extracted/partially solved content.
+- Validation before rollout: API typecheck, 126 tests and frontend production build passed. Temporary no-database Workers AI probe now additionally verifies a synthetic missing-answer arithmetic question. No schema migration or published-exam rewrite required.
+- Pending production release and live missing-answer browser acceptance. Confidence is not calibrated probability; no external factual/source verification is claimed.

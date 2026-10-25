@@ -1,13 +1,13 @@
-export type ImportQuestion={body:string;options:string[];correctOption:'A'|'B'|'C'|'D'|null;explanation:string;sourceNumber?:number};
+export type ImportQuestion={body:string;options:string[];correctOption:'A'|'B'|'C'|'D'|null;explanation:string;sourceNumber?:number;answerSource?:'document'|'ai'|'manual';aiConfidence?:'high'|'medium'|'low';aiNote?:string};
 export const normalizeImportText=(text:string)=>text.normalize('NFC').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
 export function parseExamText(source:string):{questions:ImportQuestion[];warnings:string[]}{
  const text=source.replace(/\r\n?/g,'\n').replace(/\u00a0/g,' ').replace(/([^\n])\s+([ABCD])[.)]\s+/g,'$1\n$2. ');
  const questions:ImportQuestion[]=[],warnings:string[]=[];const keys=new Map<number,ImportQuestion['correctOption']>();
  let current:ImportQuestion|null=null,option=-1,inKey=false,explaining=false;
- for(const raw of text.split('\n')){const line=raw.trim();if(!line)continue;
+ for(const raw of text.split('\n')){const line=raw.trim().replace(/^#{1,6}\s+/, '').replace(/^\*\*((?:câu|question|q)\s*\d{1,4}\s*[.:)\-]?)\*\*/i,'$1');if(!line)continue;
   const keyHeader=/^(?:đáp\s*án|answer\s*key)\s*[:：]?\s*(.*)$/i.exec(line);
   if(keyHeader&&(!keyHeader[1].trim()||/\d\s*[.\-:=]?\s*[ABCD]/i.test(keyHeader[1])))inKey=true;
-  if(inKey){for(const match of line.matchAll(/(?:^|[\s;,|])(\d{1,4})\s*[.\-:=]?\s*([ABCD])(?=$|[\s;,|])/gi))keys.set(Number(match[1]),match[2].toUpperCase() as ImportQuestion['correctOption']);continue;}
+  if(inKey){for(const match of line.matchAll(/(?:^|[\s;,|])(\d{1,4})\s*(?:[.\-:=|]\s*)?([ABCD])(?=$|[\s;,|])/gi))keys.set(Number(match[1]),match[2].toUpperCase() as ImportQuestion['correctOption']);continue;}
   const start=/^(?:(?:câu|question|q)\s*)?(\d{1,4})\s*[.:)\-]\s*(.+)$/i.exec(line);
   if(start){if(current)questions.push(current);current={body:start[2].trim(),options:['','','',''],correctOption:null,explanation:'',sourceNumber:Number(start[1])};option=-1;explaining=false;continue;}
   if(!current)continue;
@@ -20,7 +20,7 @@ export function parseExamText(source:string):{questions:ImportQuestion[];warning
   if(explaining)current.explanation+='\n'+line;else if(option>=0)current.options[option]+=' '+line;else current.body+=' '+line;
  }
  if(current)questions.push(current);
- for(const q of questions){if(!q.correctOption&&q.sourceNumber)q.correctOption=keys.get(q.sourceNumber)??null;if(q.options.some(value=>!value.trim()))warnings.push('Câu '+(q.sourceNumber??questions.indexOf(q)+1)+' chưa có đủ bốn phương án.');}
+ for(const q of questions){if(!q.correctOption&&q.sourceNumber)q.correctOption=keys.get(q.sourceNumber)??null;if(q.correctOption)q.answerSource='document';if(q.options.some(value=>!value.trim()))warnings.push('Câu '+(q.sourceNumber??questions.indexOf(q)+1)+' chưa có đủ bốn phương án.');}
  return {questions,warnings};
 }
 export function splitExamForAI(text:string,max=6500):string[]{

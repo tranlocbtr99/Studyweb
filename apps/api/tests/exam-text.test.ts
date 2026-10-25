@@ -6,5 +6,6 @@ describe('document question parsing',()=>{
  it('recognizes a separate numbered answer key',()=>{expect(parseExamText(text+'\nĐÁP ÁN\n1.B').questions[0].correctOption).toBe('B')});
  it('flags incomplete options rather than inventing answers',()=>{const data=parseExamText(text.replace('D. Phương án thứ tư',''));expect(data.questions[0].options[3]).toBe('');expect(data.warnings).toHaveLength(1)});
  it('does not split a question between AI chunks',()=>{const input=Array.from({length:8},(_,i)=>text.replace('Câu 1:',`Câu ${i+1}:`)).join('\n');const chunks=splitExamForAI(input,500);expect(chunks.length).toBeGreaterThan(1);expect(chunks.every(chunk=>chunk.length<=500)).toBe(true);expect(chunks.join('')).toBe(input)});
+ it('reads Markdown headings and tabular explicit keys',()=>{const input=text.replace('Câu 1:','### **Câu 1:**')+'\nĐáp án\n| 1 | B |';expect(parseExamText(input).questions[0]).toMatchObject({correctOption:'B',answerSource:'document'})});
  it('refuses an oversized indivisible question',()=>{expect(()=>splitExamForAI('Câu 1: '+ 'x'.repeat(7000))).toThrow()});
 });
