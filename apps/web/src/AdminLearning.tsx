@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 type Subject={id:string;title:string;slug:string};
 export default function AdminLearning(){
  const [subjects,setSubjects]=useState<Subject[]>([]);
@@ -12,7 +13,7 @@ export default function AdminLearning(){
  const [message,setMessage]=useState('');
  const [busy,setBusy]=useState(false);
  useEffect(()=>{let active=true;fetch('/api/v1/admin/subjects',{credentials:'same-origin'}).then(async r=>{if(!r.ok)throw Error('LOAD_FAILED');return r.json() as Promise<{subjects:Subject[]}>}).then(data=>{if(active)setSubjects(data.subjects)}).catch(()=>{if(active)setMessage('Không tải được danh sách môn học')});return()=>{active=false}},[]);
- async function save(event:React.FormEvent<HTMLFormElement>){
+ async function save(event:FormEvent<HTMLFormElement>){
   event.preventDefault();setBusy(true);setMessage('');
   try{
    const path=kind==='lesson'?'lessons':'materials';
