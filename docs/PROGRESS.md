@@ -101,3 +101,8 @@ Updated: 2026-10-24
 - Added admin-only DELETE /exam-items/:id and PATCH /exam-items/:id/move for draft versions, with audit logs and transactional position updates.
 - Admin UI offers move up/down and remove actions with confirmation; refreshes ordered items from D1.
 - Feature-first development as requested. CI runs automatically; comprehensive integration testing deferred until feature-complete. Production not deployed.
+
+## Student one-question exam flow (2026-10-25)
+- Replaced the all-at-once exam question display with a single-question interface, previous/next controls, numbered navigation, answered-state indicators and live answered count.
+- Existing attempt autosave, recovery, time limit and server-side submission remain unchanged; answers remain keyed by question position.
+- Feature-first work as requested; comprehensive E2E validation deferred until feature-complete. Production not deployed.
