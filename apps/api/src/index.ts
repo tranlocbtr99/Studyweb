@@ -64,7 +64,7 @@ app.post('/api/v1/auth/logout', sameOrigin, requireSession, async c => {
     return c.json({ status: 'logged_out' });
   } catch { return c.json(error('AUTH_UNAVAILABLE', 'Authentication service unavailable', ''), 503); }
 });
-app.get('/api/v1/health', c => c.json({ status: 'ok', service: 'studyweb-api' }));
+app.get('/api/v1/health', c => c.json({ status: 'ok', service: 'studyweb-api',release:c.env?.RELEASE_SHA??'development' }));
 app.get('/api/v1/subjects', async c => {
   try {
     const rows = await c.env.EXAM_CORE.prepare('SELECT id, slug, title FROM subjects ORDER BY title LIMIT 100').all();

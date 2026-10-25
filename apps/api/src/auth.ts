@@ -4,7 +4,7 @@ import { getCookie } from 'hono/cookie';
 export type ReadQuery = { bind(...args: unknown[]): ReadQuery; all(): Promise<{ results: unknown[] }>; first<T = unknown>(): Promise<T | null>; run(): Promise<unknown> };
 export type ReadDb = { prepare(query: string): ReadQuery; batch(queries: ReadQuery[]): Promise<unknown> };
 export type Env = {
-  Bindings: { EXAM_CORE: ReadDb; EXAM_RESULTS: ReadDb };
+  Bindings: { EXAM_CORE: ReadDb; EXAM_RESULTS: ReadDb; RELEASE_SHA?: string };
   Variables: { identity: { id: string; roles: string[] } };
 };
 export const sha256 = async (token: string) =>
@@ -39,3 +39,4 @@ export const requireRole = (role: string) => createMiddleware<Env>(async (c, nex
   if (!c.get('identity')?.roles.includes(role)) return unauthorized(c, 'FORBIDDEN', 403);
   await next();
 });
+

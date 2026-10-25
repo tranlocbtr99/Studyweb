@@ -259,3 +259,12 @@ Updated: 2026-10-24
 - Community feature commit eb18f41 passed Web, API, database and deployment-readiness CI.
 - Extended the local D1 workflow beyond its previous core-0005 baseline to apply core 0006/0007/0008 and results 0002, with native D1 assertions for progress/read-receipt upserts, moderation and query index presence.
 - This workflow uses local ephemeral D1 only. No production migrations or deployment.
+
+## Authorized deployment preparation (2026-10-25)
+- User explicitly requested completion and deployment to the existing Cloudflare origin.
+- Added a bounded, restart-safe upgrade for initialized D1 databases. It validates baseline/community schemas, preserves existing counts and published version fields, retains the existing credential records, and refuses to initialize an empty/unknown database.
+- Added four native SQLite upgrade tests for nonempty upgrade, rerun preservation and incompatible/unknown schema refusal.
+- Added a one-release workflow retaining the existing beta-deployment environment and deployment concurrency lock. It accepts only a release-marker-only commit whose parent is the reviewed source.
+- Workflow records D1 Time Travel bookmarks/previous Worker metadata, verifies/tests/builds before mutation, upgrades additive schemas, stamps frontend/API with the exact commit, deploys and runs live registration/login/read/CSRF/role/logout checks.
+- Live checks create only a unique synthetic student and disable it/revoke its sessions afterwards. Existing accounts/passwords and exam content are never reset. Worker rollback is attempted if post-deploy verification fails; D1 is never automatically rewound over newer user activity.
+- Not deployed yet in this preparation commit. Capacity at 100–500 simultaneous exam takers is not certified.

@@ -137,3 +137,7 @@
 
 ## 2026-10-25 — Native D1 community checks
 - Apply the new learning/community migrations and leaderboard index in local D1 CI and verify their write paths with SQL assertions.
+
+## 2026-10-25 — Authorized release preparation
+- Add idempotent existing-database upgrades with row/content preservation checks and SQLite tests.
+- Add release fingerprints, recovery metadata, version verification and bounded live authentication smoke tests for the user-authorized deployment.
