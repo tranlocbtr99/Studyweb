@@ -261,6 +261,16 @@ export default function App(){
         ['Người dùng',adminOverview.users],['Môn học',adminOverview.subjects],['Câu hỏi',adminOverview.questions],['Đề thi',adminOverview.exams],['Phiên bản xuất bản',adminOverview.publishedVersions]
       ] as Array<[string,number]>).map(([label,count])=><article key={label}><span>{label}</span><strong>{count.toLocaleString('vi-VN')}</strong></article>)}</div>}
       </div>}
+      {workspace==='overview'&&adminOverview&&<section className="admin-distribution" aria-label="Phân bố nội dung quản trị">
+        <h2>Phân bố nội dung</h2>
+        <p className="subtle">So sánh số lượng môn học, đề thi và câu hỏi thực tế. Mỗi thanh biểu thị tỷ lệ so với nhóm lớn nhất.</p>
+        {([['Môn học',adminOverview.subjects],['Đề thi',adminOverview.exams],['Câu hỏi',adminOverview.questions]] as Array<[string,number]>).map(([label,value])=><div className="admin-distribution-row" key={label}>
+          <div className="admin-distribution-label"><span>{label}</span><strong>{value.toLocaleString('vi-VN')}</strong></div>
+          <div className="admin-distribution-track" role="img" aria-label={label+': '+value}>
+            <div className="admin-distribution-fill" style={{width:(Math.max(0,value)/Math.max(1,adminOverview.subjects,adminOverview.exams,adminOverview.questions)*100)+'%'}}/>
+          </div>
+        </div>)}
+      </section>}
       {workspace==='overview'&&<div className="admin-overview-grid">
         <article><span className="admin-stat-icon">📚</span><h2>Khóa học và môn học</h2><p>Phân chia môn học và chủ đề để xây dựng ngân hàng câu hỏi.</p><button onClick={()=>setWorkspace('authoring')}>Quản lý nội dung</button></article>
         <article><span className="admin-stat-icon">📝</span><h2>Ngân hàng câu hỏi</h2><p>Soạn câu hỏi trắc nghiệm, đáp án đúng và phần giải thích.</p><button onClick={()=>setWorkspace('authoring')}>Biên soạn câu hỏi</button></article>
