@@ -161,3 +161,9 @@ Updated: 2026-10-24
 ## CI attempt-start fixture repair (2026-10-25)
 - Latest deployment readiness API typecheck passed after attemptDurationSeconds fix, but one attempt-start test failed because its mock published exam version omitted durationMinutes.
 - Updated fixture to include durationMinutes=90, matching expected 5400-second expiry; production logic unchanged. Await new CI run; do not deploy before checks pass.
+
+## Admin overview KPIs (2026-10-25)
+- Verified API checks and deployment readiness succeeded for attempt-start test fixture commit a6e4ad1.
+- Added admin-only read-only /overview endpoint aggregating counts of users, subjects, questions, exams and published versions from EXAM_CORE.
+- Admin overview UI fetches those counts and displays responsive pastel metric cards. No invented activity charts or course completion numbers.
+- Awaiting CI for the new changes; not deployed.
