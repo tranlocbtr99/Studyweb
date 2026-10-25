@@ -116,3 +116,9 @@ Updated: 2026-10-24
 - Student exam submission now opens an inline confirmation panel listing unanswered questions and a direct link back to each unanswered item.
 - Submission still uses the existing server-side save-before-submit and idempotent submission flow; no API or database changes.
 - Per user request, extensive testing deferred until feature-complete. No production deployment.
+
+## Student exam usability batch (2026-10-25)
+- Added exam catalog text search, subject filter, selection highlighting and empty-filter state.
+- Added answered progress bar, unanswered-only navigation filter, jump to first unanswered question, and clear-answer control.
+- Changes confined to web UI and styling; existing server-side scoring, autosave, and immutable published versions unchanged.
+- Comprehensive tests deferred until feature-complete as requested; no production deployment.
