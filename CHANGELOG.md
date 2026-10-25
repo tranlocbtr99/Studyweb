@@ -91,3 +91,6 @@
 
 ## 2026-10-25 — Dashboard CI repair
 - Fixed TypeScript variable initialization order for authenticated admin overview fetching.
+
+## 2026-10-25 — Admin distribution visualization
+- Added responsive, labeled bars comparing real subject, exam and question totals from the administrator overview API.
