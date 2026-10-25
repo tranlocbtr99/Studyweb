@@ -54,3 +54,6 @@
 
 ## 2026-10-25 — Single-question exam interface
 - Added one-question-at-a-time student exam UI, question navigation grid, answered indicators and progress count.
+
+## 2026-10-25 — Review flagged questions
+- Student exams now support marking questions for review, restoring flags in the same browser session, and jumping to flagged questions.
