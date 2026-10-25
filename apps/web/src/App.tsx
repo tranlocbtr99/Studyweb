@@ -21,12 +21,15 @@ export default function App(){
   const [password,setPassword]=useState('');
   const [signedIn,setSignedIn]=useState<boolean|null>(null);
   const [catalog,setCatalog]=useState<Array<{versionId:string;title:string;subject:string;questionCount:number}>>([]);
+  const [catalogSearch,setCatalogSearch]=useState('');
+  const [catalogSubject,setCatalogSubject]=useState('');
   const [versionId,setVersionId]=useState('');
   const [exam,setExam]=useState<Exam|null>(null);
   const [attempt,setAttempt]=useState<Attempt|null>(null);
   const [answers,setAnswers]=useState<Record<string,string>>({});
   const [currentQuestion,setCurrentQuestion]=useState(0);
   const [reviewBeforeSubmit,setReviewBeforeSubmit]=useState(false);
+  const [hideAnswered,setHideAnswered]=useState(false);
   const [result,setResult]=useState<Result|null>(null);
   const [message,setMessage]=useState('');
   const [busy,setBusy]=useState(false);
@@ -213,17 +216,22 @@ export default function App(){
     {signedIn&&(!isAdmin||workspace==='exams')&&resumeAvailable&&!attempt&&<section className="panel"><h2>Bài thi đang làm</h2><p>Khôi phục câu trả lời đã lưu trên máy chủ sau khi tải lại trang.</p><button disabled={busy} onClick={resume}>Tiếp tục bài thi</button></section>}
     {signedIn&&(!isAdmin||workspace==='exams')&&<section className="panel"><h1>Phòng thi trực tuyến</h1><p>Nhập mã phiên bản đề thi đã xuất bản. Bạn có thể tải đề thi bằng mã phiên bản đã xuất bản.</p>
       <div className="toolbar"><button disabled={busy} onClick={showCatalog}>Xem danh sách đề thi</button></div>
-      {catalog.map(item=><button key={item.versionId} className="secondary" disabled={busy} onClick={()=>setVersionId(item.versionId)}>{item.subject} — {item.title} ({item.questionCount} câu)</button>)}
+      {catalog.length>0&&<div className="toolbar"><label>Tìm đề thi<input value={catalogSearch} placeholder="Tên đề hoặc môn học" onChange={e=>setCatalogSearch(e.target.value)}/></label><label>Lọc môn học<select value={catalogSubject} onChange={e=>setCatalogSubject(e.target.value)}><option value="">Tất cả môn học</option>{Array.from(new Set(catalog.map(item=>item.subject))).sort().map(name=><option key={name} value={name}>{name}</option>)}</select></label></div>}
+      <div className="exam-catalog-list">{catalog.filter(item=>(!catalogSubject||item.subject===catalogSubject)&&(item.title+' '+item.subject).toLocaleLowerCase('vi').includes(catalogSearch.trim().toLocaleLowerCase('vi'))).map(item=><button key={item.versionId} className={versionId===item.versionId?'':'secondary'} disabled={busy} onClick={()=>setVersionId(item.versionId)}>{item.subject} — {item.title} ({item.questionCount} câu)</button>)}</div>
+      {catalog.length>0&&catalog.filter(item=>(!catalogSubject||item.subject===catalogSubject)&&(item.title+' '+item.subject).toLocaleLowerCase('vi').includes(catalogSearch.trim().toLocaleLowerCase('vi'))).length===0&&<p>Không tìm thấy đề thi phù hợp.</p>}
       <div className="toolbar"><input aria-label="Mã phiên bản đề thi" placeholder="Mã phiên bản đề thi (UUID)" value={versionId} onChange={e=>setVersionId(e.target.value)}/><button disabled={busy||!versionId} onClick={loadExam}>Tải đề thi</button></div>
     </section>}
     {signedIn&&(!isAdmin||workspace==='exams')&&exam&&<section className="panel"><div className="toolbar"><h2>Đề thi · {exam.questions.length} câu</h2>{!attempt&&<button disabled={busy} onClick={start}>Bắt đầu làm bài</button>}</div>
       {attempt&&<div className="status"><span>Thời gian còn lại: <strong>{Math.floor(remaining/60)}:{String(remaining%60).padStart(2,'0')}</strong></span><span>Phiên bản lưu: {attempt.saveVersion} · {({idle:'Chưa thay đổi',pending:'Chờ lưu',saving:'Đang lưu',saved:'Đã lưu',error:'Lưu thất bại'} as const)[saveState]}</span></div>}
       <div className="exam-progress" aria-live="polite"><strong>Đã trả lời {exam.questions.filter(({position})=>Boolean(answers[String(position)])).length}/{exam.questions.length} câu</strong><span>Đang xem câu {Math.min(currentQuestion+1,exam.questions.length)}/{exam.questions.length}</span></div>
+      <div className="exam-progress-track" role="progressbar" aria-label="Tiến độ trả lời" aria-valuemin={0} aria-valuemax={exam.questions.length} aria-valuenow={exam.questions.filter(({position})=>Boolean(answers[String(position)])).length}><div style={{width:(exam.questions.length?exam.questions.filter(({position})=>Boolean(answers[String(position)])).length/exam.questions.length*100:0)+'%'}}/></div>
+      <div className="toolbar"><label className="inline-check"><input type="checkbox" checked={hideAnswered} onChange={e=>setHideAnswered(e.target.checked)}/> Chỉ hiện câu chưa trả lời trong bảng điều hướng</label><button type="button" className="secondary" onClick={()=>{const index=exam.questions.findIndex(({position})=>!answers[String(position)]);if(index>=0)setCurrentQuestion(index);}}>Đến câu chưa trả lời đầu tiên</button></div>
       <nav className="question-navigation" aria-label="Chọn câu hỏi">
-        {exam.questions.map(({position},index)=><button key={position} type="button" aria-current={index===currentQuestion?'step':undefined} aria-label={'Câu '+(position+1)+(answers[String(position)]?' đã trả lời':' chưa trả lời')} className={index===currentQuestion?'question-current':answers[String(position)]?'question-answered':'secondary'} onClick={()=>setCurrentQuestion(index)}>{position+1}</button>)}
+        {exam.questions.map(({position},index)=>(hideAnswered&&answers[String(position)]?null:<button key={position} type="button" aria-current={index===currentQuestion?'step':undefined} aria-label={'Câu '+(position+1)+(answers[String(position)]?' đã trả lời':' chưa trả lời')} className={index===currentQuestion?'question-current':answers[String(position)]?'question-answered':'secondary'} onClick={()=>setCurrentQuestion(index)}>{position+1}</button>))}
       </nav>
       {exam.questions.filter((_,index)=>index===currentQuestion).map(({position,question})=><article className="question" key={position}><h3>Câu {position+1}. {question.body}</h3>
         {question.options.map(option=><label className="option" key={option.label}><input type="radio" name={'q'+position} disabled={!attempt||!!result||remaining===0} checked={answers[String(position)]===option.label} onChange={()=>setAnswers(prev=>({...prev,[String(position)]:option.label}))}/><span>{option.label}. {option.text}</span></label>)}</article>)}
+      {attempt&&!result&&remaining>0&&<div className="toolbar"><button type="button" className="secondary" disabled={!answers[String(exam.questions[currentQuestion]?.position)]} onClick={()=>{const position=exam.questions[currentQuestion]?.position;if(position!==undefined)setAnswers(prev=>{const next={...prev};delete next[String(position)];return next;});}}>Xóa lựa chọn của câu này</button></div>}
       {attempt&&!result&&<ReviewFlags attemptId={attempt.id} positions={exam.questions.map(item=>item.position)} currentPosition={exam.questions[currentQuestion]?.position??0} onNavigate={position=>{const index=exam.questions.findIndex(item=>item.position===position);if(index>=0)setCurrentQuestion(index);}}/>}
       <div className="toolbar question-controls"><button className="secondary" disabled={currentQuestion===0} onClick={()=>setCurrentQuestion(index=>Math.max(0,index-1))}>Câu trước</button><button className="secondary" disabled={currentQuestion>=exam.questions.length-1} onClick={()=>setCurrentQuestion(index=>Math.min(exam.questions.length-1,index+1))}>Câu tiếp</button></div>
       {attempt&&!result&&<div className="toolbar"><button className="secondary" disabled={busy} onClick={recover}>Khôi phục đáp án</button><button disabled={busy||remaining===0} onClick={save}>Lưu bài</button><button className="danger" disabled={busy||remaining===0} onClick={()=>setReviewBeforeSubmit(true)}>Nộp bài</button></div>}
