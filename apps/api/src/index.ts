@@ -10,6 +10,7 @@ import student from './student';
 import registration from './registration';
 import community from './community';
 import imports from './imports';
+import media from './media';
 const app = new Hono<Env>();
 const error = (code: string, message: string, requestId: string) => ({ error: { code, message, requestId } });
 app.use('*', async (c, next) => {
@@ -85,6 +86,7 @@ app.get('/api/v1/exams/:id', async c => {
 app.route('/api/v1/auth/register',registration);
 app.route('/api/v1/admin',admin);
 app.route('/api/v1/admin/imports',imports);
+app.route('/api/v1/media',media);
 app.route('/api/v1/student',student);
 app.route('/api/v1/community',community);
 app.get('/api/v1/me', requireSession, c => c.json({ user: c.get('identity') }));

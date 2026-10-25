@@ -1,5 +1,5 @@
 import {z} from 'zod';
-export const suggestionQuestion=z.object({body:z.string().trim().min(5).max(4000),options:z.array(z.string().trim().min(1).max(1000)).length(4),correctOption:z.enum(['A','B','C','D']).nullable()}).strict();
+export const suggestionQuestion=z.object({body:z.string().trim().min(5).max(4000),options:z.array(z.string().trim().min(1).max(1000)).length(4),correctOption:z.enum(['A','B','C','D']).nullable(),context:z.string().max(16000).optional()}).strict();
 const answer=z.object({index:z.number().int().min(0),correctOption:z.enum(['A','B','C','D']).nullable(),confidence:z.enum(['high','medium','low']),reason:z.string().trim().max(1800)});
 export async function suggestExamAnswers(ai:{run(model:string,input:Record<string,unknown>):Promise<unknown>},questions:z.infer<typeof suggestionQuestion>[],subject=''){
  const pending=questions.map((question,index)=>({...question,index})).filter(q=>q.correctOption===null);

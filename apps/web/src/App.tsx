@@ -1,3 +1,4 @@
+import RichBlocks,{RichText} from './RichContent';import type {RichContent} from '../../../packages/shared/rich-content';
 import { useEffect, useRef, useState } from 'react';
 import './style.css';
 import AdminPanel from './AdminPanel';
@@ -10,7 +11,7 @@ import AdminActivity from './AdminActivity';
 import ResultsDirectory from './ResultsDirectory';
 import {Notifications,Leaderboard} from './Community';
 
-type Question = { body:string; options:Array<{label:string;text:string}> };
+type Question = { richContent?:RichContent;body:string; options:Array<{label:string;text:string}> };
 type Exam = { version:{id:string;examId:string;durationMinutes:number};questions:Array<{position:number;question:Question}> };
 type Attempt = { id:string;expiresAt:number;saveVersion:number };
 type Result = { points:number;maxPoints:number;submittedAt:number };
@@ -339,8 +340,8 @@ export default function App(){
       <nav className="question-navigation" aria-label="Chọn câu hỏi">
         {exam.questions.map(({position},index)=>(hideAnswered&&answers[String(position)]?null:<button key={position} type="button" aria-current={index===currentQuestion?'step':undefined} aria-label={'Câu '+(position+1)+(answers[String(position)]?' đã trả lời':' chưa trả lời')} className={index===currentQuestion?'question-current':answers[String(position)]?'question-answered':'secondary'} onClick={()=>setCurrentQuestion(index)}>{position+1}</button>))}
       </nav>
-      {exam.questions.filter((_,index)=>index===currentQuestion).map(({position,question})=><article className="question" key={position}><h3>Câu {position+1}. {question.body}</h3>
-        {question.options.map(option=><label className="option" key={option.label}><input type="radio" name={'q'+position} disabled={!attempt||!!result||remaining===0||busy} checked={answers[String(position)]===option.label} onChange={()=>setAnswers(prev=>({...prev,[String(position)]:option.label}))}/><span className="option-letter">{option.label}</span><span>{option.text}</span></label>)}</article>)}
+      {exam.questions.filter((_,index)=>index===currentQuestion).map(({position,question})=><article className="question" key={position}><h3>Câu {position+1}. <RichText text={question.body}/></h3><RichBlocks blocks={question.richContent?.body}/>
+        {question.options.map(option=><label className="option" key={option.label}><input type="radio" name={'q'+position} disabled={!attempt||!!result||remaining===0||busy} checked={answers[String(position)]===option.label} onChange={()=>setAnswers(prev=>({...prev,[String(position)]:option.label}))}/><span className="option-letter">{option.label}</span><span><RichText text={option.text}/><RichBlocks blocks={question.richContent?.options?.[option.label as 'A'|'B'|'C'|'D']}/></span></label>)}</article>)}
       {attempt&&!result&&remaining>0&&<div className="toolbar"><button type="button" className="secondary" disabled={busy||!answers[String(exam.questions[currentQuestion]?.position)]} onClick={()=>{const position=exam.questions[currentQuestion]?.position;if(position!==undefined)setAnswers(prev=>{const next={...prev};delete next[String(position)];return next;});}}>Xóa lựa chọn của câu này</button></div>}
       {attempt&&!result&&<ReviewFlags attemptId={attempt.id} positions={exam.questions.map(item=>item.position)} currentPosition={exam.questions[currentQuestion]?.position??0} onNavigate={position=>{const index=exam.questions.findIndex(item=>item.position===position);if(index>=0)setCurrentQuestion(index);}}/>}
       <div className="toolbar question-controls"><button className="secondary" disabled={currentQuestion===0} onClick={()=>setCurrentQuestion(index=>Math.max(0,index-1))}>Câu trước</button><button className="secondary" disabled={currentQuestion>=exam.questions.length-1} onClick={()=>setCurrentQuestion(index=>Math.min(exam.questions.length-1,index+1))}>Câu tiếp</button></div>

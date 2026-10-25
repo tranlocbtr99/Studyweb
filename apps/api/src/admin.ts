@@ -1,3 +1,4 @@
+import {richAssetIds} from '../../../packages/shared/rich-content';import type {RichContent} from '../../../packages/shared/rich-content';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { requireSession, requireRole, sameOrigin } from './auth';
@@ -251,7 +252,7 @@ admin.get('/questions', async c => {
     const rows = result.results as Array<{id:string;topicId:string;subjectId:string;status:string;body:string;correctOption:string;explanation:string}>;
     const items = await Promise.all(rows.map(async row=>{
       const options = await c.env.EXAM_CORE.prepare('SELECT stable_option_id AS label,body AS text FROM question_options WHERE question_id=? ORDER BY stable_option_id').bind(row.id).all();
-      return {...row,options:options.results};
+      const rich=await c.env.EXAM_CORE.prepare('SELECT content_json AS content FROM question_rich_content WHERE question_id=?').bind(row.id).first<{content:string}>();return {...row,options:options.results,...(rich?{richContent:JSON.parse(rich.content)}:{})};
     }));
     return c.json({questions:items,limit,offset});
   } catch {
@@ -437,8 +438,8 @@ admin.get('/exam-versions/:id/items',async c=>{
     if(!version)return c.json({error:{code:'VERSION_NOT_FOUND'}},404);
     const result=await c.env.EXAM_CORE.prepare('SELECT id,position,question_snapshot_json AS snapshot FROM exam_items WHERE exam_version_id=? ORDER BY position LIMIT 1000').bind(versionId).all();
     return c.json({version,items:(result.results as Array<{id:string;position:number;snapshot:string}>).map(row=>{
-      const question=JSON.parse(row.snapshot) as {body:string;options:Array<{label:string;text:string}>};
-      return {id:row.id,position:row.position,body:question.body,options:question.options};
+      const question=JSON.parse(row.snapshot) as {body:string;options:Array<{label:string;text:string}>;richContent?:RichContent};
+      return {id:row.id,position:row.position,body:question.body,options:question.options,richContent:question.richContent};
     })});
   }catch{return c.json({error:{code:'READ_FAILED'}},503);}
 });
@@ -513,13 +514,15 @@ admin.post('/exam-items', sameOrigin, async c => {
     const options = optionRows.results as Array<{label:string;text:string}>;
     if (options.length !== 4 || options.some((o,i)=>o.label !== ['A','B','C','D'][i]))
       return c.json({ error: { code: 'INCOMPLETE_QUESTION' } }, 409);
-    const snapshot = JSON.stringify({ questionId, body: question.body, options });
+    const richRow=await c.env.EXAM_CORE.prepare('SELECT content_json AS content FROM question_rich_content WHERE question_id=?').bind(questionId).first<{content:string}>();const richContent=richRow?JSON.parse(richRow.content) as RichContent:undefined;
+    const snapshot = JSON.stringify({ questionId, body: question.body, options,...(richContent?{richContent}:{}) });
     const privateKey = JSON.stringify({ correctOption: question.correctOption, explanation: question.explanation });
     const id = crypto.randomUUID();
     const writes = await c.env.EXAM_CORE.batch([
       c.env.EXAM_CORE.prepare(
         "INSERT INTO exam_items(id,exam_version_id,position,question_snapshot_json,answer_key_private_json) SELECT ?,id,?,?,? FROM exam_versions WHERE id=? AND status='draft' AND published_at IS NULL"
       ).bind(id,position,snapshot,privateKey,versionId),
+      ...(richAssetIds(richContent).length?[c.env.EXAM_CORE.prepare("INSERT OR IGNORE INTO exam_asset_links(asset_id,version_id) SELECT value,? FROM json_each(?) WHERE EXISTS(SELECT 1 FROM exam_versions WHERE id=? AND status='draft' AND published_at IS NULL)").bind(versionId,JSON.stringify(richAssetIds(richContent)),versionId)]:[]),
       c.env.EXAM_CORE.prepare(
         'INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) SELECT ?,?,?,?,? WHERE EXISTS (SELECT 1 FROM exam_items WHERE id=?)'
       ).bind(crypto.randomUUID(),c.get('identity').id,'exam_item.created',id,Math.floor(Date.now()/1000),id)

@@ -13,7 +13,8 @@ export function validateExamDraft(data:{subjectId:string;title:string;durationMi
   if(q.options.length!==4||q.options.some(o=>!o.trim()||o.trim().length>1000))add('options','điền đủ bốn phương án A–D, mỗi phương án tối đa 1.000 ký tự.');
   if(!q.correctOption||!['A','B','C','D'].includes(q.correctOption))add('answer','chưa chọn đáp án đúng. Chọn đáp án, nhờ AI phân tích hoặc bỏ câu này khỏi đề.');
   if(q.explanation.trim().length>4000)add('explanation','giải thích vượt 4.000 ký tự.');
-  const signature=JSON.stringify([normalizeImportText(q.body),q.options.map(normalizeImportText),q.correctOption,normalizeImportText(q.explanation)]),previous=seen.get(signature);
+  if(q.richContent&&JSON.stringify(q.richContent).length>100000)add('body','nội dung hình/bảng/công thức quá lớn, cần chia nhỏ.');
+  const signature=JSON.stringify([normalizeImportText(q.body),q.options.map(normalizeImportText),q.correctOption,normalizeImportText(q.explanation),q.richContent??null]),previous=seen.get(signature);
   if(previous!==undefined)add('body','trùng nội dung và đáp án với câu '+(previous+1)+'. Hãy bỏ một trong hai câu.');else seen.set(signature,i);
  });
  if(!reviewed)issues.push({field:'review',message:'Tích xác nhận đã kiểm tra nội dung, đáp án và các đề xuất AI.'});

@@ -1,4 +1,5 @@
-export type ImportQuestion={body:string;options:string[];correctOption:'A'|'B'|'C'|'D'|null;explanation:string;sourceNumber?:number;answerSource?:'document'|'ai'|'manual';aiConfidence?:'high'|'medium'|'low';aiNote?:string};
+import type {RichContent} from './rich-content';
+export type ImportQuestion={body:string;options:string[];correctOption:'A'|'B'|'C'|'D'|null;explanation:string;sourceNumber?:number;richContent?:RichContent;answerSource?:'document'|'ai'|'manual';aiConfidence?:'high'|'medium'|'low';aiNote?:string};
 export const normalizeImportText=(text:string)=>text.normalize('NFC').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
 export function parseExamText(source:string):{questions:ImportQuestion[];warnings:string[]}{
  const text=source.replace(/\r\n?/g,'\n').replace(/\u00a0/g,' ').replace(/([^\n])\s+([ABCD])[.)]\s+/g,'$1\n$2. ');

@@ -1,3 +1,4 @@
+import {richSchema} from './rich-schema';
 /**
  * Deterministic content digest for an exam version. Hashes both the student
  * snapshot and private marking data without exposing the private data.
@@ -31,7 +32,7 @@ export async function examContentHash(items: ExamDigestItem[]): Promise<string> 
           !option || option.label !== ['A','B','C','D'][i] ||
           typeof option.text !== 'string' || !option.text.trim()) ||
         !['A','B','C','D'].includes(String(answer.correctOption)) ||
-        'correctOption' in question || 'explanation' in question) {
+        'correctOption' in question || 'explanation' in question || (question.richContent!==undefined&&!richSchema.safeParse(question.richContent).success)) {
       throw new Error('INVALID_ITEM_SNAPSHOT');
     }
   });
@@ -43,3 +44,4 @@ export async function examContentHash(items: ExamDigestItem[]): Promise<string> 
   const bytes = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(payload));
   return Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');
 }
+

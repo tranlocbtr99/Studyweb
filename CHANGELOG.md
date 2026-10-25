@@ -179,3 +179,11 @@
 - Verified successful hosted save of a clearly labeled synthetic unpublished draft. Six targeted tests and frontend build passed; deployment pending.
 
 - Release run 40225695706 succeeded. Browser verified clickable save validation and direct navigation to the missing-answer selector; previously saved draft retained.
+
+
+## 2026-10-26 — Images, tables and mathematical formulas in exams
+- Add structured rich content to question bodies and answer options, protected immutable images, KaTeX rendering and scrollable tables.
+- Add Word image/table/OMML extraction, PDF page previews/cropping, original-document review and explicit visual AI OCR/answer analysis with administrator review.
+- Preserve rich content in bank assembly and published snapshots; enforce image access against actual published references.
+- Add additive migration 0010; use bounded existing D1 storage without enabling R2/billing. Unsupported Word objects and recognition uncertainty are surfaced for review.
+- 139 API tests, frontend/API typechecks, production build and five upgrade checks passed; production release pending.
