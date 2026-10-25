@@ -1,5 +1,5 @@
 {
   "authorization": "PUBLISH_LTSTUDY_20261025",
-  "sourceCommit": "8ed4a759d4a4376037e3ada527273438bb20772c",
-  "scope": "Verify AI and publish subject-based imports and student removal"
+  "sourceCommit": "bfcb705317b2e4a66dde6655eed40c7c2a64677d",
+  "scope": "Improve exam extraction and deploy missing-answer AI suggestions with administrator review"
 }
