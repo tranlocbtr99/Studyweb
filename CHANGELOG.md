@@ -79,3 +79,6 @@
 
 ## 2026-10-25 — Global user directory filtering
 - Added server-backed account status/search/date ordering and total counts for accurate pagination; added refresh and count feedback.
+
+## 2026-10-25 — API deployment-readiness repair
+- Fixed undefined exam attempt duration variable that prevented API TypeScript compilation; duration is derived from the published exam version.
