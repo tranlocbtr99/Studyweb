@@ -106,3 +106,8 @@ Updated: 2026-10-24
 - Replaced the all-at-once exam question display with a single-question interface, previous/next controls, numbered navigation, answered-state indicators and live answered count.
 - Existing attempt autosave, recovery, time limit and server-side submission remain unchanged; answers remain keyed by question position.
 - Feature-first work as requested; comprehensive E2E validation deferred until feature-complete. Production not deployed.
+
+## Review flags for student exams (2026-10-25)
+- Added ReviewFlags component and integrated it into one-question student exam flow.
+- Students can mark/unmark the current question and jump among marked questions. Flags persist in sessionStorage keyed by attempt ID and are separate from graded answers.
+- Full integration testing deferred as requested; no production deployment.
