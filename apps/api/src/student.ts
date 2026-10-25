@@ -69,10 +69,11 @@ student.post('/attempts', sameOrigin, async c => {
     }));
     const now = Math.floor(Date.now() / 1000);
     const attemptId = crypto.randomUUID();
+    const attemptDurationSeconds = version.durationMinutes * 60;
     await c.env.EXAM_RESULTS.batch([
       c.env.EXAM_RESULTS.prepare(
         "INSERT INTO attempts(id,user_id,exam_version_id,exam_content_hash,grading_snapshot_json,started_at,expires_at,status,save_version,answer_snapshot_json,updated_at) VALUES(?,?,?,?,?,?,?,'active',0,'{}',?)"
-      ).bind(attemptId,c.get('identity').id,version.id,digest,JSON.stringify(grading),now,now+version.durationMinutes*60,now),
+      ).bind(attemptId,c.get('identity').id,version.id,digest,JSON.stringify(grading),now,now+attemptDurationSeconds,now),
       c.env.EXAM_RESULTS.prepare(
         'INSERT INTO audit_logs(id,actor_id,action,target_id,created_at) VALUES(?,?,?,?,?)'
       ).bind(crypto.randomUUID(),c.get('identity').id,'attempt.started',attemptId,now)
