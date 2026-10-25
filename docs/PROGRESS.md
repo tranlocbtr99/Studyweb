@@ -384,3 +384,8 @@ Updated: 2026-10-24
 - Renamed visible LTStudy branding to the exact requested “LTMstu” across the welcome introduction, sidebar, student/admin headings and subject pages, plus browser title and description.
 - Existing origin, repository, cookie/session/storage keys and release fingerprint identifiers retain their internal names so current sessions and saved attempts continue working. “Designed by LocTM” stays intact.
 - Frontend production build passed. Production publication and hosted display verification pending.
+
+
+### LTMstu rename deployed
+- Release dde4c4a3010e41d45aa3894197110df652ee798a succeeded in run 40229876033; Web/readiness CI and release checks passed.
+- Hosted browser title is “LTMstu — Học tập và thi trực tuyến”; welcome branding, introduction and accessible page label show LTMstu. LocTM credit remains visible. Saved screenshot verifies the new public branding.

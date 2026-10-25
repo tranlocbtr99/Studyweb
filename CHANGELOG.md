@@ -204,3 +204,5 @@
 ## 2026-10-26 — LTMstu branding
 - Rename the website's displayed name, title and description to LTMstu; preserve existing session/data identifiers and LocTM credit.
 - Frontend build passed; rollout pending.
+
+- Release 40229876033 succeeded; hosted browser verified LTMstu in the title, welcome branding and introduction.
