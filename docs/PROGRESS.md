@@ -122,3 +122,10 @@ Updated: 2026-10-24
 - Added answered progress bar, unanswered-only navigation filter, jump to first unanswered question, and clear-answer control.
 - Changes confined to web UI and styling; existing server-side scoring, autosave, and immutable published versions unchanged.
 - Comprehensive tests deferred until feature-complete as requested; no production deployment.
+
+## Batch feature implementation (2026-10-25)
+- Added additive EXAM_CORE migration 0006 for per-exam-version duration (5–240 minutes, existing 90-minute default).
+- Admin can set duration when creating a draft and update duration before publication; duration appears in saved exam listings.
+- Student catalog and exam header show the configured duration. Server sets attempt expiry using the published version's duration instead of a global constant.
+- Student dashboard now has paginated personal attempt history, statuses, dates and scores using the existing authorized /attempts endpoint.
+- Development remains feature-first at user's request. Migrations not applied to production; integration tests and deployment pending.
