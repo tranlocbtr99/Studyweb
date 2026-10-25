@@ -134,3 +134,7 @@ Updated: 2026-10-24
 - Introduced a responsive desktop sidebar and content frame for authenticated student/admin views, pastel glass styling, consistent navigation, and refreshed exam choice surfaces.
 - Reference image covers six target screens; remaining course lessons, user-management and real analytics screens require separate backed features. No fabricated dashboard metrics.
 - This is a visual foundation, not pixel-perfect completion. Integrated visual and functional testing deferred until feature completion; no production deploy.
+
+## User directory UI refinements (2026-10-25)
+- Added current-page account status filter and registration-date sorting to the admin user directory.
+- Filters operate on the currently loaded page only; global filtering and real-time analytics remain pending. No production deployment or integration verification.
