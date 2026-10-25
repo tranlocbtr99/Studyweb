@@ -214,3 +214,10 @@ Updated: 2026-10-24
 - Added protected archive/restore transitions with transactional audits; restore always produces a draft. UI confirms each transition and refreshes results.
 - Local SQLite transition/conditional-audit checks passed, including missing-row no-audit behavior. New TypeScript/API/Web CI pending; final integration tests deferred.
 - No production deployment or data deletion. Migration 0007 remains required for production learning content.
+
+## Learning editor preview and duplication (2026-10-25)
+- Commit 5bce0d8 passed Web, API and deployment readiness checks.
+- Added plain-text student-content preview with safe HTTPS material links and body character counts.
+- Added copy-to-editor action for existing content; copies are unsaved drafts until explicitly saved, leaving originals untouched.
+- Added dirty-state prompts before replacing/cancelling editor content, changing subject/type, or archiving the edited item; beforeunload warns on browser reload/close where supported.
+- Does not persist local drafts or intercept parent application navigation. Comprehensive integration/visual tests remain deferred; new CI pending and no production deployment.

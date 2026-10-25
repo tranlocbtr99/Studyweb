@@ -109,3 +109,7 @@
 ## 2026-10-25 — Learning content archive and recovery
 - Filter saved lessons/materials by title and publication status across all pages.
 - Archive content with confirmation; restore to draft, with administrator guards and audit records.
+
+## 2026-10-25 — Learning editor workflow
+- Preview lesson/material content and create editable draft copies of saved entries.
+- Show character counts and unsaved-change prompts for editor replacement and browser reload/close.
