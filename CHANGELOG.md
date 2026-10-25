@@ -51,3 +51,6 @@
 
 ## 2026-10-25 — Draft exam item management
 - Administrators can reorder and remove draft exam questions without modifying published versions.
+
+## 2026-10-25 — Single-question exam interface
+- Added one-question-at-a-time student exam UI, question navigation grid, answered indicators and progress count.
