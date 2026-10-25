@@ -73,3 +73,6 @@
 
 ## 2026-10-25 — Student dashboard
 - Added pastel student hero, quick actions, and real exam-subject cards.
+
+## 2026-10-25 — Attempt history cards
+- Styled student attempt history and added current-page status summaries from real data.
