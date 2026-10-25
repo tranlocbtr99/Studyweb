@@ -124,3 +124,6 @@
 - Added student course discovery, administrator activity charts and paginated exam result reporting using database records.
 - Fixed deadline finalization, retry identity/result reconciliation, active-exam navigation and stale directory requests.
 - Added real SQLite integration coverage; 85 API tests, frontend build, typechecks and Worker package dry-run passed. Production deployment pending migration checks.
+
+## 2026-10-25 — Submission control guard
+- Disable answer clearing while final submission/recovery is in progress.

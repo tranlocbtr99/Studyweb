@@ -240,3 +240,7 @@ Updated: 2026-10-24
 - Validation: production frontend build and API strict typecheck passed; all 85 API tests passed, including 9 real SQLite integration cases for learning visibility, permissions, archive/restore audits, expired saves/finalization, receipt replay, results and analytics. Worker dry-run packaged static assets and D1 bindings successfully.
 - Browser QA with isolated synthetic fixtures verified student navigation/course/lesson views, selecting/starting an exam, answering/marking/changing question, pre-submit review, submitted score, administrator overview/users/question table. Desktop viewport 1348px had no document horizontal overflow. Temporary fixtures were removed and production Vite configuration restored before final build. Mobile CSS is implemented; mobile viewport was not exercised in this browser.
 - No production data changes or deployment. Migrations 0006/0007 must be checked/applied before production rollout. Live authentication, production E2E and 100–500 concurrent-user load remain unverified. Persistent lesson-completion progress, discussion, ranking, notifications and account-role/status mutation are not implemented; no such controls are presented as working features.
+
+## Final submission control guard (2026-10-25)
+- Commit 2bee27d passed GitHub Web checks, API checks and deployment readiness.
+- Also disable clear-answer while submission/recovery is busy so the visible answer cannot change during finalization. No API/schema change or production deployment.
