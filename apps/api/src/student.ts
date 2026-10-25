@@ -8,6 +8,16 @@ const student = new Hono<Env>();
 student.use('*', requireSession);
 const versionId = z.string().uuid();
 
+student.get('/learning-content',async c=>{
+ const subject=(c.req.query('subject')??'').trim();
+ if(subject.length<1||subject.length>160)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+ try{
+  const lessons=await c.env.EXAM_CORE.prepare("SELECT l.id,l.title,l.body,l.position FROM learning_lessons l JOIN subjects s ON s.id=l.subject_id WHERE s.title=? AND l.status='published' ORDER BY l.position,l.id LIMIT 100").bind(subject).all();
+  const materials=await c.env.EXAM_CORE.prepare("SELECT m.id,m.title,m.description,m.url FROM learning_materials m JOIN subjects s ON s.id=m.subject_id WHERE s.title=? AND m.status='published' ORDER BY m.created_at DESC,m.id LIMIT 100").bind(subject).all();
+  return c.json({lessons:lessons.results,materials:materials.results});
+ }catch{return c.json({error:{code:'DB_UNAVAILABLE'}},503);}
+});
+
 student.get('/exam-catalog', async c => {
   const limit = Number(c.req.query('limit') ?? 20);
   const offset = Number(c.req.query('offset') ?? 0);
