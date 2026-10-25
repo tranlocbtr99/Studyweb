@@ -24,3 +24,13 @@ button:hover:not(:disabled){filter:brightness(1.04)}button:focus-visible,input:f
 
 .admin-home{padding:30px}.admin-home-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:18px}.admin-home-heading h1{margin:6px 0}.admin-eyebrow{font-weight:750;color:#3569d8;font-size:13px}.admin-live{background:#e3f8ed;color:#138455;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:750;white-space:nowrap}.admin-navigation{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0}.admin-overview-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.admin-overview-grid article{padding:22px;border-radius:18px;background:linear-gradient(145deg,#f5faff,#f3f1ff);border:1px solid #e5edfa;display:flex;flex-direction:column;align-items:flex-start}.admin-overview-grid article h2{font-size:17px;margin:12px 0 0}.admin-overview-grid article p{flex:1}.admin-stat-icon{font-size:27px;background:white;border-radius:14px;padding:10px}.admin-overview-grid button{font-size:13px}
 @media(max-width:780px){.admin-overview-grid{grid-template-columns:1fr}.admin-home-heading{flex-direction:column}.admin-home{padding:18px}}
+
+
+/* One-question exam navigation */
+.exam-progress{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:18px 0 12px;color:#4c587b}
+.question-navigation{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 22px}
+.question-navigation button{min-width:42px;min-height:42px;padding:8px;border-radius:12px}
+.question-navigation .question-current{background:#6158ca;color:#fff;border-color:#6158ca;box-shadow:0 4px 14px #6158ca33}
+.question-navigation .question-answered:not(.question-current){background:#e0f4eb;color:#1f7055;border:1px solid #8ad4b3}
+.question-controls{justify-content:space-between;margin-top:16px}
+@media(max-width:560px){.question-navigation{gap:6px}.question-navigation button{min-width:40px;min-height:40px}.exam-progress{font-size:.9rem}}
