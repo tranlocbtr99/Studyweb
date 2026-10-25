@@ -67,3 +67,6 @@
 ## 2026-10-25 — Batch: exam duration and student history
 - Configurable 5–240-minute exam duration with backward-compatible 90-minute default, enforced by API and displayed in both interfaces.
 - Paginated student attempt history with status and score summaries.
+
+## 2026-10-25 — LTStudy design foundation
+- Responsive sidebar, student/admin navigation and pastel glass layout aligned to the supplied six-screen reference. Remaining screens tracked as work in progress.
