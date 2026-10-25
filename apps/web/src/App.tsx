@@ -18,6 +18,7 @@ export default function App(){
   const [accessMode,setAccessMode]=useState<'student'|'admin'|'register'>('student');
   const [isAdmin,setIsAdmin]=useState(false);
   const [workspace,setWorkspace]=useState<'overview'|'authoring'|'exams'|'users'>('overview');
+  const [signedIn,setSignedIn]=useState<boolean|null>(null);
   const [adminOverview,setAdminOverview]=useState<{users:number;subjects:number;questions:number;exams:number;publishedVersions:number}|null>(null);
   const [overviewError,setOverviewError]=useState('');
   useEffect(()=>{
@@ -32,7 +33,6 @@ export default function App(){
 
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
-  const [signedIn,setSignedIn]=useState<boolean|null>(null);
   const [history,setHistory]=useState<Array<{id:string;versionId:string;startedAt:number;status:string;submittedAt:number|null;points:number|null;maxPoints:number|null}>>([]);
   const [historyOffset,setHistoryOffset]=useState(0);
   const [historyOpen,setHistoryOpen]=useState(false);
