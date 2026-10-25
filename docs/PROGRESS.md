@@ -301,3 +301,12 @@ Updated: 2026-10-24
 - Verified actual Workers AI extraction and document conversion on an isolated synthetic Worker; both current and abandoned probe Workers were removed. Migration 0009 applied without decreasing existing row counts or changing published exam content.
 - Live frontend/API fingerprints and assets matched the release. Real registration/login, student reads, admin isolation, CSRF and logout passed. Synthetic QA account was disabled and sessions revoked afterward.
 - All 115 API tests and five upgrade/native Wrangler checks passed again in release. Actual DOCX extraction preserved Vietnamese question/option/answer text in a synthetic fixture. Complete browser upload/admin-authoring E2E remains unverified because browser URL policy blocked preview access; owner credentials were not used. Existing concurrent-user load acceptance remains outstanding.
+
+
+## Live administrator browser acceptance (2026-10-26, Asia/Ho_Chi_Minh)
+- Independently confirmed release run 40209987458 completed successfully, including actual AI/document conversion, additive D1 upgrade, publication and authenticated live checks.
+- Owner authenticated through the secure browser credential flow; administrator navigation and live directory loaded successfully.
+- Uploaded synthetic Vietnamese DOCX and text PDF through the actual hosted file chooser. Both produced the expected question, all four Vietnamese options and explicit answer B with AI success status. Selecting existing subject Toán and acknowledging review enabled the draft/bank save action.
+- Exercised recoverable removal on the existing synthetic release smoke-test student only: directory count 5 to 4, removed-directory count 1; restored it and confirmed count 5 and its original disabled status. No real student account was removed and no password was reset.
+- Re-ran focused API/integration/parser checks: 39/39 passed. These cover subject-name creation, atomic draft/bank import, per-subject deduplication, missing-answer rejection and removal protections.
+- Synthetic uploaded questions were not saved or published to production. Thus the hosted save/publication click path remains outside this browser verification; persistence has automated real-SQL coverage. Scanned-PDF/OCR, long real-world files and 100–500 concurrent candidates are not certified by these checks.

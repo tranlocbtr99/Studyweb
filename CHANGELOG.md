@@ -156,3 +156,9 @@
 - Simplified subject creation to a name and added a unified manual or Word/PDF exam studio with answer review and separate publication.
 - Added Workers AI document/question extraction, source grounding, explicit-answer checks, subject-filtered question banks, transactional imports and duplicate-question reuse.
 - Added additive migration 0009, import/removal integration coverage and a synthetic live AI binding probe.
+
+
+## 2026-10-26 — Hosted administrator acceptance
+- Verified live secure administrator sign-in and AI extraction of Vietnamese DOCX and text PDF through browser uploads.
+- Verified recoverable synthetic-student removal/restoration and original disabled-state preservation on the hosted UI.
+- Passed 39 focused parser/API/integration checks. No application code or production exam content changed; uploaded QA content was not saved/published.
