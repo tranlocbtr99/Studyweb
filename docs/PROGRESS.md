@@ -318,3 +318,9 @@ Updated: 2026-10-24
 - Improved extraction recovery: parser-grounded questions omitted by AI are retained, reordered options cannot inherit source keys, Markdown headings and simple Markdown answer-key tables are parsed. Full-document keys are applied before solving, including keys in a later chunk. AI failure preserves extracted/partially solved content.
 - Validation before rollout: API typecheck, 126 tests and frontend production build passed. Temporary no-database Workers AI probe now additionally verifies a synthetic missing-answer arithmetic question. No schema migration or published-exam rewrite required.
 - Pending production release and live missing-answer browser acceptance. Confidence is not calibrated probability; no external factual/source verification is claimed.
+
+
+### Hosted missing-answer release and browser acceptance
+- Source bfcb705317b2e4a66dde6655eed40c7c2a64677d passed API/Web/deployment-readiness CI. Release 064e8968dd8811cc2d181214ebc1f1aa9edc7f5a succeeded in run 40224556493, including actual Workers AI missing-answer solving, database-preservation checks, publication and authenticated live verification.
+- In the existing securely authenticated owner-admin browser, uploaded a synthetic Vietnamese DOCX containing three cases. Explicit source answer B was preserved. A missing arithmetic answer was proposed as A with concise Vietnamese rationale, visible AI provenance and administrator-review label. A question referencing an absent chart was left unanswered with a missing-chart explanation.
+- Review confirmation remained unchecked and save stayed disabled while the chart question lacked an answer. No synthetic exam/question was saved or published to production. Production capacity/OCR accuracy on arbitrary real-world documents and factual correctness across all subjects are not certified by this small acceptance fixture.

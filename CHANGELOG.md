@@ -169,3 +169,5 @@
 - Preserve explicit source keys and abstain when context is insufficient or confidence low; never publish automatically.
 - Recover parser-grounded questions omitted by extraction AI, protect option ordering and read Markdown headings/key tables.
 - API typecheck, frontend build and 126 tests passed; production rollout pending.
+
+- Deployed successfully in release run 40224556493. Hosted browser acceptance confirmed preservation of explicit keys, inference with rationale for missing keys and abstention when a chart was absent.
