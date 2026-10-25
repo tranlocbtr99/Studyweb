@@ -177,3 +177,9 @@ Updated: 2026-10-24
 - Web checks and deployment readiness succeeded after the admin dashboard declaration-order repair (commit 35e6890).
 - Added responsive distribution bars for subjects, exams, and questions using real counts from the protected overview API; values and scales are labeled and no fabricated analytics are shown.
 - No production deployment. New changes await CI. Subject breakdown API expansion remains pending.
+
+## Student subject detail (2026-10-25)
+- Admin distribution visualization passed Web checks and deployment readiness at commit 98b9248.
+- Student course cards now open a subject detail panel with four tabs: exams, lessons, materials, discussion.
+- Exam tab lists real published catalog entries and lets students select a version for the existing exam flow. Other tabs explicitly state unavailable content; no fabricated lesson progress or discussions.
+- Responsive subject detail styles added. New changes await CI; no production deployment.
