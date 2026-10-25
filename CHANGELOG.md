@@ -97,3 +97,7 @@
 
 ## 2026-10-25 — Subject detail repair and search
 - Corrected the onClose callback type in SubjectDetail and added a search field for published exams by title.
+
+## 2026-10-25 — Learning reader
+- Search published lessons/materials with result counts; expand individual lessons for reading.
+- Retry failed content loads and cancel obsolete requests on navigation.

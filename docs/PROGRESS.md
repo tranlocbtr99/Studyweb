@@ -194,3 +194,9 @@ Updated: 2026-10-24
 - Added authenticated published-content reads and administrator content creation.
 - Added student lesson/material views and administrator creation form.
 - Apply migration 0007 before deploying API. CI and deployment pending.
+
+## Learning reader usability (2026-10-25)
+- Added title/body search for published lessons and title/description search for materials, with matching counts and explicit empty results.
+- Lessons expand individually using native keyboard-accessible details; preserve line breaks and wrap long content on narrow screens.
+- Added retry for failed content requests, abort on navigation, and cleared previous subject content/search when switching subjects.
+- No schema changes. Comprehensive integration/visual verification deferred as requested; CI pending and production not deployed. Migration 0007 remains a prerequisite for learning API deployment.
