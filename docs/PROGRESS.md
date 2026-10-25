@@ -365,3 +365,10 @@ Updated: 2026-10-24
 - Actual visual answer analysis returned proposal A while retaining the original explicit key. This confirms runtime connectivity and reviewed workflow, not general model correctness or calibrated confidence.
 - Hosted PDF page preview and percentage crop succeeded. Actual vision OCR read the cropped chart's 2025/2026 labels and explicitly noted that the numerical axis, units and question/options were not visible; the OCR text remained editable for administrator review. The PDF QA import was not saved.
 - Boundaries: source-page/region mapping requires administrator review; unsupported Word OLE/vector/complex equation cases are flagged, not certified lossless; PDF previews cover the first 30 pages; image storage is bounded D1 (R2 not provisioned). Full live student exam-taking with rich media, arbitrary-document OCR quality and 100–500 concurrent rich-media candidates remain unverified.
+
+
+## Refined welcome and sign-in screen (2026-10-26)
+- Replaced the plain signed-out panel with a responsive split welcome/credential layout, restrained pastel/glass styling, LTStudy branding and a lightweight decorative CSS book motif. Decorative elements are hidden from assistive technology.
+- Added a Vietnamese introduction, the headline “Học hôm nay. Tự tin ngày mai.”, a study/exam encouragement and the exact “Designed by LocTM” credit. No fabricated counts, social sign-in or unsupported password-reset flows are shown.
+- Student login, administrator login and registration retain their original handlers, field labels, password types and autocomplete attributes. Signed-out errors now appear inside the form card. The unrelated global search bar is hidden on the welcome screen, and an accessible loading status appears while restoring a session.
+- Styling is scoped to signed-out UI, includes narrow-screen layout, keyboard focus and reduced-motion handling. Frontend production build passed. Hosted visual acceptance/deployment pending; no API/schema/credential changes.

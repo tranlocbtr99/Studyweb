@@ -191,3 +191,9 @@
 - Initial rich release succeeded, including actual vision capability and hosted Word image/table/fraction extraction. Repair question merging so shortened AI extraction and full table-bearing source content become one question. Regression and 51 focused tests passed.
 
 - Final repair release 40228404734 succeeded. Hosted acceptance verified single-question Word extraction, chart/table/native-fraction review, protected-image save/reopen/zoom, formula in answer A, PDF cropping and actual visual OCR. Synthetic draft remains unpublished; R2 remains unconnected.
+
+
+## 2026-10-26 — Refined LTStudy welcome screen
+- Add a pastel/glass introduction and sign-in layout, study encouragement and “Designed by LocTM” credit.
+- Keep existing student/admin/registration flows, move authentication feedback into the form and add responsive/keyboard/reduced-motion styling.
+- Frontend production build passed; hosted visual verification pending.

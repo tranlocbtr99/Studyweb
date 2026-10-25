@@ -236,7 +236,7 @@ export default function App(){
     if(!attempt||result||busy||remaining>0||attempt.expiresAt>Math.floor(Date.now()/1000)||expiryHandled.current===attempt.id)return;
     expiryHandled.current=attempt.id;void submit(true);
   },[attempt?.id,remaining,result,busy]);
-  return <main className={signedIn?'shell study-layout':'shell'}>
+  return <main className={signedIn?'shell study-layout':'shell auth-shell'}>
     {signedIn&&<aside className="study-sidebar" aria-label="Điều hướng chính">
       <div className="study-logo"><Icon name="cap"/><strong>LTStudy</strong></div>
       <div className="study-role">{isAdmin?'Không gian quản trị':'Không gian học viên'}</div>
@@ -247,9 +247,13 @@ export default function App(){
       </nav>
       <div className="study-sidebar-footer"><span className="study-avatar">LT</span><span>{isAdmin?'Quản trị viên':'Học viên'}</span></div>
     </aside>}
-    <div className="study-main">
+    <div className="study-main">{signedIn===null&&<div className="auth-loading" role="status"><Icon name="cap"/><span>Đang mở không gian học tập…</span></div>}
     <header className="study-topbar"><form className="global-search" onSubmit={event=>{event.preventDefault();if(isAdmin){setWorkspace('authoring')}else{navigateStudent('exams');setCatalogSearch(globalSearch)}}}><Icon name="search"/><input aria-label="Tìm kiếm" value={globalSearch} onChange={event=>setGlobalSearch(event.target.value)} placeholder={isAdmin?'Tìm câu hỏi, nội dung…':'Tìm khóa học, đề thi, tài liệu…'}/><button type="submit" className="icon-button" aria-label="Tìm kiếm"><Icon name="arrow"/></button></form><span className="topbar-caption">{isAdmin?'Không gian quản trị':'Không gian học tập'}</span><span className="study-avatar" aria-label={isAdmin?'Quản trị viên':'Học viên'}>{isAdmin?'QT':'HV'}</span></header>
-    {signedIn===false&&<section className="panel"><h1>Chào mừng đến Studyweb</h1><p>Chọn cách truy cập phù hợp với bạn.</p>
+    {signedIn===false&&<section className="auth-screen" aria-label="Chào mừng đến LTStudy">
+      <div className="auth-intro"><div className="auth-brand"><span className="auth-brand-mark"><Icon name="cap"/></span><strong>LTStudy<span>LEARN. PRACTICE. GROW.</span></strong></div><p className="auth-eyebrow">MỖI NGÀY MỘT BƯỚC TIẾN</p><h1>Học hôm nay.<br/><em>Tự tin ngày mai.</em></h1><p className="auth-description">Một không gian để ôn tập kiến thức, luyện đề và theo dõi hành trình học tập. LTStudy đồng hành cùng bạn, từ những bài học nhỏ đến những kỳ thi quan trọng.</p>
+      <div className="auth-art" aria-hidden="true"><div className="auth-art-orbit"/><div className="auth-art-sheet back"/><div className="auth-art-sheet front"><span className="auth-art-book"><Icon name="book"/></span><span className="auth-art-check">✓</span><strong>Chậm mà chắc.<br/>Học để hiểu sâu.</strong><div className="auth-art-lines"><i/><i/><i/></div></div><span className="auth-art-tag"><Icon name="cap"/> Sẵn sàng cho kỳ thi</span></div>
+      <div className="auth-features"><span><Icon name="book"/> Ôn tập theo môn</span><span><Icon name="file"/> Luyện đề chủ động</span><span><Icon name="chart"/> Theo dõi tiến bộ</span></div></div>
+      <div className="auth-form-card"><span className="auth-card-eyebrow">KHÔNG GIAN CỦA BẠN</span><h2 className="auth-welcome">Rất vui được gặp bạn.</h2><p className="auth-form-description">Chọn cách truy cập phù hợp để bắt đầu hành trình học tập.</p>
       <nav className="access-modes" aria-label="Lựa chọn truy cập">
         <button type="button" className={accessMode==='student'?'':'secondary'} aria-pressed={accessMode==='student'} onClick={()=>{setAccessMode('student');setMessage('');}}>Đăng nhập học viên</button>
         <button type="button" className={accessMode==='admin'?'':'secondary'} aria-pressed={accessMode==='admin'} onClick={()=>{setAccessMode('admin');setMessage('');}}>Đăng nhập quản trị</button>
@@ -262,6 +266,8 @@ export default function App(){
         <label>Mật khẩu<input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)}/></label>
         <button disabled={busy} type="submit">Đăng nhập</button>
       </form></>}
+      {message&&<p role="alert" className="notice auth-feedback">{message}</p>}<p className="auth-form-note"><Icon name="cap"/> Mỗi lần ôn tập là một lần tiến gần hơn mục tiêu.</p></div>
+      <footer className="auth-footer"><p>Chúc các bạn <strong>học tốt, thi tốt</strong> và luôn tự tin trên hành trình của mình.</p><span>Designed by <strong>LocTM</strong><span className="auth-footer-dot">✦</span></span></footer>
     </section>}
     {signedIn&&<div className="toolbar account"><span>Đã đăng nhập</span><button className="secondary" disabled={busy} onClick={logout}>Đăng xuất</button></div>}
     {signedIn&&!isAdmin&&(studentPage==='home'||studentPage==='courses')&&!detailSubject&&<section className="panel student-home" aria-label="Trang chủ học viên">
@@ -349,7 +355,7 @@ export default function App(){
       {attempt&&!result&&reviewBeforeSubmit&&<section className="submission-review" aria-label="Kiểm tra trước khi nộp bài"><h3>Xác nhận nộp bài</h3><p>Đã trả lời {exam.questions.filter(({position})=>Boolean(answers[String(position)])).length}/{exam.questions.length} câu. Sau khi nộp, bạn không thể sửa đáp án.</p><strong>Câu chưa trả lời</strong><div className="question-navigation">{exam.questions.filter(({position})=>!answers[String(position)]).map(({position})=><button type="button" className="secondary" key={position} onClick={()=>{const index=exam.questions.findIndex(item=>item.position===position);if(index>=0)setCurrentQuestion(index);setReviewBeforeSubmit(false);}}>Câu {position+1}</button>)}{exam.questions.every(({position})=>Boolean(answers[String(position)]))&&<span>Không có câu bỏ trống.</span>}</div><div className="toolbar"><button type="button" className="secondary" onClick={()=>setReviewBeforeSubmit(false)}>Quay lại bài thi</button><button type="button" className="danger" disabled={busy} onClick={()=>void submit(remaining===0)}>Xác nhận nộp bài</button></div></section>}
     </section>}
     {signedIn&&(!isAdmin&&studentPage==='exams')&&result&&<section className="panel"><h2>Kết quả bài thi</h2><p className="score">{result.points} / {result.maxPoints}</p><p>Đã nộp: {new Date(result.submittedAt*1000).toLocaleString('vi-VN')}</p><button type="button" onClick={()=>{setExam(null);setAttempt(null);latestAttempt.current=null;setAnswers({});setResult(null);setStudentPage('exams')}}>Chọn đề thi khác</button></section>}
-    {message&&<p role="alert" className="notice">{message}</p>}
+    {message&&signedIn!==false&&<p role="alert" className="notice">{message}</p>}
     </div>
   </main>;
 }
