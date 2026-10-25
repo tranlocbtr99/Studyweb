@@ -3,6 +3,7 @@ import './style.css';
 import AdminPanel from './AdminPanel';
 import ReviewFlags from './ReviewFlags';
 import UserDirectory from './UserDirectory';
+import SubjectDetail from './SubjectDetail';
 
 type Question = { body:string; options:Array<{label:string;text:string}> };
 type Exam = { version:{id:string;examId:string;durationMinutes:number};questions:Array<{position:number;question:Question}> };
@@ -39,6 +40,7 @@ export default function App(){
   const [catalog,setCatalog]=useState<Array<{versionId:string;title:string;subject:string;questionCount:number;durationMinutes:number}>>([]);
   const [catalogSearch,setCatalogSearch]=useState('');
   const [catalogSubject,setCatalogSubject]=useState('');
+  const [detailSubject,setDetailSubject]=useState<string|null>(null);
   const [versionId,setVersionId]=useState('');
   const [exam,setExam]=useState<Exam|null>(null);
   const [attempt,setAttempt]=useState<Attempt|null>(null);
@@ -237,8 +239,9 @@ export default function App(){
         <button type="button" className="student-shortcut mint" disabled={busy||!resumeAvailable} onClick={()=>void resume()}><span className="shortcut-symbol">↻</span><strong>Tiếp tục bài thi</strong><small>{resumeAvailable?'Khôi phục bài thi đang làm':'Chưa có bài thi cần khôi phục'}</small></button>
       </div>
       <div className="student-section-title"><h2>Môn học có đề thi</h2><button type="button" className="secondary" disabled={busy} onClick={()=>void showCatalog()}>Làm mới danh sách</button></div>
-      {catalog.length===0?<p className="student-empty">Chọn “Đề thi” để tải danh sách môn học và đề thi hiện có.</p>:<div className="student-course-grid">{Array.from(new Set(catalog.map(item=>item.subject))).map((subject,index)=>{const items=catalog.filter(item=>item.subject===subject);return <article className="student-course" key={subject}><div className={'student-course-art art-'+index%4} aria-hidden="true">{['⚖','📘','📈','🎓'][index%4]}</div><div className="student-course-body"><h3>{subject}</h3><p>{items.length} đề thi đã xuất bản</p><button type="button" className="secondary" onClick={()=>{setCatalogSubject(subject);document.getElementById('student-exam-room')?.scrollIntoView({behavior:'smooth'});}}>Xem đề thi</button></div></article>;})}</div>}
+      {catalog.length===0?<p className="student-empty">Chọn “Đề thi” để tải danh sách môn học và đề thi hiện có.</p>:<div className="student-course-grid">{Array.from(new Set(catalog.map(item=>item.subject))).map((subject,index)=>{const items=catalog.filter(item=>item.subject===subject);return <article className="student-course" key={subject}><div className={'student-course-art art-'+index%4} aria-hidden="true">{['⚖','📘','📈','🎓'][index%4]}</div><div className="student-course-body"><h3>{subject}</h3><p>{items.length} đề thi đã xuất bản</p><button type="button" className="secondary" onClick={()=>{setDetailSubject(subject);}}>Xem môn học</button></div></article>;})}</div>}
     </section>}
+    {signedIn&&!isAdmin&&detailSubject&&<SubjectDetail subject={detailSubject} exams={catalog.filter(item=>item.subject===detailSubject)} onClose={()=>setDetailSubject(null)} onSelectExam={id=>{setVersionId(id);setCatalogSubject(detailSubject);setDetailSubject(null);document.getElementById('student-exam-room')?.scrollIntoView({behavior:'smooth'});}}/>}
     {signedIn&&!isAdmin&&<section className="panel student-insights" aria-label="Thống kê kết quả học tập">
       <div className="student-section-title"><div><h2>Kết quả học tập của tôi</h2><p>Tổng quan các lượt thi trong trang lịch sử đã tải.</p></div><button type="button" className="secondary" disabled={busy} onClick={()=>void loadHistory(0)}>Cập nhật kết quả</button></div>
       {!historyOpen?<p className="student-empty">Chọn “Cập nhật kết quả” để xem thống kê từ lịch sử làm bài của bạn.</p>:<div className="student-insights-grid">
