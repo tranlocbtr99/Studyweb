@@ -88,3 +88,6 @@
 
 ## 2026-10-25 — Admin overview KPIs
 - Added real read-only administrator metrics endpoint and responsive overview cards for accounts, subjects, questions, exams and published versions.
+
+## 2026-10-25 — Dashboard CI repair
+- Fixed TypeScript variable initialization order for authenticated admin overview fetching.
