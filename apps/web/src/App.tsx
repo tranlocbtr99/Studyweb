@@ -190,8 +190,17 @@ export default function App(){
       setReviewBeforeSubmit(false);setResult(data.result);sessionStorage.removeItem('studyweb_active_attempt');setResumeAvailable(false);
     }catch(e){setMessage(String(e)+' — Bài chưa được xác nhận nộp. Kiểm tra trạng thái lưu và kết quả trước khi thử lại.');}finally{setBusy(false);}
   }
-  return <main className="shell">
-    <header><span className="brand">Studyweb</span><span className="subtle">Không gian ôn tập và thi trực tuyến</span></header>
+  return <main className={signedIn?'shell study-layout':'shell'}>
+    {signedIn&&<aside className="study-sidebar" aria-label="Điều hướng chính">
+      <div className="study-logo"><span aria-hidden="true">🎓</span><strong>LTStudy</strong></div>
+      <div className="study-role">{isAdmin?'Không gian quản trị':'Không gian học viên'}</div>
+      <nav className="study-menu" aria-label="Danh mục">
+        {isAdmin?<><button type="button" className={workspace==='overview'?'selected':''} onClick={()=>setWorkspace('overview')}>▦ <span>Tổng quan</span></button><button type="button" className={workspace==='authoring'?'selected':''} onClick={()=>setWorkspace('authoring')}>▤ <span>Ngân hàng câu hỏi</span></button><button type="button" className={workspace==='exams'?'selected':''} onClick={()=>setWorkspace('exams')}>▣ <span>Quản lý đề thi</span></button></>:<><button type="button" onClick={()=>void showCatalog()}>⌂ <span>Trang chủ</span></button><button type="button" onClick={()=>void showCatalog()}>▣ <span>Đề thi</span></button><button type="button" onClick={()=>{const element=document.getElementById('student-history');element?.scrollIntoView({behavior:'smooth'});}}>◷ <span>Lịch sử</span></button></>}
+      </nav>
+      <div className="study-sidebar-footer"><span className="study-avatar">LT</span><span>{isAdmin?'Quản trị viên':'Học viên'}</span></div>
+    </aside>}
+    <div className="study-main">
+    <header className="study-topbar"><span className="brand">{signedIn?'LTStudy':'Studyweb'}</span><span className="subtle">Không gian ôn tập và thi trực tuyến</span></header>
     {signedIn===false&&<section className="panel"><h1>Chào mừng đến Studyweb</h1><p>Chọn cách truy cập phù hợp với bạn.</p>
       <nav className="access-modes" aria-label="Lựa chọn truy cập">
         <button type="button" className={accessMode==='student'?'':'secondary'} aria-pressed={accessMode==='student'} onClick={()=>{setAccessMode('student');setMessage('');}}>Đăng nhập học viên</button>
@@ -250,5 +259,6 @@ export default function App(){
     </section>}
     {signedIn&&(!isAdmin||workspace==='exams')&&result&&<section className="panel"><h2>Kết quả bài thi</h2><p className="score">{result.points} / {result.maxPoints}</p><p>Đã nộp: {new Date(result.submittedAt*1000).toLocaleString('vi-VN')}</p></section>}
     {message&&<p role="alert" className="notice">{message}</p>}
+    </div>
   </main>;
 }
