@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 type PublishedExam={versionId:string;title:string;subject:string;questionCount:number;durationMinutes:number};
-type Props={subject:string;exams:PublishedExam[];onClose:()=>;onSelectExam:(versionId:string)=>void};
+type Props={subject:string;exams:PublishedExam[];onClose:()=>void;onSelectExam:(versionId:string)=>void};
 type Tab='exams'|'lessons'|'materials'|'discussion';
 
 export default function SubjectDetail({subject,exams,onClose,onSelectExam}:Props){
