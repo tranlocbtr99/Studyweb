@@ -189,3 +189,5 @@
 - 139 API tests, frontend/API typechecks, production build and five upgrade checks passed; production release pending.
 
 - Initial rich release succeeded, including actual vision capability and hosted Word image/table/fraction extraction. Repair question merging so shortened AI extraction and full table-bearing source content become one question. Regression and 51 focused tests passed.
+
+- Final repair release 40228404734 succeeded. Hosted acceptance verified single-question Word extraction, chart/table/native-fraction review, protected-image save/reopen/zoom, formula in answer A, PDF cropping and actual visual OCR. Synthetic draft remains unpublished; R2 remains unconnected.

@@ -356,3 +356,12 @@ Updated: 2026-10-24
 - Hosted Word acceptance extracted the embedded raster chart, native fraction as LaTeX and structured table. It exposed an extraction merge defect: an AI-shortened question plus the parser's full table-bearing question could both be emitted.
 - Canonicalize a uniquely matched AI question against the full source body/options before adding omitted parser questions. Preserve full table/formula context and the explicit source answer key. A regression reproducing the shortened-body/full-table case passes; 51 focused AI/import/media tests and API typecheck passed after repair.
 - Follow-up repair release and full hosted save/preview acceptance pending. No existing published question or credential was changed.
+
+
+### Final rich-content acceptance (2026-10-26)
+- Follow-up release b68e31f0566445e8cb0a814c81563f9fcb75996e succeeded in run 40228404734; API/readiness CI passed and the release reran frontend/API/upgrade/live checks. Test total is now 140.
+- Re-uploaded the same synthetic Word after repair: exactly one question, complete table/formula text and explicit source key A retained, with embedded chart and structured table available for reviewed attachment.
+- Administrator attached the chart/table to the question, added a LaTeX fraction to option A, saved one clearly labeled [KIỂM THỬ] unpublished draft, and reopened it from the persisted draft directory. Image loaded from the protected asset endpoint at 600×240; zoom, table rows and question/option formulas rendered successfully. No synthetic exam was published to existing students.
+- Actual visual answer analysis returned proposal A while retaining the original explicit key. This confirms runtime connectivity and reviewed workflow, not general model correctness or calibrated confidence.
+- Hosted PDF page preview and percentage crop succeeded. Actual vision OCR read the cropped chart's 2025/2026 labels and explicitly noted that the numerical axis, units and question/options were not visible; the OCR text remained editable for administrator review. The PDF QA import was not saved.
+- Boundaries: source-page/region mapping requires administrator review; unsupported Word OLE/vector/complex equation cases are flagged, not certified lossless; PDF previews cover the first 30 pages; image storage is bounded D1 (R2 not provisioned). Full live student exam-taking with rich media, arbitrary-document OCR quality and 100–500 concurrent rich-media candidates remain unverified.
