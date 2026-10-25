@@ -227,6 +227,14 @@ export default function App(){
       <div className="student-section-title"><h2>Môn học có đề thi</h2><button type="button" className="secondary" disabled={busy} onClick={()=>void showCatalog()}>Làm mới danh sách</button></div>
       {catalog.length===0?<p className="student-empty">Chọn “Đề thi” để tải danh sách môn học và đề thi hiện có.</p>:<div className="student-course-grid">{Array.from(new Set(catalog.map(item=>item.subject))).map((subject,index)=>{const items=catalog.filter(item=>item.subject===subject);return <article className="student-course" key={subject}><div className={'student-course-art art-'+index%4} aria-hidden="true">{['⚖','📘','📈','🎓'][index%4]}</div><div className="student-course-body"><h3>{subject}</h3><p>{items.length} đề thi đã xuất bản</p><button type="button" className="secondary" onClick={()=>{setCatalogSubject(subject);document.getElementById('student-exam-room')?.scrollIntoView({behavior:'smooth'});}}>Xem đề thi</button></div></article>;})}</div>}
     </section>}
+    {signedIn&&!isAdmin&&<section className="panel student-insights" aria-label="Thống kê kết quả học tập">
+      <div className="student-section-title"><div><h2>Kết quả học tập của tôi</h2><p>Tổng quan các lượt thi trong trang lịch sử đã tải.</p></div><button type="button" className="secondary" disabled={busy} onClick={()=>void loadHistory(0)}>Cập nhật kết quả</button></div>
+      {!historyOpen?<p className="student-empty">Chọn “Cập nhật kết quả” để xem thống kê từ lịch sử làm bài của bạn.</p>:<div className="student-insights-grid">
+        <article><span>Lượt thi đã tải</span><strong>{history.length}</strong><small>{history.length===20?'Đang hiển thị 20 lượt gần nhất':'Lượt thi trong trang lịch sử hiện tại'}</small></article>
+        <article><span>Đã nộp bài</span><strong>{history.filter(item=>item.status==='submitted').length}</strong><small>Trong trang lịch sử hiện tại</small></article>
+        <article><span>Điểm trung bình</span><strong>{(()=>{const scored=history.filter(item=>item.points!==null&&item.maxPoints!==null&&item.maxPoints>0);return scored.length?(scored.reduce((sum,item)=>sum+(item.points??0)/(item.maxPoints??1)*100,0)/scored.length).toFixed(1)+'%':'—';})()}</strong><small>Chỉ tính các bài đã có điểm</small></article>
+      </div>}
+    </section>}
     {signedIn&&isAdmin&&<section className="panel admin-home">
       <div className="admin-home-heading"><div><span className="admin-eyebrow">LTStudy · Quản trị</span><h1>Không gian quản trị</h1><p>Quản lý nội dung học tập và tổ chức thi trực tuyến.</p></div><span className="admin-live">Hệ thống trực tuyến</span></div>
       <nav className="admin-navigation" aria-label="Điều hướng quản trị">
