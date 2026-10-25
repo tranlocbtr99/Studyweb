@@ -96,3 +96,8 @@ Updated: 2026-10-24
 - Added admin-only GET /api/v1/admin/exam-versions/:id/items to retrieve ordered public question snapshots without private answer keys.
 - Authoring UI can display and refresh saved draft questions after reopening an exam. Removal/reordering remain pending.
 - Per user preference, focus upcoming turns on features; consolidate extensive integration tests near release. Existing CI still runs automatically. No production deploy.
+
+## Draft exam item management (2026-10-25)
+- Added admin-only DELETE /exam-items/:id and PATCH /exam-items/:id/move for draft versions, with audit logs and transactional position updates.
+- Admin UI offers move up/down and remove actions with confirmation; refreshes ordered items from D1.
+- Feature-first development as requested. CI runs automatically; comprehensive integration testing deferred until feature-complete. Production not deployed.
