@@ -189,7 +189,7 @@ admin.get('/exams',async c=>{
   const parsed=listExamsSchema.safeParse({subjectId:c.req.query('subjectId')});
   if(!parsed.success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
   try{
-    const result=await c.env.EXAM_CORE.prepare("SELECT e.id,e.subject_id AS subjectId,e.title,v.id AS versionId,v.version_number AS versionNumber,v.status,(SELECT COUNT(*) FROM exam_items i WHERE i.exam_version_id=v.id) AS questionCount FROM exams e LEFT JOIN exam_versions v ON v.exam_id=e.id WHERE (? IS NULL OR e.subject_id=?) ORDER BY e.rowid DESC,v.version_number DESC LIMIT 200").bind(parsed.data.subjectId??null,parsed.data.subjectId??null).all();
+    const result=await c.env.EXAM_CORE.prepare("SELECT e.id,e.subject_id AS subjectId,e.title,v.id AS versionId,v.version_number AS versionNumber,v.status,v.duration_minutes AS durationMinutes,(SELECT COUNT(*) FROM exam_items i WHERE i.exam_version_id=v.id) AS questionCount FROM exams e LEFT JOIN exam_versions v ON v.exam_id=e.id WHERE (? IS NULL OR e.subject_id=?) ORDER BY e.rowid DESC,v.version_number DESC LIMIT 200").bind(parsed.data.subjectId??null,parsed.data.subjectId??null).all();
     return c.json({exams:result.results});
   }catch{return c.json({error:{code:'READ_FAILED'}},503);}
 });
@@ -220,14 +220,14 @@ admin.post('/exams', sameOrigin, async c => {
   }
 });
 
-const versionSchema = z.object({ examId: z.string().uuid() }).strict();
+const versionSchema = z.object({ examId: z.string().uuid(), durationMinutes:z.number().int().min(5).max(240).default(90) }).strict();
 admin.post('/exam-versions', sameOrigin, async c => {
   let input: unknown;
   try { input = await c.req.json(); }
   catch { return c.json({ error: { code: 'BAD_JSON' } }, 400); }
   const parsed = versionSchema.safeParse(input);
   if (!parsed.success) return c.json({ error: { code: 'VALIDATION_FAILED' } }, 400);
-  const { examId } = parsed.data;
+  const { examId,durationMinutes } = parsed.data;
   try {
     const exam = await c.env.EXAM_CORE.prepare('SELECT id FROM exams WHERE id=?').bind(examId).first();
     if (!exam) return c.json({ error: { code: 'EXAM_NOT_FOUND' } }, 404);
@@ -235,23 +235,41 @@ admin.post('/exam-versions', sameOrigin, async c => {
     // Version allocation happens inside SQLite to avoid a read-then-write race.
     await c.env.EXAM_CORE.batch([
       c.env.EXAM_CORE.prepare(
-        "INSERT INTO exam_versions(id,exam_id,version_number,content_hash,status) SELECT ?,?,COALESCE(MAX(version_number),0)+1,?,'draft' FROM exam_versions WHERE exam_id=?"
-      ).bind(id,examId,'',examId),
+        "INSERT INTO exam_versions(id,exam_id,version_number,content_hash,status,duration_minutes) SELECT ?,?,COALESCE(MAX(version_number),0)+1,?,'draft',? FROM exam_versions WHERE exam_id=?"
+      ).bind(id,examId,'',durationMinutes,examId),
       c.env.EXAM_CORE.prepare('INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) VALUES(?,?,?,?,?)')
         .bind(crypto.randomUUID(),c.get('identity').id,'exam_version.created',id,Math.floor(Date.now()/1000))
     ]);
-    return c.json({ version: { id, examId, status: 'draft' } }, 201);
+    return c.json({ version: { id, examId, status: 'draft',durationMinutes } }, 201);
   } catch {
     return c.json({ error: { code: 'WRITE_FAILED' } }, 503);
   }
 });
 
 
+const durationSchema=z.object({durationMinutes:z.number().int().min(5).max(240)}).strict();
+admin.patch('/exam-versions/:id/duration',sameOrigin,async c=>{
+  const id=c.req.param('id');
+  if(!z.string().uuid().safeParse(id).success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+  let input:unknown;
+  try{input=await c.req.json();}catch{return c.json({error:{code:'BAD_JSON'}},400);}
+  const parsed=durationSchema.safeParse(input);
+  if(!parsed.success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+  try{
+    const writes=await c.env.EXAM_CORE.batch([
+      c.env.EXAM_CORE.prepare("UPDATE exam_versions SET duration_minutes=? WHERE id=? AND status='draft' AND published_at IS NULL").bind(parsed.data.durationMinutes,id),
+      c.env.EXAM_CORE.prepare("INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) SELECT ?,?,?,?,? WHERE EXISTS(SELECT 1 FROM exam_versions WHERE id=? AND status='draft' AND duration_minutes=?)").bind(crypto.randomUUID(),c.get('identity').id,'exam_version.duration_updated',id,Math.floor(Date.now()/1000),id,parsed.data.durationMinutes)
+    ]);
+    if((writes as Array<{meta?:{changes?:number}}>)[0]?.meta?.changes!==1)return c.json({error:{code:'VERSION_NOT_DRAFT'}},409);
+    return c.json({versionId:id,durationMinutes:parsed.data.durationMinutes});
+  }catch{return c.json({error:{code:'WRITE_FAILED'}},503);}
+});
+
 admin.get('/exam-versions/:id/items',async c=>{
   const versionId=c.req.param('id');
   if(!z.string().uuid().safeParse(versionId).success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
   try{
-    const version=await c.env.EXAM_CORE.prepare('SELECT id,status FROM exam_versions WHERE id=?').bind(versionId).first<{id:string;status:string}>();
+    const version=await c.env.EXAM_CORE.prepare('SELECT id,status,duration_minutes AS durationMinutes FROM exam_versions WHERE id=?').bind(versionId).first<{id:string;status:string}>();
     if(!version)return c.json({error:{code:'VERSION_NOT_FOUND'}},404);
     const result=await c.env.EXAM_CORE.prepare('SELECT id,position,question_snapshot_json AS snapshot FROM exam_items WHERE exam_version_id=? ORDER BY position LIMIT 1000').bind(versionId).all();
     return c.json({version,items:(result.results as Array<{id:string;position:number;snapshot:string}>).map(row=>{
