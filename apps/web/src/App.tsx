@@ -20,6 +20,9 @@ export default function App(){
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
   const [signedIn,setSignedIn]=useState<boolean|null>(null);
+  const [history,setHistory]=useState<Array<{id:string;versionId:string;startedAt:number;status:string;submittedAt:number|null;points:number|null;maxPoints:number|null}>>([]);
+  const [historyOffset,setHistoryOffset]=useState(0);
+  const [historyOpen,setHistoryOpen]=useState(false);
   const [catalog,setCatalog]=useState<Array<{versionId:string;title:string;subject:string;questionCount:number;durationMinutes:number}>>([]);
   const [catalogSearch,setCatalogSearch]=useState('');
   const [catalogSubject,setCatalogSubject]=useState('');
@@ -141,6 +144,11 @@ export default function App(){
     const tick=()=>setRemaining(Math.max(0,attempt.expiresAt-Math.floor(Date.now()/1000)));
     tick();const timer=window.setInterval(tick,1000);return()=>window.clearInterval(timer);
   },[attempt]);
+  async function loadHistory(offset=0){
+    setBusy(true);setMessage('');
+    try{const data=await api<{attempts:typeof history}>('/attempts?'+new URLSearchParams({limit:'20',offset:String(offset)}));setHistory(data.attempts);setHistoryOffset(offset);setHistoryOpen(true);}
+    catch(error){setMessage('Không thể tải lịch sử làm bài: '+String(error));}finally{setBusy(false);}
+  }
   async function showCatalog(){
     setBusy(true);setMessage('');
     try{
@@ -213,6 +221,9 @@ export default function App(){
       </div>}
     </section>}
     {signedIn&&isAdmin&&workspace==='authoring'&&<AdminPanel/>}
+    {signedIn&&(!isAdmin||workspace==='exams')&&<section className="panel"><div className="toolbar"><h2>Lịch sử làm bài</h2><button className="secondary" disabled={busy} onClick={()=>void loadHistory(0)}>{historyOpen?'Làm mới':'Xem lịch sử'}</button></div>
+      {historyOpen&&<><div className="history-list">{history.map(item=><article className="bank-question" key={item.id}><strong>{item.status==='submitted'?'Đã nộp':item.status==='active'?'Đang làm':'Đã kết thúc'}</strong><p>Bắt đầu: {new Date(item.startedAt*1000).toLocaleString('vi-VN')}</p><p>{item.points!==null&&item.maxPoints!==null?'Điểm: '+item.points+'/'+item.maxPoints:'Chưa có kết quả chấm điểm'}</p><small>Mã phiên bản: {item.versionId}</small></article>)}{history.length===0&&<p>Chưa có lượt thi trong trang này.</p>}</div><div className="toolbar"><button className="secondary" disabled={busy||historyOffset===0} onClick={()=>void loadHistory(Math.max(0,historyOffset-20))}>Trang trước</button><button className="secondary" disabled={busy||history.length<20} onClick={()=>void loadHistory(historyOffset+20)}>Trang tiếp</button></div></>}
+    </section>}
     {signedIn&&(!isAdmin||workspace==='exams')&&resumeAvailable&&!attempt&&<section className="panel"><h2>Bài thi đang làm</h2><p>Khôi phục câu trả lời đã lưu trên máy chủ sau khi tải lại trang.</p><button disabled={busy} onClick={resume}>Tiếp tục bài thi</button></section>}
     {signedIn&&(!isAdmin||workspace==='exams')&&<section className="panel"><h1>Phòng thi trực tuyến</h1><p>Nhập mã phiên bản đề thi đã xuất bản. Bạn có thể tải đề thi bằng mã phiên bản đã xuất bản.</p>
       <div className="toolbar"><button disabled={busy} onClick={showCatalog}>Xem danh sách đề thi</button></div>
