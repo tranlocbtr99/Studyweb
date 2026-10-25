@@ -9,12 +9,17 @@ admin.use('*',requireSession,requireRole('admin'));
 
 
 admin.get('/users',async c=>{
- const search=(c.req.query('search')??'').trim().slice(0,120);
+ const search=(c.req.query('search')??'').trim();
  const offset=Number(c.req.query('offset')??0);
- if(!Number.isInteger(offset)||offset<0||offset>100000)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+ const status=c.req.query('status')??'all';
+ const order=c.req.query('order')??'newest';
+ if(search.length>120||!['all','active','disabled'].includes(status)||!['newest','oldest'].includes(order)||!Number.isInteger(offset)||offset<0||offset>100000)return c.json({error:{code:'VALIDATION_FAILED'}},400);
  try{
-  const rows=await c.env.EXAM_CORE.prepare("SELECT id,email,status,created_at AS createdAt FROM users WHERE (?='' OR instr(lower(email),lower(?))>0) ORDER BY created_at DESC LIMIT 20 OFFSET ?").bind(search,search,offset).all();
-  return c.json({users:rows.results,offset});
+  const filter=" WHERE (?='' OR instr(lower(email),lower(?))>0) AND (?='all' OR status=?)";
+  const ordering=order==='newest'?'DESC':'ASC';
+  const rows=await c.env.EXAM_CORE.prepare("SELECT id,email,status,created_at AS createdAt FROM users"+filter+" ORDER BY created_at "+ordering+",id "+ordering+" LIMIT 20 OFFSET ?").bind(search,search,status,status,offset).all();
+  const count=await c.env.EXAM_CORE.prepare("SELECT COUNT(*) AS total FROM users"+filter).bind(search,search,status,status).first<{total:number}>();
+  return c.json({users:rows.results,offset,total:count?.total??0});
  }catch{return c.json({error:{code:'READ_FAILED'}},503);}
 });
 
