@@ -1,7 +1,6 @@
 {
   "authorization": "PUBLISH_LTSTUDY_20261025",
-  "sourceCommit": "f261e0a8684bcb3fdb9c1e52645885894742c060",
-  "authorizedOn": "2026-10-25",
-  "target": "https://studyweb-api.tranlocbtr99.workers.dev",
-  "reason": "Continue the authorized release after reproducing and repairing Wrangler SQL argument parsing; existing users/exams remain protected."
+  "sourceCommit": "c30c944afa151e2f722f3cfc78aae0d1d1a0ec4e",
+  "scope": "Student removal and subject-based manual/DOCX/PDF AI exam imports",
+  "requestedAt": "2026-10-25"
 }
