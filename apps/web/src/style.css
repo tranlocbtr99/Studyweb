@@ -42,3 +42,27 @@ button:hover:not(:disabled){filter:brightness(1.04)}button:focus-visible,input:f
 .exam-catalog-list{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
 .inline-check{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
 .inline-check input{width:auto}
+
+
+/* LTStudy reference: desktop application frame and student/admin sidebar */
+.study-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:20px;max-width:1580px;min-height:100vh;padding:22px}
+.study-main{min-width:0}
+.study-sidebar{position:sticky;top:22px;height:calc(100vh - 44px);min-height:520px;display:flex;flex-direction:column;padding:23px 15px;background:rgba(255,255,255,.80);border:1px solid #ffffffde;border-radius:23px;box-shadow:0 12px 38px #45669e18;backdrop-filter:blur(24px)}
+.study-logo{display:flex;align-items:center;gap:9px;font-size:20px;color:#1259b5;padding:0 10px 14px;letter-spacing:-.04em}
+.study-logo span{font-size:27px}
+.study-role{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#8a98b0;font-weight:700;padding:8px 12px 14px}
+.study-menu{display:flex;flex-direction:column;gap:6px}
+.study-menu button{width:100%;display:flex;gap:12px;align-items:center;text-align:left;padding:13px 14px;background:transparent;color:#52637d;box-shadow:none;border-radius:12px;font-size:13px}
+.study-menu button:hover,.study-menu button.selected{background:linear-gradient(100deg,#d8e9ff,#e5e6ff);color:#1259c1}
+.study-sidebar-footer{display:flex;align-items:center;gap:10px;margin-top:auto;padding:16px 8px 0;border-top:1px solid #e5ecf8;font-size:13px;font-weight:650}
+.study-avatar{display:grid;place-items:center;width:35px;height:35px;background:#d9e7ff;color:#1a5fbf;border-radius:50%}
+.study-topbar{min-height:56px;padding:7px 6px 22px}
+.study-layout .panel{border-radius:19px;box-shadow:0 8px 28px #425e9a12}
+.study-layout .admin-home{background:linear-gradient(130deg,#fffefaed,#f4f7ffef)}
+.study-layout .admin-home-heading h1{font-size:clamp(23px,2.6vw,34px)}
+.study-layout .admin-overview-grid article{background:linear-gradient(145deg,#fff,#f0f5ff);box-shadow:0 6px 20px #4a74b00b}
+.study-layout .question{padding:24px 0}
+.study-layout .option{background:#fff;transition:background .15s,border-color .15s}
+.study-layout .option:has(input:checked){background:#e9f3ff;border-color:#4385ea;box-shadow:0 0 0 1px #4385ea40}
+@media(max-width:900px){.study-layout{grid-template-columns:76px minmax(0,1fr);gap:12px;padding:12px}.study-sidebar{padding:14px 8px}.study-logo{padding:0 4px 18px}.study-logo strong,.study-role,.study-menu button span,.study-sidebar-footer>span:last-child{display:none}.study-menu button{justify-content:center;font-size:19px;padding:12px}.study-sidebar-footer{justify-content:center}}
+@media(max-width:600px){.study-layout{display:block;padding:10px 10px 80px}.study-sidebar{position:relative;top:auto;min-height:0;height:auto;display:block;padding:10px 12px;margin-bottom:12px;border-radius:16px}.study-logo{display:none}.study-menu{flex-direction:row;overflow-x:auto;gap:5px}.study-menu button{min-width:50px;padding:10px}.study-sidebar-footer{display:none}.study-topbar{padding:5px 5px 12px}.study-layout .panel{padding:16px}}
