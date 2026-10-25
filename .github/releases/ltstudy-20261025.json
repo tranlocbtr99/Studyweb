@@ -1,6 +1,5 @@
 {
   "authorization": "PUBLISH_LTSTUDY_20261025",
-  "sourceCommit": "c30c944afa151e2f722f3cfc78aae0d1d1a0ec4e",
-  "scope": "Student removal and subject-based manual/DOCX/PDF AI exam imports",
-  "requestedAt": "2026-10-25"
+  "sourceCommit": "8ed4a759d4a4376037e3ada527273438bb20772c",
+  "scope": "Verify AI and publish subject-based imports and student removal"
 }
