@@ -332,3 +332,9 @@ Updated: 2026-10-24
 - Save now remains clickable except during a request. It validates locally, displays an actionable error list and offers direct navigation to subject/title/duration/review or the specific question field, automatically opening collapsed question details. Fractional durations, oversized imported fields and duplicate questions are identified before sending a save. Long original file names are bounded to the API limit.
 - Backend answer completeness, administrator review and publication safeguards remain enforced. Existing content is not cleared on validation or request errors. Six targeted validation tests, frontend production build and API typecheck passed before rollout.
 - Pending deployment/browser confirmation of the repaired validation UI. Incomplete drafts still require corrections before this import endpoint can persist them.
+
+
+### Save repair deployed and browser verified
+- Release 81d6a45052a25bc181f4ec3a2897a9c852b451d9 succeeded in Actions run 40225695706, including frontend/API tests, data preservation and authenticated live checks. Source API/Web/deployment-readiness workflows all succeeded.
+- Hosted browser: Save on an incomplete new form is enabled and displays all six exact blockers. Clicking the missing-answer issue focuses the actual answer selector, confirming field navigation works. The previously saved synthetic [KIỂM THỬ] draft remained present after deployment/reload and was never published.
+- Existing user's unsent draft was not inspected or cleared. Six targeted regression tests passed. The saved synthetic draft was intentionally retained as an unpublished verification artifact.

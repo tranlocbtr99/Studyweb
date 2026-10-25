@@ -177,3 +177,5 @@
 - Replace silently disabled Save with clickable validation, exact missing-field/question feedback and navigation to the field requiring correction.
 - Validate whole-minute duration, imported field sizes and duplicate questions before requests; bound source filenames to the server limit.
 - Verified successful hosted save of a clearly labeled synthetic unpublished draft. Six targeted tests and frontend build passed; deployment pending.
+
+- Release run 40225695706 succeeded. Browser verified clickable save validation and direct navigation to the missing-answer selector; previously saved draft retained.
