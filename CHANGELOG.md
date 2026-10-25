@@ -187,3 +187,5 @@
 - Preserve rich content in bank assembly and published snapshots; enforce image access against actual published references.
 - Add additive migration 0010; use bounded existing D1 storage without enabling R2/billing. Unsupported Word objects and recognition uncertainty are surfaced for review.
 - 139 API tests, frontend/API typechecks, production build and five upgrade checks passed; production release pending.
+
+- Initial rich release succeeded, including actual vision capability and hosted Word image/table/fraction extraction. Repair question merging so shortened AI extraction and full table-bearing source content become one question. Regression and 51 focused tests passed.

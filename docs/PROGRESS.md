@@ -349,3 +349,10 @@ Updated: 2026-10-24
 - Administrator workspace supports manual attachment to any question/option, reuse for shared passages, crop, image OCR review and explicit visual answer analysis. Text-only answer suggestion skips attached images; the visual path supplies image pixels plus table/math/context. Existing keys are not automatically overwritten; uncertain outputs remain unanswered and admin review is required.
 - Vision uses the documented Workers AI Qwen3.8 vision request format, has independent per-admin quota and fails visibly without losing document content. It never auto-accepts a model license or changes the account plan. A temporary no-database probe reports actual vision availability separately from the already required text AI checks.
 - Validation: API/frontend typechecks, frontend build, 139 API tests (including 7 rich-media integration/security cases) and five nonempty upgrade/native Wrangler checks passed. Native D1 CI applies migration 0010. Hosted/browser acceptance and actual vision capability are pending release.
+
+
+### Hosted rich release and extraction repair
+- Rich release 4c79f5e3af92a9bd5a60366ca17fcb64ab7b3a7a succeeded in run 40227909170. All five source CI workflows passed, including native D1 0010 application. Isolated actual vision probe reported VISION_CAPABILITY_VERIFIED=true.
+- Hosted Word acceptance extracted the embedded raster chart, native fraction as LaTeX and structured table. It exposed an extraction merge defect: an AI-shortened question plus the parser's full table-bearing question could both be emitted.
+- Canonicalize a uniquely matched AI question against the full source body/options before adding omitted parser questions. Preserve full table/formula context and the explicit source answer key. A regression reproducing the shortened-body/full-table case passes; 51 focused AI/import/media tests and API typecheck passed after repair.
+- Follow-up repair release and full hosted save/preview acceptance pending. No existing published question or credential was changed.
