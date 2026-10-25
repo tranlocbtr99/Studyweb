@@ -42,3 +42,6 @@
 
 ## 2026-10-25 — Admin security tests
 - Added regression tests for admin-only question editing, CSRF, validation and published snapshot preservation.
+
+## 2026-10-25 — Exam publication integrity tests
+- Added nine regression cases for invalid exam structures, answer-key isolation and deterministic content hashing.
