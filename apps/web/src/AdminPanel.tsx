@@ -25,6 +25,7 @@ export default function AdminPanel(){
   const [correctOption,setCorrectOption]=useState<'A'|'B'|'C'|'D'>('A');
   const [explanation,setExplanation]=useState('');
   const [count,setCount]=useState(0);
+  const [draftItems,setDraftItems]=useState<Array<{id:string;position:number;body:string;options:Array<{label:string;text:string}>}>>([]);
   const [createdQuestions,setCreatedQuestions]=useState<Array<{id:string;body:string}>>([]);
   const [message,setMessage]=useState('');
   const [busy,setBusy]=useState(false);
@@ -57,6 +58,12 @@ export default function AdminPanel(){
   async function action(fn:()=>Promise<void>){
     setBusy(true);setMessage('');
     try{await fn();}catch(error){setMessage('Thao tác thất bại: '+String(error));}finally{setBusy(false);}
+  }
+  async function loadDraftItems(versionId:string){
+    const response=await fetch('/api/v1/admin/exam-versions/'+versionId+'/items',{credentials:'same-origin'});
+    if(!response.ok)throw Error('HTTP '+response.status);
+    const data=await response.json() as {items:typeof draftItems};
+    setDraftItems(data.items);setCount(data.items.length);
   }
   async function loadExams(){
     setBusy(true);setMessage('');
@@ -118,7 +125,7 @@ export default function AdminPanel(){
         <strong>{item.title}</strong>
         <small>{item.versionId?'Phiên bản '+item.versionNumber+' · '+item.status+' · '+item.questionCount+' câu':'Chưa có phiên bản'}</small>
         {item.status==='draft'&&item.versionId&&<button className="secondary" disabled={busy} onClick={()=>{
-          setSubject({id:item.subjectId});setTopic(null);setExam({id:item.id});setVersion({id:item.versionId!});setCount(item.questionCount);setMessage('Đã mở bản nháp: '+item.title);
+          setSubject({id:item.subjectId});setTopic(null);setExam({id:item.id});setVersion({id:item.versionId!});setCount(item.questionCount);setDraftItems([]);void loadDraftItems(item.versionId!).catch(()=>setMessage('Không tải được danh sách câu hỏi trong đề'));setMessage('Đã mở bản nháp: '+item.title);
         }}>Tiếp tục biên soạn</button>}
       </div>)}
     </div>
@@ -134,7 +141,7 @@ export default function AdminPanel(){
       <h2>5. Tạo phiên bản đề</h2>
       <button disabled={busy} onClick={()=>void action(async()=>{
         const data=await create<{version:Created}>('exam-versions',{examId:exam.id});
-        setVersion(data.version);setCount(0);setMessage('Đã tạo phiên bản nháp');
+        setVersion(data.version);setCount(0);setDraftItems([]);setMessage('Đã tạo phiên bản nháp');
       })}>Tạo phiên bản nháp</button>
     </div>}
     <div className="admin-step">
@@ -165,10 +172,12 @@ export default function AdminPanel(){
     </div>
     {version&&<div className="admin-step">
       <h2>6. Thêm câu hỏi vào đề</h2>
+      <button className="secondary" disabled={busy} onClick={()=>void loadDraftItems(version.id).catch(()=>setMessage('Không tải được nội dung đề'))}>Làm mới danh sách câu hỏi</button>
+      {draftItems.map(item=><div className="bank-question" key={item.id}><strong>Câu {item.position+1}. {item.body}</strong><small>{item.options.map(option=>option.label+'. '+option.text).join(' · ')}</small></div>)}
       <p>Chọn câu hỏi đã tạo để thêm vào phiên bản đề thi.</p>
       <QuestionPicker busy={busy} position={count} questions={[...createdQuestions,...bank.filter(q=>!createdQuestions.some(item=>item.id===q.id)&&(!subject||q.subjectId===subject.id))]} onAdd={id=>action(async()=>{
         await create('exam-items',{versionId:version.id,questionId:id,position:count});
-        setCount(prev=>prev+1);setMessage('Đã thêm câu hỏi vào đề');
+        setCount(prev=>prev+1);void loadDraftItems(version.id).catch(()=>setMessage('Đã thêm câu hỏi nhưng chưa tải lại danh sách'));setMessage('Đã thêm câu hỏi vào đề');
       })}/>
       <p>Đã thêm {count} câu hỏi trong phiên làm việc này.</p>
       <button disabled={busy||count===0} onClick={()=>void action(async()=>{
