@@ -152,3 +152,8 @@ Updated: 2026-10-24
 - Admin user directory now supports server-side status filtering, email search, stable date sorting, exact matching-account count and paginated navigation across the complete user table.
 - UI sends filters to the API and provides refresh and visible result count. Read-only user management; no permission or account status mutations.
 - Changes committed; integrated validation and production deployment pending.
+
+## Deployment readiness TypeScript repair (2026-10-25)
+- Exam start response previously referenced undefined attemptDurationSeconds, blocking API typecheck in workflow run 40162966050.
+- Define attemptDurationSeconds from published exam version duration_minutes, and use consistently for persisted expires_at and response expiresAt.
+- No migration or data changes; awaiting fresh GitHub Actions verification before any deployment.
