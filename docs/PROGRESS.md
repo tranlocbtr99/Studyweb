@@ -188,3 +188,9 @@ Updated: 2026-10-24
 - Subject detail initially failed web typecheck with TS1110 due to missing void in onClose callback type; corrected the type.
 - Added local case-insensitive title search of actual published exams within subject detail, with clear no-match state and responsive search field.
 - CI verification for these changes remains pending; no production deployment.
+
+## Learning content MVP (2026-10-25)
+- Added migration 0007 for subject lessons and HTTPS materials.
+- Added authenticated published-content reads and administrator content creation.
+- Added student lesson/material views and administrator creation form.
+- Apply migration 0007 before deploying API. CI and deployment pending.
