@@ -111,3 +111,8 @@ Updated: 2026-10-24
 - Added ReviewFlags component and integrated it into one-question student exam flow.
 - Students can mark/unmark the current question and jump among marked questions. Flags persist in sessionStorage keyed by attempt ID and are separate from graded answers.
 - Full integration testing deferred as requested; no production deployment.
+
+## Pre-submission unanswered question review (2026-10-25)
+- Student exam submission now opens an inline confirmation panel listing unanswered questions and a direct link back to each unanswered item.
+- Submission still uses the existing server-side save-before-submit and idempotent submission flow; no API or database changes.
+- Per user request, extensive testing deferred until feature-complete. No production deployment.
