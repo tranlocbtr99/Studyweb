@@ -4,7 +4,7 @@ import AdminPanel from './AdminPanel';
 import ReviewFlags from './ReviewFlags';
 
 type Question = { body:string; options:Array<{label:string;text:string}> };
-type Exam = { version:{id:string;examId:string};questions:Array<{position:number;question:Question}> };
+type Exam = { version:{id:string;examId:string;durationMinutes:number};questions:Array<{position:number;question:Question}> };
 type Attempt = { id:string;expiresAt:number;saveVersion:number };
 type Result = { points:number;maxPoints:number;submittedAt:number };
 const api = async <T,>(path:string,init?:RequestInit):Promise<T> => {
@@ -20,7 +20,7 @@ export default function App(){
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
   const [signedIn,setSignedIn]=useState<boolean|null>(null);
-  const [catalog,setCatalog]=useState<Array<{versionId:string;title:string;subject:string;questionCount:number}>>([]);
+  const [catalog,setCatalog]=useState<Array<{versionId:string;title:string;subject:string;questionCount:number;durationMinutes:number}>>([]);
   const [catalogSearch,setCatalogSearch]=useState('');
   const [catalogSubject,setCatalogSubject]=useState('');
   const [versionId,setVersionId]=useState('');
@@ -144,7 +144,7 @@ export default function App(){
   async function showCatalog(){
     setBusy(true);setMessage('');
     try{
-      const data=await api<{exams:Array<{versionId:string;title:string;subject:string;questionCount:number}>}>('/exam-catalog');
+      const data=await api<{exams:Array<{versionId:string;title:string;subject:string;questionCount:number;durationMinutes:number}>}>('/exam-catalog');
       setCatalog(data.exams);
     }catch(e){setMessage(String(e));}finally{setBusy(false);}
   }
@@ -217,11 +217,11 @@ export default function App(){
     {signedIn&&(!isAdmin||workspace==='exams')&&<section className="panel"><h1>Phòng thi trực tuyến</h1><p>Nhập mã phiên bản đề thi đã xuất bản. Bạn có thể tải đề thi bằng mã phiên bản đã xuất bản.</p>
       <div className="toolbar"><button disabled={busy} onClick={showCatalog}>Xem danh sách đề thi</button></div>
       {catalog.length>0&&<div className="toolbar"><label>Tìm đề thi<input value={catalogSearch} placeholder="Tên đề hoặc môn học" onChange={e=>setCatalogSearch(e.target.value)}/></label><label>Lọc môn học<select value={catalogSubject} onChange={e=>setCatalogSubject(e.target.value)}><option value="">Tất cả môn học</option>{Array.from(new Set(catalog.map(item=>item.subject))).sort().map(name=><option key={name} value={name}>{name}</option>)}</select></label></div>}
-      <div className="exam-catalog-list">{catalog.filter(item=>(!catalogSubject||item.subject===catalogSubject)&&(item.title+' '+item.subject).toLocaleLowerCase('vi').includes(catalogSearch.trim().toLocaleLowerCase('vi'))).map(item=><button key={item.versionId} className={versionId===item.versionId?'':'secondary'} disabled={busy} onClick={()=>setVersionId(item.versionId)}>{item.subject} — {item.title} ({item.questionCount} câu)</button>)}</div>
+      <div className="exam-catalog-list">{catalog.filter(item=>(!catalogSubject||item.subject===catalogSubject)&&(item.title+' '+item.subject).toLocaleLowerCase('vi').includes(catalogSearch.trim().toLocaleLowerCase('vi'))).map(item=><button key={item.versionId} className={versionId===item.versionId?'':'secondary'} disabled={busy} onClick={()=>setVersionId(item.versionId)}>{item.subject} — {item.title} ({item.questionCount} câu · {item.durationMinutes} phút)</button>)}</div>
       {catalog.length>0&&catalog.filter(item=>(!catalogSubject||item.subject===catalogSubject)&&(item.title+' '+item.subject).toLocaleLowerCase('vi').includes(catalogSearch.trim().toLocaleLowerCase('vi'))).length===0&&<p>Không tìm thấy đề thi phù hợp.</p>}
       <div className="toolbar"><input aria-label="Mã phiên bản đề thi" placeholder="Mã phiên bản đề thi (UUID)" value={versionId} onChange={e=>setVersionId(e.target.value)}/><button disabled={busy||!versionId} onClick={loadExam}>Tải đề thi</button></div>
     </section>}
-    {signedIn&&(!isAdmin||workspace==='exams')&&exam&&<section className="panel"><div className="toolbar"><h2>Đề thi · {exam.questions.length} câu</h2>{!attempt&&<button disabled={busy} onClick={start}>Bắt đầu làm bài</button>}</div>
+    {signedIn&&(!isAdmin||workspace==='exams')&&exam&&<section className="panel"><div className="toolbar"><h2>Đề thi · {exam.questions.length} câu · {exam.version.durationMinutes} phút</h2>{!attempt&&<button disabled={busy} onClick={start}>Bắt đầu làm bài</button>}</div>
       {attempt&&<div className="status"><span>Thời gian còn lại: <strong>{Math.floor(remaining/60)}:{String(remaining%60).padStart(2,'0')}</strong></span><span>Phiên bản lưu: {attempt.saveVersion} · {({idle:'Chưa thay đổi',pending:'Chờ lưu',saving:'Đang lưu',saved:'Đã lưu',error:'Lưu thất bại'} as const)[saveState]}</span></div>}
       <div className="exam-progress" aria-live="polite"><strong>Đã trả lời {exam.questions.filter(({position})=>Boolean(answers[String(position)])).length}/{exam.questions.length} câu</strong><span>Đang xem câu {Math.min(currentQuestion+1,exam.questions.length)}/{exam.questions.length}</span></div>
       <div className="exam-progress-track" role="progressbar" aria-label="Tiến độ trả lời" aria-valuemin={0} aria-valuemax={exam.questions.length} aria-valuenow={exam.questions.filter(({position})=>Boolean(answers[String(position)])).length}><div style={{width:(exam.questions.length?exam.questions.filter(({position})=>Boolean(answers[String(position)])).length/exam.questions.length*100:0)+'%'}}/></div>
