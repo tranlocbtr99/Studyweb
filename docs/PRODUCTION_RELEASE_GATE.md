@@ -12,5 +12,5 @@ The user explicitly authorized updating the existing hosted LTStudy application.
 - If live verification fails after publishing, roll back Worker code to the recorded single previous version. Keep additive schema changes; do not restore D1 over concurrent user activity automatically.
 
 ## Verification boundary
-Source/SQLite/native D1 tests and bundle checks have passed for the community feature release. The release job must still succeed and its actual live version must be checked before claiming deployment.
+Release run 40204738861 succeeded. Frontend/API ea18fe4517ab1b8aa1df787818d9e98a7edd0b3f is live on the existing origin; browser metadata and live authentication smoke tests verified the deployed version. Remote additive migrations completed with existing count/content checks. 95 API tests and five upgrade/real-CLI tests passed.
 A successful deployment is not certification for 100–500 concurrent examination candidates. Staging load verification and live owner-admin/full examination authoring verification remain separate acceptance items.

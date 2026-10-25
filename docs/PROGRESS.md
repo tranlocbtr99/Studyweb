@@ -275,3 +275,13 @@ Updated: 2026-10-24
 - Pass SQL using the single --command=SQL argument and add a real local Wrangler regression preserving an existing row/default duration. All five upgrade tests passed.
 - Live fingerprint reads now retry within a bounded propagation window; registration/writes are never automatically retried.
 - Existing production Worker and credentials remain unchanged pending the repaired release run.
+
+## Hosted release verified (2026-10-25)
+- Release run 40204738861 succeeded at https://studyweb-api.tranlocbtr99.workers.dev/.
+- Live frontend/API fingerprint: ea18fe4517ab1b8aa1df787818d9e98a7edd0b3f. Cloudflare Worker version: ec62de4e-a6f2-40ce-867c-1344ef65ac58.
+- Remote core 0006/0007/0008 and results 0002 upgrade verified; baseline row counts and all existing published exam fields retained. Existing password records were not reset.
+- Release validation passed 95 API tests plus five upgrade/real-Wrangler tests, typechecks, frontend build and Worker packaging.
+- Live HTTPS checks passed exact API/frontend versions, static assets, registration, student login/session-cookie protections, authenticated student/course/community reads, administrator isolation, cross-origin rejection and logout.
+- The unique synthetic student was disabled and its sessions revoked. No exam attempts/content or existing user data were created/rewritten by the live smoke tests.
+- Independently opened the hosted page in the browser: LTStudy title, completed login UI and exact release meta match; desktop document width equals viewport width.
+- Remaining acceptance boundaries: 100–500 concurrent-candidate load, mobile viewport QA and owner-admin/full live exam-authoring E2E are not certified. Recovery metadata is retained with the successful release run.

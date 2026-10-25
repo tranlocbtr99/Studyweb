@@ -145,3 +145,7 @@
 ## 2026-10-25 — Deployment SQL argument repair
 - Fix real Wrangler parsing of comment-leading migration SQL and cover it with a native CLI regression.
 - Retry only read-only release fingerprint checks while deployment propagates.
+
+## 2026-10-25 — Hosted release published
+- Published frontend/API ea18fe4 and additive D1 upgrades to the existing LTStudy origin.
+- Verified live student authentication, role/CSRF boundaries, assets and exact version; existing credentials/data preserved.
