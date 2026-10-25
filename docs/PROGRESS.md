@@ -138,3 +138,8 @@ Updated: 2026-10-24
 ## User directory UI refinements (2026-10-25)
 - Added current-page account status filter and registration-date sorting to the admin user directory.
 - Filters operate on the currently loaded page only; global filtering and real-time analytics remain pending. No production deployment or integration verification.
+
+## Student dashboard (2026-10-25)
+- Student home now has LTStudy-style hero, exam catalog count, quick actions (catalog, history, resume), and subject cards derived from actual published exam catalog.
+- Course tiles represent subjects with published exams, not lesson-progress records; no fabricated completion metrics.
+- Visual and functional integration verification deferred to final consolidation; not deployed.
