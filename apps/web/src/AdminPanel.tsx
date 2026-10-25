@@ -20,6 +20,7 @@ export default function AdminPanel(){
   const [slug,setSlug]=useState('');
   const [topicTitle,setTopicTitle]=useState('');
   const [examTitle,setExamTitle]=useState('');
+  const [durationMinutes,setDurationMinutes]=useState(90);
   const [body,setBody]=useState('');
   const [options,setOptions]=useState(['','','','']);
   const [correctOption,setCorrectOption]=useState<'A'|'B'|'C'|'D'>('A');
@@ -37,7 +38,7 @@ export default function AdminPanel(){
   const [editExplanation,setEditExplanation]=useState('');
   const [search,setSearch]=useState('');
   const [offset,setOffset]=useState(0);
-  const [savedExams,setSavedExams]=useState<Array<{id:string;subjectId:string;title:string;versionId:string|null;versionNumber:number|null;status:string|null;questionCount:number}>>([]);
+  const [savedExams,setSavedExams]=useState<Array<{id:string;subjectId:string;title:string;versionId:string|null;versionNumber:number|null;status:string|null;questionCount:number;durationMinutes:number}>>([]);
   useEffect(()=>{
     let alive=true;
     fetch('/api/v1/admin/subjects',{credentials:'same-origin'}).then(async response=>{
@@ -70,7 +71,7 @@ export default function AdminPanel(){
     try{
       const response=await fetch('/api/v1/admin/exams',{credentials:'same-origin'});
       if(!response.ok)throw Error('HTTP '+response.status);
-      const data=await response.json() as {exams:Array<{id:string;subjectId:string;title:string;versionId:string|null;versionNumber:number|null;status:string|null;questionCount:number}>};
+      const data=await response.json() as {exams:Array<{id:string;subjectId:string;title:string;versionId:string|null;versionNumber:number|null;status:string|null;questionCount:number;durationMinutes:number}>};
       setSavedExams(data.exams);
     }catch(error){setMessage('Không tải được danh sách đề thi: '+String(error));}finally{setBusy(false);}
   }
@@ -125,7 +126,7 @@ export default function AdminPanel(){
         <strong>{item.title}</strong>
         <small>{item.versionId?'Phiên bản '+item.versionNumber+' · '+item.status+' · '+item.questionCount+' câu':'Chưa có phiên bản'}</small>
         {item.status==='draft'&&item.versionId&&<button className="secondary" disabled={busy} onClick={()=>{
-          setSubject({id:item.subjectId});setTopic(null);setExam({id:item.id});setVersion({id:item.versionId!});setCount(item.questionCount);setDraftItems([]);void loadDraftItems(item.versionId!).catch(()=>setMessage('Không tải được danh sách câu hỏi trong đề'));setMessage('Đã mở bản nháp: '+item.title);
+          setSubject({id:item.subjectId});setTopic(null);setExam({id:item.id});setVersion({id:item.versionId!});setCount(item.questionCount);setDurationMinutes(item.durationMinutes);setDraftItems([]);void loadDraftItems(item.versionId!).catch(()=>setMessage('Không tải được danh sách câu hỏi trong đề'));setMessage('Đã mở bản nháp: '+item.title);
         }}>Tiếp tục biên soạn</button>}
       </div>)}
     </div>
@@ -139,8 +140,9 @@ export default function AdminPanel(){
     </form>}
     {exam&&<div className="admin-step">
       <h2>5. Tạo phiên bản đề</h2>
+      <label>Thời gian làm bài (5–240 phút)<input type="number" min={5} max={240} value={durationMinutes} onChange={e=>setDurationMinutes(Number(e.target.value))}/></label>
       <button disabled={busy} onClick={()=>void action(async()=>{
-        const data=await create<{version:Created}>('exam-versions',{examId:exam.id});
+        const data=await create<{version:Created}>('exam-versions',{examId:exam.id,durationMinutes});
         setVersion(data.version);setCount(0);setDraftItems([]);setMessage('Đã tạo phiên bản nháp');
       })}>Tạo phiên bản nháp</button>
     </div>}
@@ -172,6 +174,8 @@ export default function AdminPanel(){
     </div>
     {version&&<div className="admin-step">
       <h2>6. Thêm câu hỏi vào đề</h2>
+      <label>Thời gian làm bài (phút)<input type="number" min={5} max={240} value={durationMinutes} onChange={e=>setDurationMinutes(Number(e.target.value))}/></label>
+      <button type="button" className="secondary" disabled={busy||durationMinutes<5||durationMinutes>240} onClick={()=>void action(async()=>{const response=await fetch('/api/v1/admin/exam-versions/'+version.id+'/duration',{method:'PATCH',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({durationMinutes})});if(!response.ok)throw Error('HTTP '+response.status);setMessage('Đã lưu thời gian làm bài');})}>Lưu thời gian làm bài</button>
       <button className="secondary" disabled={busy} onClick={()=>void loadDraftItems(version.id).catch(()=>setMessage('Không tải được nội dung đề'))}>Làm mới danh sách câu hỏi</button>
       {draftItems.map(item=><div className="bank-question" key={item.id}>
         <strong>Câu {item.position+1}. {item.body}</strong>
