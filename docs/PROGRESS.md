@@ -183,3 +183,8 @@ Updated: 2026-10-24
 - Student course cards now open a subject detail panel with four tabs: exams, lessons, materials, discussion.
 - Exam tab lists real published catalog entries and lets students select a version for the existing exam flow. Other tabs explicitly state unavailable content; no fabricated lesson progress or discussions.
 - Responsive subject detail styles added. New changes await CI; no production deployment.
+
+## Subject detail CI repair and exam search (2026-10-25)
+- Subject detail initially failed web typecheck with TS1110 due to missing void in onClose callback type; corrected the type.
+- Added local case-insensitive title search of actual published exams within subject detail, with clear no-match state and responsive search field.
+- CI verification for these changes remains pending; no production deployment.
