@@ -36,6 +36,43 @@ admin.post('/learning/materials',sameOrigin,async c=>{
  }catch{return c.json({error:{code:'WRITE_FAILED'}},503);}
 });
 
+
+const learningListInput=z.object({subjectId:z.string().uuid(),kind:z.enum(['lesson','material']),offset:z.coerce.number().int().min(0).max(100000).default(0)});
+admin.get('/learning',async c=>{
+ const parsed=learningListInput.safeParse(c.req.query());
+ if(!parsed.success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+ const {subjectId,kind,offset}=parsed.data;
+ const table=kind==='lesson'?'learning_lessons':'learning_materials';
+ const fields=kind==='lesson'?'body,position':"description AS body,url";
+ try{
+  const rows=await c.env.EXAM_CORE.prepare('SELECT id,subject_id AS subjectId,title,status,updated_at AS updatedAt,'+fields+' FROM '+table+' WHERE subject_id=? ORDER BY updated_at DESC,id LIMIT 20 OFFSET ?').bind(subjectId,offset).all();
+  const count=await c.env.EXAM_CORE.prepare('SELECT COUNT(*) AS total FROM '+table+' WHERE subject_id=?').bind(subjectId).first<{total:number}>();
+  return c.json({items:rows.results,total:count?.total??0,offset});
+ }catch{return c.json({error:{code:'READ_FAILED'}},503);}
+});
+admin.put('/learning/:kind/:id',sameOrigin,async c=>{
+ const kind=c.req.param('kind'),id=c.req.param('id');
+ if(!['lessons','materials'].includes(kind)||!z.string().uuid().safeParse(id).success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+ const input=await c.req.json().catch(()=>null);
+ const now=Math.floor(Date.now()/1000);
+ try{
+  const parsed=kind==='lessons'?lessonInput.safeParse(input):materialInput.safeParse(input);
+  if(!parsed.success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+  const data=parsed.data;
+  const subject=await c.env.EXAM_CORE.prepare('SELECT id FROM subjects WHERE id=?').bind(data.subjectId).first();
+  if(!subject)return c.json({error:{code:'SUBJECT_NOT_FOUND'}},404);
+  const statement='body' in data
+   ?c.env.EXAM_CORE.prepare('UPDATE learning_lessons SET title=?,body=?,position=?,status=?,updated_at=? WHERE id=? AND subject_id=?').bind(data.title,data.body,data.position,data.status,now,id,data.subjectId)
+   :c.env.EXAM_CORE.prepare('UPDATE learning_materials SET title=?,description=?,url=?,status=?,updated_at=? WHERE id=? AND subject_id=?').bind(data.title,data.description,data.url,data.status,now,id,data.subjectId);
+  const writes=await c.env.EXAM_CORE.batch([
+   statement,
+   c.env.EXAM_CORE.prepare('INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) SELECT ?,?,?,?,? WHERE changes()=1').bind(crypto.randomUUID(),c.get('identity').id,'learning.'+kind+'.updated',id,now)
+  ]);
+  if((writes as Array<{meta?:{changes?:number}}>)[0]?.meta?.changes!==1)return c.json({error:{code:'CONTENT_NOT_FOUND'}},404);
+  return c.json({id,updated:true});
+ }catch{return c.json({error:{code:'WRITE_FAILED'}},503);}
+});
+
 admin.get('/overview',async c=>{
  try{
   const core=await c.env.EXAM_CORE.prepare("SELECT (SELECT COUNT(*) FROM users) AS users,(SELECT COUNT(*) FROM subjects) AS subjects,(SELECT COUNT(*) FROM questions) AS questions,(SELECT COUNT(*) FROM exams) AS exams,(SELECT COUNT(*) FROM exam_versions WHERE status='published') AS publishedVersions").first<{users:number;subjects:number;questions:number;exams:number;publishedVersions:number}>();

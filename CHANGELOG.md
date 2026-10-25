@@ -101,3 +101,7 @@
 ## 2026-10-25 — Learning reader
 - Search published lessons/materials with result counts; expand individual lessons for reading.
 - Retry failed content loads and cancel obsolete requests on navigation.
+
+## 2026-10-25 — Saved learning content management
+- Paginated administrator lesson/material directory with reopen/edit and draft/publication controls.
+- Validated, administrator-only, same-origin update API with audit records; no destructive data changes.

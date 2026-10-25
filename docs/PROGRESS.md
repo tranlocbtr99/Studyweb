@@ -200,3 +200,10 @@ Updated: 2026-10-24
 - Lessons expand individually using native keyboard-accessible details; preserve line breaks and wrap long content on narrow screens.
 - Added retry for failed content requests, abort on navigation, and cleared previous subject content/search when switching subjects.
 - No schema changes. Comprehensive integration/visual verification deferred as requested; CI pending and production not deployed. Migration 0007 remains a prerequisite for learning API deployment.
+
+## Saved learning content management (2026-10-25)
+- Added protected administrator lesson/material listing by subject and kind, 20 entries per page with matching total.
+- Added same-origin protected updates with schema validation, subject-bound IDs, missing-content errors and transactional audit records.
+- Administrator UI can reopen saved content, edit text/links/lesson order and switch between draft/published; refreshes list after save.
+- Locked subject/type during editing and disabled form during save to prevent accidental cross-content changes. No delete or migration added.
+- Relevant guards/types reviewed against existing Env; automated CI pending. Comprehensive integration/visual tests deferred as requested. Not deployed; migration 0007 still required.
