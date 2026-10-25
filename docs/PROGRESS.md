@@ -172,3 +172,8 @@ Updated: 2026-10-24
 - API checks and deployment readiness passed for the new read-only overview endpoint at d4719e6.
 - Web checks failed for dashboard App.tsx because overview useEffect referenced signedIn before its declaration (TS2448/TS2454).
 - Moved signedIn state declaration above the effect; pending next CI run. No production deployment.
+
+## Admin distribution visualization (2026-10-25)
+- Web checks and deployment readiness succeeded after the admin dashboard declaration-order repair (commit 35e6890).
+- Added responsive distribution bars for subjects, exams, and questions using real counts from the protected overview API; values and scales are labeled and no fabricated analytics are shown.
+- No production deployment. New changes await CI. Subject breakdown API expansion remains pending.
