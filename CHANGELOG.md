@@ -48,3 +48,6 @@
 
 ## 2026-10-25 — Draft question review
 - Added admin-only exam item listing and draft question review in the authoring UI, without exposing answer keys.
+
+## 2026-10-25 — Draft exam item management
+- Administrators can reorder and remove draft exam questions without modifying published versions.
