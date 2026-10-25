@@ -9,6 +9,33 @@ admin.use('*',requireSession,requireRole('admin'));
 
 
 
+const lessonInput=z.object({subjectId:z.string().uuid(),title:z.string().trim().min(2).max(160),body:z.string().max(30000),position:z.number().int().min(0).max(10000),status:z.enum(['draft','published'])}).strict();
+const materialInput=z.object({subjectId:z.string().uuid(),title:z.string().trim().min(2).max(160),description:z.string().max(2000),url:z.url().max(2048).refine(url=>url.startsWith('https://')),status:z.enum(['draft','published'])}).strict();
+admin.post('/learning/lessons',sameOrigin,async c=>{
+ const parsed=lessonInput.safeParse(await c.req.json().catch(()=>null));
+ if(!parsed.success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+ const {subjectId,title,body,position,status}=parsed.data;
+ const id=crypto.randomUUID(),now=Math.floor(Date.now()/1000);
+ try{
+  const subject=await c.env.EXAM_CORE.prepare('SELECT id FROM subjects WHERE id=?').bind(subjectId).first();
+  if(!subject)return c.json({error:{code:'SUBJECT_NOT_FOUND'}},404);
+  await c.env.EXAM_CORE.prepare('INSERT INTO learning_lessons(id,subject_id,title,body,position,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)').bind(id,subjectId,title,body,position,status,now,now).run();
+  return c.json({id},201);
+ }catch{return c.json({error:{code:'WRITE_FAILED'}},503);}
+});
+admin.post('/learning/materials',sameOrigin,async c=>{
+ const parsed=materialInput.safeParse(await c.req.json().catch(()=>null));
+ if(!parsed.success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+ const {subjectId,title,description,url,status}=parsed.data;
+ const id=crypto.randomUUID(),now=Math.floor(Date.now()/1000);
+ try{
+  const subject=await c.env.EXAM_CORE.prepare('SELECT id FROM subjects WHERE id=?').bind(subjectId).first();
+  if(!subject)return c.json({error:{code:'SUBJECT_NOT_FOUND'}},404);
+  await c.env.EXAM_CORE.prepare('INSERT INTO learning_materials(id,subject_id,title,description,url,status,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)').bind(id,subjectId,title,description,url,status,now,now).run();
+  return c.json({id},201);
+ }catch{return c.json({error:{code:'WRITE_FAILED'}},503);}
+});
+
 admin.get('/overview',async c=>{
  try{
   const core=await c.env.EXAM_CORE.prepare("SELECT (SELECT COUNT(*) FROM users) AS users,(SELECT COUNT(*) FROM subjects) AS subjects,(SELECT COUNT(*) FROM questions) AS questions,(SELECT COUNT(*) FROM exams) AS exams,(SELECT COUNT(*) FROM exam_versions WHERE status='published') AS publishedVersions").first<{users:number;subjects:number;questions:number;exams:number;publishedVersions:number}>();
