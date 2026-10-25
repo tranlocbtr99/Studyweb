@@ -1,5 +1,5 @@
 {
   "authorization": "PUBLISH_LTSTUDY_20261025",
-  "sourceCommit": "bfcb705317b2e4a66dde6655eed40c7c2a64677d",
-  "scope": "Improve exam extraction and deploy missing-answer AI suggestions with administrator review"
+  "sourceCommit": "b3d27d2a46ac26b3a82c54dc9e00b1bd370bcf52",
+  "scope": "Repair silent disabled save button with actionable exam validation"
 }
