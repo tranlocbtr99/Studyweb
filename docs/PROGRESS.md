@@ -372,3 +372,9 @@ Updated: 2026-10-24
 - Added a Vietnamese introduction, the headline “Học hôm nay. Tự tin ngày mai.”, a study/exam encouragement and the exact “Designed by LocTM” credit. No fabricated counts, social sign-in or unsupported password-reset flows are shown.
 - Student login, administrator login and registration retain their original handlers, field labels, password types and autocomplete attributes. Signed-out errors now appear inside the form card. The unrelated global search bar is hidden on the welcome screen, and an accessible loading status appears while restoring a session.
 - Styling is scoped to signed-out UI, includes narrow-screen layout, keyboard focus and reduced-motion handling. Frontend production build passed. Hosted visual acceptance/deployment pending; no API/schema/credential changes.
+
+
+### Welcome screen deployed and visually verified
+- Release 925f570c2af1a8cffafda82ecc9eb5266760a0a2 succeeded in run 40229328595; source Web/deployment-readiness CI passed. Existing release safety, API tests and authenticated live checks passed without changing authentication or database behavior.
+- Hosted signed-out browser verified the introduction, “Học hôm nay. Tự tin ngày mai.” headline, encouragement and “Designed by LocTM” footer. Student/admin/register modes switch to their expected forms; original password input types and autocomplete remain intact.
+- Desktop visual QA at a 1363-pixel viewport showed document width 1363 (no horizontal overflow); the introduction, credential form and footer fit the captured view. Screenshot retained for the user. Responsive CSS is included; a real mobile-device walkthrough was not performed.

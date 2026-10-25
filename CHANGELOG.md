@@ -197,3 +197,5 @@
 - Add a pastel/glass introduction and sign-in layout, study encouragement and “Designed by LocTM” credit.
 - Keep existing student/admin/registration flows, move authentication feedback into the form and add responsive/keyboard/reduced-motion styling.
 - Frontend production build passed; hosted visual verification pending.
+
+- Release run 40229328595 succeeded. Hosted visual QA verified all three access modes, introduction/credit/footer and desktop layout without horizontal overflow.
