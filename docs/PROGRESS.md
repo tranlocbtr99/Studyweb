@@ -221,3 +221,10 @@ Updated: 2026-10-24
 - Added copy-to-editor action for existing content; copies are unsaved drafts until explicitly saved, leaving originals untouched.
 - Added dirty-state prompts before replacing/cancelling editor content, changing subject/type, or archiving the edited item; beforeunload warns on browser reload/close where supported.
 - Does not persist local drafts or intercept parent application navigation. Comprehensive integration/visual tests remain deferred; new CI pending and no production deployment.
+
+## Learning directory review workflow (2026-10-25)
+- Previous commit 5b518ce passed Web checks and deployment readiness.
+- Added inline saved-content previews, safe HTTPS material links, Vietnamese update timestamps and visible result ranges.
+- Added clear-filters action. Editing or copying scrolls back to the editor and focuses the title field while preserving unsaved-change confirmation.
+- Previewing list entries does not replace the editor buffer or change publication state. No API/schema changes or production deployment.
+- New CI pending; complete integration/visual verification remains deferred until feature completion.

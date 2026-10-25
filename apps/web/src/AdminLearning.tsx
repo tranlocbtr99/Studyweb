@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 type LearningItem={id:string;subjectId:string;title:string;body:string;position?:number;url?:string;status:'draft'|'published'|'archived';updatedAt:number};
 type Subject={id:string;title:string;slug:string};
 export default function AdminLearning(){
+ const editorRef=useRef<HTMLFormElement>(null);
+ const titleRef=useRef<HTMLInputElement>(null);
  const [preview,setPreview]=useState(false);
  const [baseline,setBaseline]=useState(JSON.stringify({title:'',body:'',url:'',position:0,status:'draft'}));
  const [filterStatus,setFilterStatus]=useState('all');
@@ -56,6 +58,8 @@ export default function AdminLearning(){
   setBaseline(JSON.stringify({title:duplicate?'':nextTitle,body:duplicate?'':item.body,url:duplicate?'':item.url??'',position:duplicate?0:item.position??0,status:duplicate?'draft':nextStatus}));
   setEditingId(duplicate?'':item.id);setTitle(nextTitle);setBody(item.body);setUrl(item.url??'');setPosition(item.position??0);
   setStatus(nextStatus);setMessage(duplicate?'Đã tạo bản sao trong trình soạn. Nhấn Lưu nội dung để lưu bản nháp mới.':'');
+  editorRef.current?.scrollIntoView({behavior:'smooth',block:'start'});
+  titleRef.current?.focus({preventScroll:true});
  }
  async function changeStatus(){
   if(!pendingStatus||busy)return;
@@ -85,10 +89,10 @@ export default function AdminLearning(){
  return <section className="panel" aria-label="Quản lý nội dung học tập">
   <h2>Biên soạn bài học và tài liệu</h2><p>Chọn môn học, nhập nội dung và quyết định lưu nháp hoặc xuất bản cho học viên.</p>
   {editingId&&<p role="status">Đang chỉnh sửa: {title}</p>}
-  <form onSubmit={event=>void save(event)} className="admin-learning-form"><fieldset disabled={busy} style={{border:0,padding:0,margin:0,display:'contents'}}>
+  <form ref={editorRef} onSubmit={event=>void save(event)} className="admin-learning-form"><fieldset disabled={busy} style={{border:0,padding:0,margin:0,display:'contents'}}>
    <label>Môn học<select required value={subjectId} disabled={!!editingId} onChange={e=>{if(!discardChanges())return;setSubjectId(e.target.value);setOffset(0);setPendingStatus(null);resetEditor()}}><option value="">Chọn môn học</option>{subjects.map(s=><option key={s.id} value={s.id}>{s.title}</option>)}</select></label>
    <label>Loại nội dung<select value={kind} disabled={!!editingId} onChange={e=>{if(!discardChanges())return;setPendingStatus(null);setKind(e.target.value as 'lesson'|'material');setOffset(0);resetEditor()}}><option value="lesson">Bài học</option><option value="material">Tài liệu</option></select></label>
-   <label>Tiêu đề<input required minLength={2} maxLength={160} value={title} onChange={e=>setTitle(e.target.value)}/></label>
+   <label>Tiêu đề<input ref={titleRef} required minLength={2} maxLength={160} value={title} onChange={e=>setTitle(e.target.value)}/></label>
    <label>{kind==='lesson'?'Nội dung bài học':'Mô tả tài liệu'}<textarea rows={6} maxLength={kind==='lesson'?30000:2000} value={body} onChange={e=>setBody(e.target.value)}/></label>
    {kind==='material'&&<label>Liên kết HTTPS<input required type="url" pattern="https://.*" value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://..."/></label>}
    {kind==='lesson'&&<label>Thứ tự bài học<input type="number" min={0} max={10000} value={position} onChange={e=>setPosition(Number(e.target.value))}/></label>}
@@ -110,12 +114,20 @@ export default function AdminLearning(){
    <form className="actions" onSubmit={event=>{event.preventDefault();setSearch(searchInput.trim());setOffset(0)}}>
     <label>Tìm tiêu đề<input type="search" maxLength={160} value={searchInput} onChange={e=>setSearchInput(e.target.value)}/></label>
     <button type="submit" disabled={busy}>Tìm kiếm</button>
+    {(searchInput||search||filterStatus!=='all')&&<button type="button" className="secondary" disabled={busy} onClick={()=>{setSearchInput('');setSearch('');setFilterStatus('all');setOffset(0)}}>Xóa bộ lọc</button>}
     <label>Trạng thái<select value={filterStatus} disabled={busy} onChange={e=>{setFilterStatus(e.target.value);setOffset(0)}}><option value="all">Tất cả</option><option value="draft">Bản nháp</option><option value="published">Đã xuất bản</option><option value="archived">Đã lưu trữ</option></select></label>
    </form>
    {pendingStatus&&<div className="panel" role="group" aria-label="Xác nhận đổi trạng thái"><p>{pendingStatus.status==='archived'?'Khôi phục thành bản nháp: ':'Lưu trữ và ẩn khỏi học viên: '}{pendingStatus.title}?</p><button type="button" disabled={busy} onClick={()=>void changeStatus()}>Xác nhận</button><button type="button" className="secondary" disabled={busy} onClick={()=>setPendingStatus(null)}>Hủy</button></div>}
    <h3>{kind==='lesson'?'Bài học':'Tài liệu'} đã lưu · {total}</h3>
+   {!loading&&!listError&&total>0&&<p>Hiển thị {offset+1}–{Math.min(offset+items.length,total)} / {total} kết quả</p>}
    <button type="button" className="secondary" disabled={loading||busy} onClick={()=>setRevision(value=>value+1)}>Tải lại danh sách</button>
-   {loading?<p role="status">Đang tải…</p>:listError?<p role="alert">{listError}</p>:items.length?<div className="subject-exam-list">{items.map(item=><article key={item.id} className="subject-exam-card"><div><h4>{item.title}</h4><p>{item.status==='published'?'Đã xuất bản':item.status==='archived'?'Đã lưu trữ':'Bản nháp'}{kind==='lesson'?' · Thứ tự '+item.position:''}</p></div><button type="button" disabled={busy||item.status==='archived'} onClick={()=>edit(item)}>Chỉnh sửa</button><button type="button" className="secondary" disabled={busy} onClick={()=>edit(item,true)}>Tạo bản sao</button><button type="button" className="secondary" disabled={busy} onClick={()=>setPendingStatus(item)}>{item.status==='archived'?'Khôi phục':'Lưu trữ'}</button></article>)}</div>:<p>Chưa có nội dung ở trang này.</p>}
+   {loading?<p role="status">Đang tải…</p>:listError?<p role="alert">{listError}</p>:items.length?<div className="subject-exam-list">{items.map(item=><article key={item.id} className="subject-exam-card"><div><h4>{item.title}</h4><p>{item.status==='published'?'Đã xuất bản':item.status==='archived'?'Đã lưu trữ':'Bản nháp'}{kind==='lesson'?' · Thứ tự '+item.position:''}</p>
+     <p>Cập nhật: <time dateTime={new Date(item.updatedAt*1000).toISOString()}>{new Date(item.updatedAt*1000).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})}</time></p>
+     <details><summary style={{cursor:'pointer'}}>Xem nội dung đã lưu</summary>
+      <div style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',lineHeight:1.8,maxHeight:360,overflowY:'auto',marginTop:12}}>{item.body||'Chưa có nội dung'}</div>
+      {kind==='material'&&(()=>{try{const link=new URL(item.url??'');return link.protocol==='https:'?<p><a href={link.href} target="_blank" rel="noopener noreferrer">Mở tài liệu</a></p>:null}catch{return null}})()}
+     </details>
+    </div><button type="button" disabled={busy||item.status==='archived'} onClick={()=>edit(item)}>Chỉnh sửa</button><button type="button" className="secondary" disabled={busy} onClick={()=>edit(item,true)}>Tạo bản sao</button><button type="button" className="secondary" disabled={busy} onClick={()=>setPendingStatus(item)}>{item.status==='archived'?'Khôi phục':'Lưu trữ'}</button></article>)}</div>:<p>Chưa có nội dung ở trang này.</p>}
    <div className="actions"><button type="button" disabled={offset===0||loading||busy} onClick={()=>setOffset(value=>Math.max(0,value-20))}>Trang trước</button><span>Trang {Math.floor(offset/20)+1}</span><button type="button" disabled={offset+20>=total||loading||busy} onClick={()=>setOffset(value=>value+20)}>Trang sau</button></div>
   </section>}
  </section>;

@@ -113,3 +113,7 @@
 ## 2026-10-25 — Learning editor workflow
 - Preview lesson/material content and create editable draft copies of saved entries.
 - Show character counts and unsaved-change prompts for editor replacement and browser reload/close.
+
+## 2026-10-25 — Learning directory review
+- Preview saved content in place, show update times/result ranges and clear search filters.
+- Return focus to the editor when opening or copying saved content.
