@@ -60,3 +60,6 @@
 
 ## 2026-10-25 — Pre-submit review
 - Added an unanswered-question review and explicit confirmation before submitting a student exam.
+
+## 2026-10-25 — Student exam usability batch
+- Search/filter published exam catalog; completion progress meter; unanswered navigation and clear-answer control.
