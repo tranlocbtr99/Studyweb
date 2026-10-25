@@ -70,3 +70,6 @@
 
 ## 2026-10-25 — LTStudy design foundation
 - Responsive sidebar, student/admin navigation and pastel glass layout aligned to the supplied six-screen reference. Remaining screens tracked as work in progress.
+
+## 2026-10-25 — Student dashboard
+- Added pastel student hero, quick actions, and real exam-subject cards.
