@@ -26,6 +26,7 @@ export default function App(){
   const [attempt,setAttempt]=useState<Attempt|null>(null);
   const [answers,setAnswers]=useState<Record<string,string>>({});
   const [currentQuestion,setCurrentQuestion]=useState(0);
+  const [reviewBeforeSubmit,setReviewBeforeSubmit]=useState(false);
   const [result,setResult]=useState<Result|null>(null);
   const [message,setMessage]=useState('');
   const [busy,setBusy]=useState(false);
@@ -167,7 +168,7 @@ export default function App(){
     catch(e){setMessage(String(e)+' — Dữ liệu chưa được lưu; không nộp bài cho đến khi lưu thành công.');}
   }
   async function submit(){
-    if(!attempt||!window.confirm('Xác nhận nộp bài?'))return;
+    if(!attempt)return;
     setBusy(true);setMessage('');
     const key=window.crypto.randomUUID();
     try{
@@ -175,7 +176,7 @@ export default function App(){
       const current=latestAttempt.current;
       if(!current)throw new Error('Không tìm thấy lượt thi');
       const data=await api<{result:Result}>('/attempts/'+current.id+'/submit',{method:'POST',body:JSON.stringify({saveVersion:current.saveVersion,idempotencyKey:key})});
-      setResult(data.result);sessionStorage.removeItem('studyweb_active_attempt');setResumeAvailable(false);
+      setReviewBeforeSubmit(false);setResult(data.result);sessionStorage.removeItem('studyweb_active_attempt');setResumeAvailable(false);
     }catch(e){setMessage(String(e)+' — Bài chưa được xác nhận nộp. Kiểm tra trạng thái lưu và kết quả trước khi thử lại.');}finally{setBusy(false);}
   }
   return <main className="shell">
@@ -225,7 +226,8 @@ export default function App(){
         {question.options.map(option=><label className="option" key={option.label}><input type="radio" name={'q'+position} disabled={!attempt||!!result||remaining===0} checked={answers[String(position)]===option.label} onChange={()=>setAnswers(prev=>({...prev,[String(position)]:option.label}))}/><span>{option.label}. {option.text}</span></label>)}</article>)}
       {attempt&&!result&&<ReviewFlags attemptId={attempt.id} positions={exam.questions.map(item=>item.position)} currentPosition={exam.questions[currentQuestion]?.position??0} onNavigate={position=>{const index=exam.questions.findIndex(item=>item.position===position);if(index>=0)setCurrentQuestion(index);}}/>}
       <div className="toolbar question-controls"><button className="secondary" disabled={currentQuestion===0} onClick={()=>setCurrentQuestion(index=>Math.max(0,index-1))}>Câu trước</button><button className="secondary" disabled={currentQuestion>=exam.questions.length-1} onClick={()=>setCurrentQuestion(index=>Math.min(exam.questions.length-1,index+1))}>Câu tiếp</button></div>
-      {attempt&&!result&&<div className="toolbar"><button className="secondary" disabled={busy} onClick={recover}>Khôi phục đáp án</button><button disabled={busy||remaining===0} onClick={save}>Lưu bài</button><button className="danger" disabled={busy||remaining===0} onClick={submit}>Nộp bài</button></div>}
+      {attempt&&!result&&<div className="toolbar"><button className="secondary" disabled={busy} onClick={recover}>Khôi phục đáp án</button><button disabled={busy||remaining===0} onClick={save}>Lưu bài</button><button className="danger" disabled={busy||remaining===0} onClick={()=>setReviewBeforeSubmit(true)}>Nộp bài</button></div>}
+      {attempt&&!result&&reviewBeforeSubmit&&<section className="submission-review" aria-label="Kiểm tra trước khi nộp bài"><h3>Xác nhận nộp bài</h3><p>Đã trả lời {exam.questions.filter(({position})=>Boolean(answers[String(position)])).length}/{exam.questions.length} câu. Sau khi nộp, bạn không thể sửa đáp án.</p><strong>Câu chưa trả lời</strong><div className="question-navigation">{exam.questions.filter(({position})=>!answers[String(position)]).map(({position})=><button type="button" className="secondary" key={position} onClick={()=>{const index=exam.questions.findIndex(item=>item.position===position);if(index>=0)setCurrentQuestion(index);setReviewBeforeSubmit(false);}}>Câu {position+1}</button>)}{exam.questions.every(({position})=>Boolean(answers[String(position)]))&&<span>Không có câu bỏ trống.</span>}</div><div className="toolbar"><button type="button" className="secondary" onClick={()=>setReviewBeforeSubmit(false)}>Quay lại bài thi</button><button type="button" className="danger" disabled={busy||remaining===0} onClick={()=>void submit()}>Xác nhận nộp bài</button></div></section>}
     </section>}
     {signedIn&&(!isAdmin||workspace==='exams')&&result&&<section className="panel"><h2>Kết quả bài thi</h2><p className="score">{result.points} / {result.maxPoints}</p><p>Đã nộp: {new Date(result.submittedAt*1000).toLocaleString('vi-VN')}</p></section>}
     {message&&<p role="alert" className="notice">{message}</p>}
