@@ -91,3 +91,8 @@ Updated: 2026-10-24
 ## Exam integrity regression coverage (2026-10-25)
 - Added nine automated tests for empty exams, missing/duplicate positions, incomplete options, accidental answer-key exposure, invalid answer keys, deterministic ordering, and hash changes for public/private content edits.
 - Tests target existing server-side examContentHash validation; no production data or schema changed. API CI 40158373119 pending. Deployment not initiated.
+
+## Draft exam question review (2026-10-25)
+- Added admin-only GET /api/v1/admin/exam-versions/:id/items to retrieve ordered public question snapshots without private answer keys.
+- Authoring UI can display and refresh saved draft questions after reopening an exam. Removal/reordering remain pending.
+- Per user preference, focus upcoming turns on features; consolidate extensive integration tests near release. Existing CI still runs automatically. No production deploy.
