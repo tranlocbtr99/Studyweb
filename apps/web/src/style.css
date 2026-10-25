@@ -36,3 +36,9 @@ button:hover:not(:disabled){filter:brightness(1.04)}button:focus-visible,input:f
 @media(max-width:560px){.question-navigation{gap:6px}.question-navigation button{min-width:40px;min-height:40px}.exam-progress{font-size:.9rem}}
 
 .submission-review{margin-top:22px;padding:20px;border:1px solid #c8c4ef;border-radius:18px;background:#f6f4ff}.submission-review h3{margin-top:0}.submission-review .toolbar{justify-content:flex-end;flex-wrap:wrap}
+
+.exam-progress-track{height:10px;border-radius:99px;background:#e9e6f8;overflow:hidden;margin:8px 0 16px}
+.exam-progress-track>div{height:100%;border-radius:inherit;background:linear-gradient(90deg,#7c70dd,#50b5a5);transition:width .2s ease}
+.exam-catalog-list{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.inline-check{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.inline-check input{width:auto}
