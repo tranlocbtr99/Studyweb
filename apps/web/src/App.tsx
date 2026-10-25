@@ -18,6 +18,18 @@ export default function App(){
   const [accessMode,setAccessMode]=useState<'student'|'admin'|'register'>('student');
   const [isAdmin,setIsAdmin]=useState(false);
   const [workspace,setWorkspace]=useState<'overview'|'authoring'|'exams'|'users'>('overview');
+  const [adminOverview,setAdminOverview]=useState<{users:number;subjects:number;questions:number;exams:number;publishedVersions:number}|null>(null);
+  const [overviewError,setOverviewError]=useState('');
+  useEffect(()=>{
+    if(!signedIn||!isAdmin||workspace!=='overview')return;
+    let cancelled=false;
+    fetch('/api/v1/admin/overview',{credentials:'same-origin'})
+      .then(async res=>{if(!res.ok)throw Error('HTTP '+res.status);return res.json() as Promise<{overview:{users:number;subjects:number;questions:number;exams:number;publishedVersions:number}}>})
+      .then(data=>{if(!cancelled)setAdminOverview(data.overview)})
+      .catch(err=>{if(!cancelled)setOverviewError(String(err))});
+    return()=>{cancelled=true};
+  },[signedIn,isAdmin,workspace]);
+
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
   const [signedIn,setSignedIn]=useState<boolean|null>(null);
@@ -242,6 +254,13 @@ export default function App(){
         <button className={workspace==='authoring'?'':'secondary'} onClick={()=>setWorkspace('authoring')}>Tạo đề thi</button><button className={workspace==='users'?'':'secondary'} onClick={()=>setWorkspace('users')}>Người dùng</button>
         <button className={workspace==='exams'?'':'secondary'} onClick={()=>setWorkspace('exams')}>Phòng thi</button>
       </nav>
+      {workspace==='overview'&&<div className="admin-metrics" aria-live="polite">
+      {overviewError&&<p role="alert">Không tải được thống kê: {overviewError}</p>}
+      {!adminOverview&&!overviewError&&<p>Đang tải thống kê thực tế…</p>}
+      {adminOverview&&<div className="admin-metrics-grid">{([
+        ['Người dùng',adminOverview.users],['Môn học',adminOverview.subjects],['Câu hỏi',adminOverview.questions],['Đề thi',adminOverview.exams],['Phiên bản xuất bản',adminOverview.publishedVersions]
+      ] as Array<[string,number]>).map(([label,count])=><article key={label}><span>{label}</span><strong>{count.toLocaleString('vi-VN')}</strong></article>)}</div>}
+      </div>}
       {workspace==='overview'&&<div className="admin-overview-grid">
         <article><span className="admin-stat-icon">📚</span><h2>Khóa học và môn học</h2><p>Phân chia môn học và chủ đề để xây dựng ngân hàng câu hỏi.</p><button onClick={()=>setWorkspace('authoring')}>Quản lý nội dung</button></article>
         <article><span className="admin-stat-icon">📝</span><h2>Ngân hàng câu hỏi</h2><p>Soạn câu hỏi trắc nghiệm, đáp án đúng và phần giải thích.</p><button onClick={()=>setWorkspace('authoring')}>Biên soạn câu hỏi</button></article>
