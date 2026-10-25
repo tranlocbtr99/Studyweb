@@ -5,6 +5,9 @@ import ReviewFlags from './ReviewFlags';
 import UserDirectory from './UserDirectory';
 import SubjectDetail from './SubjectDetail';
 import AdminLearning from './AdminLearning';
+import Icon from './Icon';
+import AdminActivity from './AdminActivity';
+import ResultsDirectory from './ResultsDirectory';
 
 type Question = { body:string; options:Array<{label:string;text:string}> };
 type Exam = { version:{id:string;examId:string;durationMinutes:number};questions:Array<{position:number;question:Question}> };
@@ -17,15 +20,19 @@ const api = async <T,>(path:string,init?:RequestInit):Promise<T> => {
   return body;
 };
 export default function App(){
+  const [studentPage,setStudentPage]=useState<'home'|'courses'|'exams'|'history'>('home');
+  const [courses,setCourses]=useState<Array<{id:string;title:string;lessonCount:number;materialCount:number;examCount:number}>>([]);
+  const [globalSearch,setGlobalSearch]=useState('');
+  const expiryHandled=useRef<string|null>(null);
   const [accessMode,setAccessMode]=useState<'student'|'admin'|'register'>('student');
   const [isAdmin,setIsAdmin]=useState(false);
   const [signedIn,setSignedIn]=useState<boolean|null>(null);
-  const [workspace,setWorkspace]=useState<'overview'|'authoring'|'exams'|'users'|'learning'>('overview');
+  const [workspace,setWorkspace]=useState<'overview'|'authoring'|'exams'|'users'|'learning'|'results'>('overview');
   const [adminOverview,setAdminOverview]=useState<{users:number;subjects:number;questions:number;exams:number;publishedVersions:number}|null>(null);
   const [overviewError,setOverviewError]=useState('');
   useEffect(()=>{
     if(!signedIn||!isAdmin||workspace!=='overview')return;
-    let cancelled=false;
+    let cancelled=false;setOverviewError('');
     fetch('/api/v1/admin/overview',{credentials:'same-origin'})
       .then(async res=>{if(!res.ok)throw Error('HTTP '+res.status);return res.json() as Promise<{overview:{users:number;subjects:number;questions:number;exams:number;publishedVersions:number}}>})
       .then(data=>{if(!cancelled)setAdminOverview(data.overview)})
@@ -72,6 +79,7 @@ export default function App(){
         const data=await api<{saveVersion:number}>('/attempts/'+current.id+'/answers',{
           method:'PUT',body:JSON.stringify({saveVersion:current.saveVersion,answers:JSON.parse(snapshot)})
         });
+        if(latestAttempt.current?.id!==current.id)return;
         savedAnswers.current=snapshot;
         latestAttempt.current={...current,saveVersion:data.saveVersion};
         setAttempt(previous=>previous?.id===current.id?{...previous,saveVersion:data.saveVersion}:previous);
@@ -92,6 +100,8 @@ export default function App(){
   useEffect(()=>{
     if(signedIn!==true)return;
     setResumeAvailable(Boolean(sessionStorage.getItem('studyweb_active_attempt')));
+    void showCatalog();
+    fetch('/api/v1/student/subjects',{credentials:'same-origin'}).then(async response=>{if(!response.ok)throw Error();return response.json() as Promise<{subjects:typeof courses}>}).then(data=>setCourses(data.subjects)).catch(()=>setMessage('Không tải được khóa học. Vui lòng tải lại trang.'));
   },[signedIn]);
   useEffect(()=>{
     const onBeforeUnload=(event:BeforeUnloadEvent)=>{
@@ -102,6 +112,11 @@ export default function App(){
     window.addEventListener('beforeunload',onBeforeUnload);
     return()=>window.removeEventListener('beforeunload',onBeforeUnload);
   },[attempt,result]);
+  function navigateStudent(page:typeof studentPage){
+    if(attempt&&!result&&page!=='exams'){setMessage('Hãy nộp bài trước khi rời phòng thi. Bài đang làm vẫn được lưu tự động.');return;}
+    setStudentPage(page);setDetailSubject(null);setMessage('');
+    if(page==='history')void loadHistory(0);
+  }
   async function resume(){
     const raw=sessionStorage.getItem('studyweb_active_attempt');
     if(!raw)return;
@@ -115,7 +130,7 @@ export default function App(){
       ]);
       if(saveData.attempt.status!=='active')throw new Error('Lượt thi không còn hoạt động');
       const next={id:record.attemptId,expiresAt:saveData.attempt.expiresAt,saveVersion:saveData.attempt.saveVersion};
-      setExam(examData);setCurrentQuestion(0);setVersionId(record.versionId);setAnswers(saveData.attempt.answers);
+      setStudentPage('exams');setExam(examData);setCurrentQuestion(0);setVersionId(record.versionId);setAnswers(saveData.attempt.answers);
       savedAnswers.current=JSON.stringify(saveData.attempt.answers);
       latestAttempt.current=next;setAttempt(next);setResult(null);setSaveState('saved');
       setMessage('Đã khôi phục bài thi từ máy chủ');
@@ -136,7 +151,7 @@ export default function App(){
         const status=await fetch('/api/v1/admin/status',{credentials:'same-origin'});
         if(!status.ok){await fetch('/api/v1/auth/logout',{method:'POST',credentials:'same-origin'});throw new Error('Tài khoản không có quyền quản trị');}
       }
-      setIsAdmin(accessMode==='admin');setWorkspace(accessMode==='admin'?'authoring':'exams');setSignedIn(true);setPassword('');
+      setIsAdmin(accessMode==='admin');setWorkspace('overview');setStudentPage('home');setSignedIn(true);setPassword('');
     }catch(e){setMessage(String(e));}finally{setBusy(false);}
   }
   async function register(){
@@ -148,11 +163,12 @@ export default function App(){
     }catch(e){setMessage(String(e));}finally{setBusy(false);}
   }
   async function logout(){
+    if(attempt&&!result&&!window.confirm('Bài thi chưa nộp. Đăng xuất sẽ đóng phiên làm việc; thời gian thi vẫn tiếp tục.'))return;
     setBusy(true);
     try{
       const res=await fetch('/api/v1/auth/logout',{method:'POST',credentials:'same-origin'});
       if(!res.ok)throw new Error('Đăng xuất thất bại');
-      sessionStorage.removeItem('studyweb_active_attempt');setResumeAvailable(false);setSignedIn(false);setIsAdmin(false);setExam(null);setAttempt(null);setAnswers({});savedAnswers.current='{}';setResult(null);
+      sessionStorage.removeItem('studyweb_active_attempt');setResumeAvailable(false);setSignedIn(false);setIsAdmin(false);setExam(null);setAttempt(null);latestAttempt.current=null;setAnswers({});savedAnswers.current='{}';setResult(null);setCourses([]);setCatalog([]);setHistory([]);setHistoryOpen(false);setAdminOverview(null);
     }catch(e){setMessage(String(e));}finally{setBusy(false);}
   }
   useEffect(()=>{
@@ -168,13 +184,14 @@ export default function App(){
   async function showCatalog(){
     setBusy(true);setMessage('');
     try{
-      const data=await api<{exams:Array<{versionId:string;title:string;subject:string;questionCount:number;durationMinutes:number}>}>('/exam-catalog');
+      const data=await api<{exams:Array<{versionId:string;title:string;subject:string;questionCount:number;durationMinutes:number}>}>('/exam-catalog?limit=50');
       setCatalog(data.exams);
     }catch(e){setMessage(String(e));}finally{setBusy(false);}
   }
-  async function loadExam(){
+  async function loadExam(selectedId=versionId){
+    if(attempt&&!result){setMessage('Không thể đổi đề trong khi đang làm bài.');return;}
     setBusy(true);setMessage('');
-    try{const data=await api<{version:Exam['version'];questions:Exam['questions']}>('/exam-versions/'+encodeURIComponent(versionId));setExam(data);setCurrentQuestion(0);setAttempt(null);setAnswers({});setResult(null);}
+    try{const data=await api<{version:Exam['version'];questions:Exam['questions']}>('/exam-versions/'+encodeURIComponent(selectedId));setVersionId(selectedId);setStudentPage('exams');setExam(data);setCurrentQuestion(0);setAttempt(null);setAnswers({});setResult(null);}
     catch(e){setMessage(String(e));}finally{setBusy(false);}
   }
   async function start(){
@@ -194,29 +211,40 @@ export default function App(){
     try{await queueSave();setMessage('Đã lưu đáp án');}
     catch(e){setMessage(String(e)+' — Dữ liệu chưa được lưu; không nộp bài cho đến khi lưu thành công.');}
   }
-  async function submit(){
+  async function submit(expired=false){
     if(!attempt)return;
     setBusy(true);setMessage('');
-    const key=window.crypto.randomUUID();
+    const key=attempt.id;
     try{
-      await queueSave();
+      if(!expired)await queueSave();
       const current=latestAttempt.current;
       if(!current)throw new Error('Không tìm thấy lượt thi');
       const data=await api<{result:Result}>('/attempts/'+current.id+'/submit',{method:'POST',body:JSON.stringify({saveVersion:current.saveVersion,idempotencyKey:key})});
       setReviewBeforeSubmit(false);setResult(data.result);sessionStorage.removeItem('studyweb_active_attempt');setResumeAvailable(false);
-    }catch(e){setMessage(String(e)+' — Bài chưa được xác nhận nộp. Kiểm tra trạng thái lưu và kết quả trước khi thử lại.');}finally{setBusy(false);}
+    }catch(e){
+      try{
+        const confirmed=await api<{result:Result}>('/attempts/'+attempt.id+'/result');
+        setReviewBeforeSubmit(false);setResult(confirmed.result);sessionStorage.removeItem('studyweb_active_attempt');setResumeAvailable(false);setMessage('Đã xác nhận bài nộp từ máy chủ.');
+      }catch{setMessage(String(e)+' — Bài chưa được xác nhận nộp. Kiểm tra kết nối và thử lại.');}
+    }finally{setBusy(false);}
   }
+  useEffect(()=>{
+    if(!attempt||result||busy||remaining>0||attempt.expiresAt>Math.floor(Date.now()/1000)||expiryHandled.current===attempt.id)return;
+    expiryHandled.current=attempt.id;void submit(true);
+  },[attempt?.id,remaining,result,busy]);
   return <main className={signedIn?'shell study-layout':'shell'}>
     {signedIn&&<aside className="study-sidebar" aria-label="Điều hướng chính">
-      <div className="study-logo"><span aria-hidden="true">🎓</span><strong>LTStudy</strong></div>
+      <div className="study-logo"><Icon name="cap"/><strong>LTStudy</strong></div>
       <div className="study-role">{isAdmin?'Không gian quản trị':'Không gian học viên'}</div>
       <nav className="study-menu" aria-label="Danh mục">
-        {isAdmin?<><button type="button" className={workspace==='overview'?'selected':''} onClick={()=>setWorkspace('overview')}>▦ <span>Tổng quan</span></button><button type="button" className={workspace==='users'?'selected':''} onClick={()=>setWorkspace('users')}>♙ <span>Quản lý người dùng</span></button><button type="button" className={workspace==='authoring'?'selected':''} onClick={()=>setWorkspace('authoring')}>▤ <span>Ngân hàng câu hỏi</span></button><button type="button" className={workspace==='learning'?'selected':''} onClick={()=>setWorkspace('learning')}>📖 <span>Bài học và tài liệu</span></button><button type="button" className={workspace==='exams'?'selected':''} onClick={()=>setWorkspace('exams')}>▣ <span>Quản lý đề thi</span></button></>:<><button type="button" onClick={()=>void showCatalog()}>⌂ <span>Trang chủ</span></button><button type="button" onClick={()=>void showCatalog()}>▣ <span>Đề thi</span></button><button type="button" onClick={()=>{const element=document.getElementById('student-history');element?.scrollIntoView({behavior:'smooth'});}}>◷ <span>Lịch sử</span></button></>}
+        {(isAdmin?[
+          ['overview','grid','Tổng quan'],['users','users','Quản lý người dùng'],['learning','book','Quản lý khóa học'],['exams','file','Quản lý đề thi'],['authoring','layers','Ngân hàng câu hỏi'],['results','chart','Kết quả & thống kê']
+        ]:[['home','home','Trang chủ'],['courses','book','Khóa học'],['exams','file','Đề thi'],['history','clock','Lịch sử']]).map(([id,icon,label])=><button key={id} type="button" title={label} aria-current={(isAdmin?workspace:studentPage)===id?'page':undefined} className={(isAdmin?workspace:studentPage)===id?'selected':''} onClick={()=>isAdmin?setWorkspace(id as typeof workspace):navigateStudent(id as typeof studentPage)}><Icon name={icon}/><span>{label}</span></button>)}
       </nav>
       <div className="study-sidebar-footer"><span className="study-avatar">LT</span><span>{isAdmin?'Quản trị viên':'Học viên'}</span></div>
     </aside>}
     <div className="study-main">
-    <header className="study-topbar"><span className="brand">{signedIn?'LTStudy':'Studyweb'}</span><span className="subtle">Không gian ôn tập và thi trực tuyến</span></header>
+    <header className="study-topbar"><form className="global-search" onSubmit={event=>{event.preventDefault();if(isAdmin){setWorkspace('authoring')}else{navigateStudent('exams');setCatalogSearch(globalSearch)}}}><Icon name="search"/><input aria-label="Tìm kiếm" value={globalSearch} onChange={event=>setGlobalSearch(event.target.value)} placeholder={isAdmin?'Tìm câu hỏi, nội dung…':'Tìm khóa học, đề thi, tài liệu…'}/><button type="submit" className="icon-button" aria-label="Tìm kiếm"><Icon name="arrow"/></button></form><span className="topbar-caption">{isAdmin?'Không gian quản trị':'Không gian học tập'}</span><span className="study-avatar" aria-label={isAdmin?'Quản trị viên':'Học viên'}>{isAdmin?'QT':'HV'}</span></header>
     {signedIn===false&&<section className="panel"><h1>Chào mừng đến Studyweb</h1><p>Chọn cách truy cập phù hợp với bạn.</p>
       <nav className="access-modes" aria-label="Lựa chọn truy cập">
         <button type="button" className={accessMode==='student'?'':'secondary'} aria-pressed={accessMode==='student'} onClick={()=>{setAccessMode('student');setMessage('');}}>Đăng nhập học viên</button>
@@ -232,18 +260,18 @@ export default function App(){
       </form></>}
     </section>}
     {signedIn&&<div className="toolbar account"><span>Đã đăng nhập</span><button className="secondary" disabled={busy} onClick={logout}>Đăng xuất</button></div>}
-    {signedIn&&!isAdmin&&<section className="panel student-home" aria-label="Trang chủ học viên">
-      <div className="student-hero"><div><span className="student-eyebrow">LTStudy · Học tập mỗi ngày</span><h1>Chào mừng trở lại 👋</h1><p>Tiếp tục ôn tập và kiểm tra kiến thức theo tiến độ của bạn.</p></div><div className="student-hero-badge"><span>Đề thi đã tải</span><strong>{catalog.length}</strong><small>Dữ liệu từ hệ thống</small></div></div>
-      <div className="student-shortcuts">
-        <button type="button" className="student-shortcut blue" disabled={busy} onClick={()=>void showCatalog()}><span className="shortcut-symbol">▣</span><strong>Đề thi</strong><small>Khám phá đề thi đã xuất bản</small></button>
-        <button type="button" className="student-shortcut pink" disabled={busy} onClick={()=>void loadHistory(0)}><span className="shortcut-symbol">◷</span><strong>Lịch sử</strong><small>Xem kết quả đã làm</small></button>
-        <button type="button" className="student-shortcut mint" disabled={busy||!resumeAvailable} onClick={()=>void resume()}><span className="shortcut-symbol">↻</span><strong>Tiếp tục bài thi</strong><small>{resumeAvailable?'Khôi phục bài thi đang làm':'Chưa có bài thi cần khôi phục'}</small></button>
-      </div>
-      <div className="student-section-title"><h2>Môn học có đề thi</h2><button type="button" className="secondary" disabled={busy} onClick={()=>void showCatalog()}>Làm mới danh sách</button></div>
-      {catalog.length===0?<p className="student-empty">Chọn “Đề thi” để tải danh sách môn học và đề thi hiện có.</p>:<div className="student-course-grid">{Array.from(new Set(catalog.map(item=>item.subject))).map((subject,index)=>{const items=catalog.filter(item=>item.subject===subject);return <article className="student-course" key={subject}><div className={'student-course-art art-'+index%4} aria-hidden="true">{['⚖','📘','📈','🎓'][index%4]}</div><div className="student-course-body"><h3>{subject}</h3><p>{items.length} đề thi đã xuất bản</p><button type="button" className="secondary" onClick={()=>{setDetailSubject(subject);}}>Xem môn học</button></div></article>;})}</div>}
+    {signedIn&&!isAdmin&&(studentPage==='home'||studentPage==='courses')&&!detailSubject&&<section className="panel student-home" aria-label="Trang chủ học viên">
+      {studentPage==='home'&&<div className="student-hero"><div><span className="student-eyebrow">LTStudy · Học tập mỗi ngày</span><h1>Chào mừng trở lại 👋</h1><p>Tiếp tục ôn tập và kiểm tra kiến thức theo tiến độ của bạn.</p></div><div className="student-hero-badge"><span>Đề thi đã tải</span><strong>{catalog.length}</strong><small>Dữ liệu từ hệ thống</small></div></div>}
+      {studentPage==='home'&&<div className="student-shortcuts">
+        <button type="button" className="student-shortcut blue" disabled={busy} onClick={()=>navigateStudent('exams')}><span className="shortcut-symbol"><Icon name="file"/></span><strong>Đề thi</strong><small>Khám phá đề thi đã xuất bản</small></button>
+        <button type="button" className="student-shortcut pink" disabled={busy} onClick={()=>navigateStudent('history')}><span className="shortcut-symbol"><Icon name="clock"/></span><strong>Lịch sử</strong><small>Xem kết quả đã làm</small></button>
+        <button type="button" className="student-shortcut mint" disabled={busy||!resumeAvailable} onClick={()=>void resume()}><span className="shortcut-symbol"><Icon name="refresh"/></span><strong>Tiếp tục bài thi</strong><small>{resumeAvailable?'Khôi phục bài thi đang làm':'Chưa có bài thi cần khôi phục'}</small></button>
+      </div>}
+      <div className="student-section-title"><h2>Khóa học của tôi</h2><button type="button" className="secondary" disabled={busy} onClick={()=>{void showCatalog();fetch('/api/v1/student/subjects',{credentials:'same-origin'}).then(async r=>{if(!r.ok)throw Error();return r.json() as Promise<{subjects:typeof courses}>}).then(data=>setCourses(data.subjects)).catch(()=>setMessage('Không tải được khóa học.'))}}>Làm mới danh sách</button></div>
+      {courses.length===0?<p className="student-empty">Chưa có khóa học được xuất bản.</p>:<div className="student-course-grid">{courses.filter(course=>course.title.toLocaleLowerCase('vi').includes(globalSearch.trim().toLocaleLowerCase('vi'))).map((course,index)=><article className="student-course" key={course.id}><div className={'student-course-art art-'+index%4} aria-hidden="true"><Icon name={['scales','book','building','chart'][index%4]}/></div><div className="student-course-body"><h3>{course.title}</h3><p>{course.lessonCount} bài học · {course.materialCount} tài liệu</p><span className="course-meta">{course.examCount} đề thi đã xuất bản</span><button type="button" className="secondary" onClick={()=>setDetailSubject(course.title)}>Vào học <Icon name="arrow"/></button></div></article>)}</div>}
     </section>}
-    {signedIn&&!isAdmin&&detailSubject&&<SubjectDetail subject={detailSubject} exams={catalog.filter(item=>item.subject===detailSubject)} onClose={()=>setDetailSubject(null)} onSelectExam={id=>{setVersionId(id);setCatalogSubject(detailSubject);setDetailSubject(null);document.getElementById('student-exam-room')?.scrollIntoView({behavior:'smooth'});}}/>}
-    {signedIn&&!isAdmin&&<section className="panel student-insights" aria-label="Thống kê kết quả học tập">
+    {signedIn&&!isAdmin&&detailSubject&&<SubjectDetail subject={detailSubject} exams={catalog.filter(item=>item.subject===detailSubject)} onClose={()=>setDetailSubject(null)} onSelectExam={id=>{setCatalogSubject(detailSubject);setDetailSubject(null);void loadExam(id);}}/>}
+    {signedIn&&!isAdmin&&studentPage==='home'&&!detailSubject&&<section className="panel student-insights" aria-label="Thống kê kết quả học tập">
       <div className="student-section-title"><div><h2>Kết quả học tập của tôi</h2><p>Tổng quan các lượt thi trong trang lịch sử đã tải.</p></div><button type="button" className="secondary" disabled={busy} onClick={()=>void loadHistory(0)}>Cập nhật kết quả</button></div>
       {!historyOpen?<p className="student-empty">Chọn “Cập nhật kết quả” để xem thống kê từ lịch sử làm bài của bạn.</p>:<div className="student-insights-grid">
         <article><span>Lượt thi đã tải</span><strong>{history.length}</strong><small>{history.length===20?'Đang hiển thị 20 lượt gần nhất':'Lượt thi trong trang lịch sử hiện tại'}</small></article>
@@ -251,12 +279,12 @@ export default function App(){
         <article><span>Điểm trung bình</span><strong>{(()=>{const scored=history.filter(item=>item.points!==null&&item.maxPoints!==null&&item.maxPoints>0);return scored.length?(scored.reduce((sum,item)=>sum+(item.points??0)/(item.maxPoints??1)*100,0)/scored.length).toFixed(1)+'%':'—';})()}</strong><small>Chỉ tính các bài đã có điểm</small></article>
       </div>}
     </section>}
-    {signedIn&&isAdmin&&<section className="panel admin-home">
-      <div className="admin-home-heading"><div><span className="admin-eyebrow">LTStudy · Quản trị</span><h1>Không gian quản trị</h1><p>Quản lý nội dung học tập và tổ chức thi trực tuyến.</p></div><span className="admin-live">Hệ thống trực tuyến</span></div>
+    {signedIn&&isAdmin&&workspace==='overview'&&<section className="panel admin-home">
+      <div className="admin-home-heading"><div><span className="admin-eyebrow">LTStudy · Quản trị</span><h1>Không gian quản trị</h1><p>Quản lý nội dung học tập và tổ chức thi trực tuyến.</p></div><span className="admin-live">Dữ liệu hệ thống</span></div>
       <nav className="admin-navigation" aria-label="Điều hướng quản trị">
         <button className={workspace==='overview'?'':'secondary'} onClick={()=>setWorkspace('overview')}>Tổng quan</button>
-        <button className={workspace==='authoring'?'':'secondary'} onClick={()=>setWorkspace('authoring')}>Tạo đề thi</button><button className={workspace==='users'?'':'secondary'} onClick={()=>setWorkspace('users')}>Người dùng</button>
-        <button className={workspace==='exams'?'':'secondary'} onClick={()=>setWorkspace('exams')}>Phòng thi</button>
+        <button className="secondary" onClick={()=>setWorkspace('authoring')}>Tạo đề thi</button><button className="secondary" onClick={()=>setWorkspace('users')}>Người dùng</button>
+        <button className="secondary" onClick={()=>setWorkspace('exams')}>Phòng thi</button>
       </nav>
       {workspace==='overview'&&<div className="admin-metrics" aria-live="polite">
       {overviewError&&<p role="alert">Không tải được thống kê: {overviewError}</p>}
@@ -265,6 +293,7 @@ export default function App(){
         ['Người dùng',adminOverview.users],['Môn học',adminOverview.subjects],['Câu hỏi',adminOverview.questions],['Đề thi',adminOverview.exams],['Phiên bản xuất bản',adminOverview.publishedVersions]
       ] as Array<[string,number]>).map(([label,count])=><article key={label}><span>{label}</span><strong>{count.toLocaleString('vi-VN')}</strong></article>)}</div>}
       </div>}
+      {workspace==='overview'&&<AdminActivity/>}
       {workspace==='overview'&&adminOverview&&<section className="admin-distribution" aria-label="Phân bố nội dung quản trị">
         <h2>Phân bố nội dung</h2>
         <p className="subtle">So sánh số lượng môn học, đề thi và câu hỏi thực tế. Mỗi thanh biểu thị tỷ lệ so với nhóm lớn nhất.</p>
@@ -281,22 +310,24 @@ export default function App(){
         <article><span className="admin-stat-icon">🎓</span><h2>Đề thi trực tuyến</h2><p>Tạo phiên bản nháp, ghép câu hỏi và xuất bản đề thi.</p><button onClick={()=>setWorkspace('authoring')}>Tạo đề mới</button></article>
       </div>}
     </section>}
-    {signedIn&&isAdmin&&workspace==='authoring'&&<AdminPanel/>}
+    {signedIn&&isAdmin&&(workspace==='authoring'||workspace==='exams')&&<AdminPanel initialSearch={globalSearch} mode={workspace==='exams'?'exams':'questions'}/>}
     {signedIn&&isAdmin&&workspace==='learning'&&<AdminLearning/>}
     {signedIn&&isAdmin&&workspace==='users'&&<UserDirectory/>}
-    {signedIn&&(!isAdmin||workspace==='exams')&&<section className="panel" id="student-history"><div className="toolbar"><h2>Lịch sử làm bài</h2><button className="secondary" disabled={busy} onClick={()=>void loadHistory(0)}>{historyOpen?'Làm mới':'Xem lịch sử'}</button></div>
+    {signedIn&&isAdmin&&workspace==='results'&&<ResultsDirectory/>}
+    {signedIn&&!isAdmin&&studentPage==='history'&&<section className="panel" id="student-history"><div className="toolbar"><h2>Lịch sử làm bài</h2><button className="secondary" disabled={busy} onClick={()=>void loadHistory(0)}>{historyOpen?'Làm mới':'Xem lịch sử'}</button></div>
       {historyOpen&&<><div className="history-summary"><article><span>Lượt thi trong trang</span><strong>{history.length}</strong></article><article><span>Đã nộp</span><strong>{history.filter(item=>item.status==='submitted').length}</strong></article><article><span>Đang làm</span><strong>{history.filter(item=>item.status==='active').length}</strong></article></div><div className="history-list">{history.map(item=><article className="bank-question history-entry" key={item.id}><strong>{item.status==='submitted'?'Đã nộp':item.status==='active'?'Đang làm':'Đã kết thúc'}</strong><p>Bắt đầu: {new Date(item.startedAt*1000).toLocaleString('vi-VN')}</p><p>{item.points!==null&&item.maxPoints!==null?'Điểm: '+item.points+'/'+item.maxPoints:'Chưa có kết quả chấm điểm'}</p><small>Mã phiên bản: {item.versionId}</small></article>)}{history.length===0&&<p>Chưa có lượt thi trong trang này.</p>}</div><div className="toolbar"><button className="secondary" disabled={busy||historyOffset===0} onClick={()=>void loadHistory(Math.max(0,historyOffset-20))}>Trang trước</button><button className="secondary" disabled={busy||history.length<20} onClick={()=>void loadHistory(historyOffset+20)}>Trang tiếp</button></div></>}
     </section>}
-    {signedIn&&(!isAdmin||workspace==='exams')&&resumeAvailable&&!attempt&&<section className="panel"><h2>Bài thi đang làm</h2><p>Khôi phục câu trả lời đã lưu trên máy chủ sau khi tải lại trang.</p><button disabled={busy} onClick={resume}>Tiếp tục bài thi</button></section>}
-    {signedIn&&(!isAdmin||workspace==='exams')&&<section className="panel" id="student-exam-room"><h1>Phòng thi trực tuyến</h1><p>Nhập mã phiên bản đề thi đã xuất bản. Bạn có thể tải đề thi bằng mã phiên bản đã xuất bản.</p>
+    {signedIn&&(!isAdmin&&studentPage==='exams')&&resumeAvailable&&!attempt&&<section className="panel"><h2>Bài thi đang làm</h2><p>Khôi phục câu trả lời đã lưu trên máy chủ sau khi tải lại trang.</p><button disabled={busy} onClick={resume}>Tiếp tục bài thi</button></section>}
+    {signedIn&&(!isAdmin&&studentPage==='exams')&&<section className="panel" id="student-exam-room" hidden={!!exam}><h1>Phòng thi trực tuyến</h1><p>Chọn đề thi, xem thời lượng và bắt đầu khi bạn sẵn sàng.</p>
       <div className="toolbar"><button disabled={busy} onClick={showCatalog}>Xem danh sách đề thi</button></div>
       {catalog.length>0&&<div className="toolbar"><label>Tìm đề thi<input value={catalogSearch} placeholder="Tên đề hoặc môn học" onChange={e=>setCatalogSearch(e.target.value)}/></label><label>Lọc môn học<select value={catalogSubject} onChange={e=>setCatalogSubject(e.target.value)}><option value="">Tất cả môn học</option>{Array.from(new Set(catalog.map(item=>item.subject))).sort().map(name=><option key={name} value={name}>{name}</option>)}</select></label></div>}
-      <div className="exam-catalog-list">{catalog.filter(item=>(!catalogSubject||item.subject===catalogSubject)&&(item.title+' '+item.subject).toLocaleLowerCase('vi').includes(catalogSearch.trim().toLocaleLowerCase('vi'))).map(item=><button key={item.versionId} className={versionId===item.versionId?'':'secondary'} disabled={busy} onClick={()=>setVersionId(item.versionId)}>{item.subject} — {item.title} ({item.questionCount} câu · {item.durationMinutes} phút)</button>)}</div>
+      <div className="exam-catalog-list">{catalog.filter(item=>(!catalogSubject||item.subject===catalogSubject)&&(item.title+' '+item.subject).toLocaleLowerCase('vi').includes(catalogSearch.trim().toLocaleLowerCase('vi'))).map(item=><button key={item.versionId} className={versionId===item.versionId?'':'secondary'} disabled={busy||!!(attempt&&!result)} onClick={()=>void loadExam(item.versionId)}>{item.subject} — {item.title} ({item.questionCount} câu · {item.durationMinutes} phút)</button>)}</div>
       {catalog.length>0&&catalog.filter(item=>(!catalogSubject||item.subject===catalogSubject)&&(item.title+' '+item.subject).toLocaleLowerCase('vi').includes(catalogSearch.trim().toLocaleLowerCase('vi'))).length===0&&<p>Không tìm thấy đề thi phù hợp.</p>}
-      <div className="toolbar"><input aria-label="Mã phiên bản đề thi" placeholder="Mã phiên bản đề thi (UUID)" value={versionId} onChange={e=>setVersionId(e.target.value)}/><button disabled={busy||!versionId} onClick={loadExam}>Tải đề thi</button></div>
+      <details className="advanced-exam"><summary>Mở đề thi bằng mã</summary><div className="toolbar"><input aria-label="Mã phiên bản đề thi" placeholder="Mã phiên bản đề thi (UUID)" value={versionId} onChange={e=>setVersionId(e.target.value)}/><button disabled={busy||!versionId} onClick={()=>void loadExam()}>Tải đề thi</button></div></details>
     </section>}
-    {signedIn&&(!isAdmin||workspace==='exams')&&exam&&<section className="panel"><div className="toolbar"><h2>Đề thi · {exam.questions.length} câu · {exam.version.durationMinutes} phút</h2>{!attempt&&<button disabled={busy} onClick={start}>Bắt đầu làm bài</button>}</div>
-      {attempt&&<div className="status"><span>Thời gian còn lại: <strong>{Math.floor(remaining/60)}:{String(remaining%60).padStart(2,'0')}</strong></span><span>Phiên bản lưu: {attempt.saveVersion} · {({idle:'Chưa thay đổi',pending:'Chờ lưu',saving:'Đang lưu',saved:'Đã lưu',error:'Lưu thất bại'} as const)[saveState]}</span></div>}
+    {signedIn&&(!isAdmin&&studentPage==='exams')&&exam&&<section className="panel exam-sheet"><div className="toolbar"><h2>Đề thi · {exam.questions.length} câu · {exam.version.durationMinutes} phút</h2>{!attempt&&<button disabled={busy} onClick={start}>Bắt đầu làm bài</button>}</div>
+      {attempt&&<div className="status"><span>Thời gian còn lại: <strong>{Math.floor(remaining/60)}:{String(remaining%60).padStart(2,'0')}</strong></span><span aria-live="polite">{({idle:'Chưa thay đổi',pending:'Chờ lưu',saving:'Đang lưu',saved:'Đã lưu',error:'Lưu thất bại'} as const)[saveState]}</span></div>}
+      {attempt&&remaining===0&&!result&&<p role="alert">Đã hết giờ. Hệ thống chấm các đáp án đã lưu trước thời hạn. Nếu kết nối lỗi, hãy chọn Nộp bài để thử lại.</p>}
       <div className="exam-progress" aria-live="polite"><strong>Đã trả lời {exam.questions.filter(({position})=>Boolean(answers[String(position)])).length}/{exam.questions.length} câu</strong><span>Đang xem câu {Math.min(currentQuestion+1,exam.questions.length)}/{exam.questions.length}</span></div>
       <div className="exam-progress-track" role="progressbar" aria-label="Tiến độ trả lời" aria-valuemin={0} aria-valuemax={exam.questions.length} aria-valuenow={exam.questions.filter(({position})=>Boolean(answers[String(position)])).length}><div style={{width:(exam.questions.length?exam.questions.filter(({position})=>Boolean(answers[String(position)])).length/exam.questions.length*100:0)+'%'}}/></div>
       <div className="toolbar"><label className="inline-check"><input type="checkbox" checked={hideAnswered} onChange={e=>setHideAnswered(e.target.checked)}/> Chỉ hiện câu chưa trả lời trong bảng điều hướng</label><button type="button" className="secondary" onClick={()=>{const index=exam.questions.findIndex(({position})=>!answers[String(position)]);if(index>=0)setCurrentQuestion(index);}}>Đến câu chưa trả lời đầu tiên</button></div>
@@ -304,15 +335,16 @@ export default function App(){
         {exam.questions.map(({position},index)=>(hideAnswered&&answers[String(position)]?null:<button key={position} type="button" aria-current={index===currentQuestion?'step':undefined} aria-label={'Câu '+(position+1)+(answers[String(position)]?' đã trả lời':' chưa trả lời')} className={index===currentQuestion?'question-current':answers[String(position)]?'question-answered':'secondary'} onClick={()=>setCurrentQuestion(index)}>{position+1}</button>))}
       </nav>
       {exam.questions.filter((_,index)=>index===currentQuestion).map(({position,question})=><article className="question" key={position}><h3>Câu {position+1}. {question.body}</h3>
-        {question.options.map(option=><label className="option" key={option.label}><input type="radio" name={'q'+position} disabled={!attempt||!!result||remaining===0} checked={answers[String(position)]===option.label} onChange={()=>setAnswers(prev=>({...prev,[String(position)]:option.label}))}/><span>{option.label}. {option.text}</span></label>)}</article>)}
+        {question.options.map(option=><label className="option" key={option.label}><input type="radio" name={'q'+position} disabled={!attempt||!!result||remaining===0||busy} checked={answers[String(position)]===option.label} onChange={()=>setAnswers(prev=>({...prev,[String(position)]:option.label}))}/><span className="option-letter">{option.label}</span><span>{option.text}</span></label>)}</article>)}
       {attempt&&!result&&remaining>0&&<div className="toolbar"><button type="button" className="secondary" disabled={!answers[String(exam.questions[currentQuestion]?.position)]} onClick={()=>{const position=exam.questions[currentQuestion]?.position;if(position!==undefined)setAnswers(prev=>{const next={...prev};delete next[String(position)];return next;});}}>Xóa lựa chọn của câu này</button></div>}
       {attempt&&!result&&<ReviewFlags attemptId={attempt.id} positions={exam.questions.map(item=>item.position)} currentPosition={exam.questions[currentQuestion]?.position??0} onNavigate={position=>{const index=exam.questions.findIndex(item=>item.position===position);if(index>=0)setCurrentQuestion(index);}}/>}
       <div className="toolbar question-controls"><button className="secondary" disabled={currentQuestion===0} onClick={()=>setCurrentQuestion(index=>Math.max(0,index-1))}>Câu trước</button><button className="secondary" disabled={currentQuestion>=exam.questions.length-1} onClick={()=>setCurrentQuestion(index=>Math.min(exam.questions.length-1,index+1))}>Câu tiếp</button></div>
-      {attempt&&!result&&<div className="toolbar"><button className="secondary" disabled={busy} onClick={recover}>Khôi phục đáp án</button><button disabled={busy||remaining===0} onClick={save}>Lưu bài</button><button className="danger" disabled={busy||remaining===0} onClick={()=>setReviewBeforeSubmit(true)}>Nộp bài</button></div>}
-      {attempt&&!result&&reviewBeforeSubmit&&<section className="submission-review" aria-label="Kiểm tra trước khi nộp bài"><h3>Xác nhận nộp bài</h3><p>Đã trả lời {exam.questions.filter(({position})=>Boolean(answers[String(position)])).length}/{exam.questions.length} câu. Sau khi nộp, bạn không thể sửa đáp án.</p><strong>Câu chưa trả lời</strong><div className="question-navigation">{exam.questions.filter(({position})=>!answers[String(position)]).map(({position})=><button type="button" className="secondary" key={position} onClick={()=>{const index=exam.questions.findIndex(item=>item.position===position);if(index>=0)setCurrentQuestion(index);setReviewBeforeSubmit(false);}}>Câu {position+1}</button>)}{exam.questions.every(({position})=>Boolean(answers[String(position)]))&&<span>Không có câu bỏ trống.</span>}</div><div className="toolbar"><button type="button" className="secondary" onClick={()=>setReviewBeforeSubmit(false)}>Quay lại bài thi</button><button type="button" className="danger" disabled={busy||remaining===0} onClick={()=>void submit()}>Xác nhận nộp bài</button></div></section>}
+      {attempt&&!result&&<div className="toolbar"><button className="secondary" disabled={busy} onClick={recover}>Khôi phục đáp án</button><button disabled={busy||remaining===0} onClick={save}>Lưu bài</button><button className="danger" disabled={busy} onClick={()=>setReviewBeforeSubmit(true)}>Nộp bài</button></div>}
+      {attempt&&!result&&reviewBeforeSubmit&&<section className="submission-review" aria-label="Kiểm tra trước khi nộp bài"><h3>Xác nhận nộp bài</h3><p>Đã trả lời {exam.questions.filter(({position})=>Boolean(answers[String(position)])).length}/{exam.questions.length} câu. Sau khi nộp, bạn không thể sửa đáp án.</p><strong>Câu chưa trả lời</strong><div className="question-navigation">{exam.questions.filter(({position})=>!answers[String(position)]).map(({position})=><button type="button" className="secondary" key={position} onClick={()=>{const index=exam.questions.findIndex(item=>item.position===position);if(index>=0)setCurrentQuestion(index);setReviewBeforeSubmit(false);}}>Câu {position+1}</button>)}{exam.questions.every(({position})=>Boolean(answers[String(position)]))&&<span>Không có câu bỏ trống.</span>}</div><div className="toolbar"><button type="button" className="secondary" onClick={()=>setReviewBeforeSubmit(false)}>Quay lại bài thi</button><button type="button" className="danger" disabled={busy} onClick={()=>void submit(remaining===0)}>Xác nhận nộp bài</button></div></section>}
     </section>}
-    {signedIn&&(!isAdmin||workspace==='exams')&&result&&<section className="panel"><h2>Kết quả bài thi</h2><p className="score">{result.points} / {result.maxPoints}</p><p>Đã nộp: {new Date(result.submittedAt*1000).toLocaleString('vi-VN')}</p></section>}
+    {signedIn&&(!isAdmin&&studentPage==='exams')&&result&&<section className="panel"><h2>Kết quả bài thi</h2><p className="score">{result.points} / {result.maxPoints}</p><p>Đã nộp: {new Date(result.submittedAt*1000).toLocaleString('vi-VN')}</p><button type="button" onClick={()=>{setExam(null);setAttempt(null);latestAttempt.current=null;setAnswers({});setResult(null);setStudentPage('exams')}}>Chọn đề thi khác</button></section>}
     {message&&<p role="alert" className="notice">{message}</p>}
     </div>
   </main>;
 }
+

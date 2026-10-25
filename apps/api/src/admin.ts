@@ -92,6 +92,34 @@ admin.put('/learning/:kind/:id',sameOrigin,async c=>{
  }catch{return c.json({error:{code:'WRITE_FAILED'}},503);}
 });
 
+admin.get('/results',async c=>{
+ const parsed=z.object({offset:z.coerce.number().int().min(0).max(100000).default(0),status:z.enum(['all','submitted','active','expired']).default('all')}).safeParse(c.req.query());
+ if(!parsed.success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+ const {offset,status}=parsed.data,now=Math.floor(Date.now()/1000);
+ const normalized="CASE WHEN a.status='active' AND a.expires_at<=? THEN 'expired' ELSE a.status END";
+ try{
+  const rows=await c.env.EXAM_RESULTS.prepare('SELECT a.id,a.user_id AS userId,a.exam_version_id AS versionId,a.started_at AS startedAt,a.submitted_at AS submittedAt,'+normalized+' AS status,s.points,s.max_points AS maxPoints FROM attempts a LEFT JOIN scores s ON s.attempt_id=a.id WHERE (?=\'all\' OR '+normalized+'=?) ORDER BY a.started_at DESC,a.id DESC LIMIT 20 OFFSET ?').bind(now,status,now,status,offset).all();
+  const count=await c.env.EXAM_RESULTS.prepare('SELECT COUNT(*) AS total FROM attempts a WHERE (?=\'all\' OR '+normalized+'=?)').bind(status,now,status).first<{total:number}>();
+  const entries=rows.results as Array<{id:string;userId:string;versionId:string;status:string}>;
+  const userIds=[...new Set(entries.map(row=>row.userId))],versionIds=[...new Set(entries.map(row=>row.versionId))];
+  const users=userIds.length?await c.env.EXAM_CORE.prepare('SELECT id,email FROM users WHERE id IN ('+userIds.map(()=>'?').join(',')+')').bind(...userIds).all():{results:[]};
+  const exams=versionIds.length?await c.env.EXAM_CORE.prepare('SELECT v.id,e.title FROM exam_versions v JOIN exams e ON e.id=v.exam_id WHERE v.id IN ('+versionIds.map(()=>'?').join(',')+')').bind(...versionIds).all():{results:[]};
+  const emails=new Map((users.results as Array<{id:string;email:string}>).map(row=>[row.id,row.email]));
+  const titles=new Map((exams.results as Array<{id:string;title:string}>).map(row=>[row.id,row.title]));
+  return c.json({results:entries.map(row=>({...row,email:emails.get(row.userId)??'Tài khoản không còn tồn tại',examTitle:titles.get(row.versionId)??'Đề thi không còn trong danh mục'})),total:count?.total??0,offset});
+ }catch{return c.json({error:{code:'READ_FAILED'}},503);}
+});
+
+admin.get('/analytics',async c=>{
+ const since=Math.floor(Date.now()/1000)-7*86400;
+ try{
+  const daily=await c.env.EXAM_RESULTS.prepare("SELECT date(started_at,'unixepoch','+7 hours') AS day,COUNT(*) AS count FROM attempts WHERE started_at>=? GROUP BY day ORDER BY day").bind(since).all();
+  const statuses=await c.env.EXAM_RESULTS.prepare("SELECT CASE WHEN status='active' AND expires_at<=? THEN 'expired' ELSE status END AS status,COUNT(*) AS count FROM attempts GROUP BY 1").bind(Math.floor(Date.now()/1000)).all();
+  const activity=await c.env.EXAM_CORE.prepare('SELECT a.id,a.action,a.created_at AS createdAt,u.email FROM core_audit_logs a LEFT JOIN users u ON u.id=a.actor_id ORDER BY a.created_at DESC,a.id DESC LIMIT 6').all();
+  return c.json({daily:daily.results,statuses:statuses.results,activity:activity.results});
+ }catch{return c.json({error:{code:'READ_FAILED'}},503);}
+});
+
 admin.get('/overview',async c=>{
  try{
   const core=await c.env.EXAM_CORE.prepare("SELECT (SELECT COUNT(*) FROM users) AS users,(SELECT COUNT(*) FROM subjects) AS subjects,(SELECT COUNT(*) FROM questions) AS questions,(SELECT COUNT(*) FROM exams) AS exams,(SELECT COUNT(*) FROM exam_versions WHERE status='published') AS publishedVersions").first<{users:number;subjects:number;questions:number;exams:number;publishedVersions:number}>();
@@ -108,7 +136,7 @@ admin.get('/users',async c=>{
  try{
   const filter=" WHERE (?='' OR instr(lower(email),lower(?))>0) AND (?='all' OR status=?)";
   const ordering=order==='newest'?'DESC':'ASC';
-  const rows=await c.env.EXAM_CORE.prepare("SELECT id,email,status,created_at AS createdAt FROM users"+filter+" ORDER BY created_at "+ordering+",id "+ordering+" LIMIT 20 OFFSET ?").bind(search,search,status,status,offset).all();
+  const rows=await c.env.EXAM_CORE.prepare("SELECT id,email,status,created_at AS createdAt,(SELECT GROUP_CONCAT(r.code,',') FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE ur.user_id=users.id) AS roles FROM users"+filter+" ORDER BY created_at "+ordering+",id "+ordering+" LIMIT 20 OFFSET ?").bind(search,search,status,status,offset).all();
   const count=await c.env.EXAM_CORE.prepare("SELECT COUNT(*) AS total FROM users"+filter).bind(search,search,status,status).first<{total:number}>();
   return c.json({users:rows.results,offset,total:count?.total??0});
  }catch{return c.json({error:{code:'READ_FAILED'}},503);}
@@ -513,3 +541,4 @@ admin.post('/publish-exam-version', sameOrigin, async c => {
   }
 });
 export default admin;
+

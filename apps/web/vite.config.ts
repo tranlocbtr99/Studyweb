@@ -5,14 +5,14 @@ import { defineConfig } from 'vite';
 // Production must serve /api and the SPA under the same public origin.
 export default defineConfig({
   server: {
+    allowedHosts: ['terminal.local'],
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:8787',
         changeOrigin: true,
         configure(proxy) {
           proxy.on('proxyReq', (proxyReq, req) => {
-            if (req.headers.origin === 'http://localhost:5173' ||
-                req.headers.origin === 'http://127.0.0.1:5173') {
+            if (req.headers.origin && new URL(req.headers.origin).host === req.headers.host) {
               proxyReq.setHeader('Origin', 'http://127.0.0.1:8787');
             }
           });
@@ -21,3 +21,4 @@ export default defineConfig({
     }
   }
 });
+

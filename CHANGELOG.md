@@ -117,3 +117,10 @@
 ## 2026-10-25 — Learning directory review
 - Preview saved content in place, show update times/result ranges and clear search filters.
 - Return focus to the editor when opening or copying saved content.
+
+
+## 2026-10-25 — Reference UI and integrated exam workflow
+- Unified responsive student/admin frame, course cards, SVG navigation, question bank/account tables and exam controls around the supplied LTStudy reference.
+- Added student course discovery, administrator activity charts and paginated exam result reporting using database records.
+- Fixed deadline finalization, retry identity/result reconciliation, active-exam navigation and stale directory requests.
+- Added real SQLite integration coverage; 85 API tests, frontend build, typechecks and Worker package dry-run passed. Production deployment pending migration checks.

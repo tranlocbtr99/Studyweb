@@ -5,7 +5,7 @@ type Props={subject:string;exams:PublishedExam[];onClose:()=>void;onSelectExam:(
 type Tab='exams'|'lessons'|'materials'|'discussion';
 
 export default function SubjectDetail({subject,exams,onClose,onSelectExam}:Props){
- const [tab,setTab]=useState<Tab>('exams');
+ const [tab,setTab]=useState<Tab>('lessons');
  const [search,setSearch]=useState('');
  const [contentSearch,setContentSearch]=useState('');
  const [reload,setReload]=useState(0);
@@ -24,12 +24,12 @@ export default function SubjectDetail({subject,exams,onClose,onSelectExam}:Props
    .finally(()=>{if(!cancelled)setLoadingContent(false)});
   return()=>{cancelled=true;controller.abort()};
  },[subject,reload]);
- useEffect(()=>{setSearch('');setContentSearch('');setTab('exams')},[subject]);
+ useEffect(()=>{setSearch('');setContentSearch('');setTab('lessons')},[subject]);
  const normalizedSearch=contentSearch.trim().toLocaleLowerCase('vi');
  const visibleLessons=lessons.filter(item=>(item.title+' '+item.body).toLocaleLowerCase('vi').includes(normalizedSearch));
  const visibleMaterials=materials.filter(item=>(item.title+' '+item.description).toLocaleLowerCase('vi').includes(normalizedSearch));
  const visibleExams=exams.filter(exam=>exam.title.toLocaleLowerCase('vi').includes(search.trim().toLocaleLowerCase('vi')));
- const tabs:Array<{id:Tab;label:string}>=[{id:'exams',label:'Đề thi'},{id:'lessons',label:'Bài học'},{id:'materials',label:'Tài liệu'},{id:'discussion',label:'Thảo luận'}];
+ const tabs:Array<{id:Tab;label:string}>=[{id:'lessons',label:'Bài học'},{id:'materials',label:'Tài liệu'},{id:'exams',label:'Đề thi'}];
  return <section className="panel subject-detail" aria-label={'Chi tiết môn học '+subject}>
    <div className="subject-detail-hero"><div><span className="subject-detail-eyebrow">LTStudy · Môn học</span><h2>{subject}</h2><p>{exams.length} đề thi đã xuất bản</p></div><button type="button" className="secondary" onClick={onClose}>Đóng</button></div>
    <div className="subject-tabs" role="tablist" aria-label="Nội dung môn học">
@@ -45,3 +45,4 @@ export default function SubjectDetail({subject,exams,onClose,onSelectExam}:Props
    </div>
  </section>;
 }
+

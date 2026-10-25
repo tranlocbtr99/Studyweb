@@ -9,7 +9,10 @@ async function create<T>(path: string, body: object): Promise<T> {
   if (!response.ok) throw new Error(result.error?.code ?? 'HTTP '+response.status);
   return result;
 }
-export default function AdminPanel(){
+export default function AdminPanel({initialSearch='',mode='questions'}:{initialSearch?:string;mode?:'questions'|'exams'}){
+  const [view,setView]=useState<'bank'|'builder'>(mode==='exams'?'builder':'bank');
+  const [bankSubject,setBankSubject]=useState('');
+  useEffect(()=>{setView(mode==='exams'?'builder':'bank')},[mode]);
   const [subject,setSubject]=useState<Created|null>(null);
   const [subjects,setSubjects]=useState<Subject[]>([]);
   const [topics,setTopics]=useState<Topic[]>([]);
@@ -36,7 +39,8 @@ export default function AdminPanel(){
   const [editOptions,setEditOptions]=useState(['','','','']);
   const [editCorrect,setEditCorrect]=useState<'A'|'B'|'C'|'D'>('A');
   const [editExplanation,setEditExplanation]=useState('');
-  const [search,setSearch]=useState('');
+  const [search,setSearch]=useState(initialSearch);
+  useEffect(()=>{setSearch(initialSearch)},[initialSearch]);
   const [offset,setOffset]=useState(0);
   const [savedExams,setSavedExams]=useState<Array<{id:string;subjectId:string;title:string;versionId:string|null;versionNumber:number|null;status:string|null;questionCount:number;durationMinutes:number}>>([]);
   useEffect(()=>{
@@ -75,18 +79,20 @@ export default function AdminPanel(){
       setSavedExams(data.exams);
     }catch(error){setMessage('Không tải được danh sách đề thi: '+String(error));}finally{setBusy(false);}
   }
-  async function loadBank(nextOffset=0){
+  async function loadBank(nextOffset=0,query=search,subjectFilter=bankSubject){
     setBusy(true);setMessage('');
     try{
-      const response=await fetch('/api/v1/admin/questions?'+new URLSearchParams({search,offset:String(nextOffset),limit:'30'}),{credentials:'same-origin'});
+      const response=await fetch('/api/v1/admin/questions?'+new URLSearchParams({search:query,offset:String(nextOffset),limit:'30',...(subjectFilter?{subjectId:subjectFilter}:{})}),{credentials:'same-origin'});
       const result=await response.json() as {questions?:typeof bank;error?:{code:string}};
       if(!response.ok)throw new Error(result.error?.code??'HTTP '+response.status);
       setBank(result.questions??[]);setOffset(nextOffset);
     }catch(error){setMessage('Không tải được ngân hàng câu hỏi: '+String(error));}finally{setBusy(false);}
   }
-  return <section className="panel admin-editor">
-    <h1>Quản trị · Biên soạn đề thi</h1>
-    <p>Tạo môn học, chủ đề, câu hỏi trắc nghiệm rồi xuất bản đề để học viên làm bài. Các bước được lưu trực tiếp lên máy chủ.</p>
+  useEffect(()=>{void loadExams()},[]);
+  useEffect(()=>{void loadBank(0,initialSearch)},[initialSearch]);
+  return <section className={'panel admin-editor '+(view==='bank'?'bank-view':'builder-view')}>
+    <h1>{mode==='questions'?'Ngân hàng câu hỏi':'Quản lý đề thi'}</h1>
+    <p>Biên soạn nội dung, quản lý câu hỏi và xuất bản đề thi cho học viên.</p><div className="admin-section-toolbar"><button type="button" className={view==='bank'?'':'secondary'} onClick={()=>setView('bank')}>Ngân hàng câu hỏi</button><button type="button" className={view==='builder'?'':'secondary'} onClick={()=>setView('builder')}>+ Biên soạn câu hỏi / đề thi</button></div>
     <div className="admin-step"><h2>Tiếp tục từ môn học đã lưu</h2><label>Chọn môn học<select value={subject?.id??''} onChange={e=>{const id=e.target.value;setSubject(id?{id}:null);setTopic(null);setExam(null);setVersion(null);setCreatedQuestions([]);}}><option value="">Chọn môn học</option>{subjects.map(item=><option key={item.id} value={item.id}>{item.title}</option>)}</select></label></div>
     <form onSubmit={event=>{event.preventDefault();void action(async()=>{
       const data=await create<{subject:Created}>('subjects',{slug,title:subjectTitle});
@@ -146,21 +152,22 @@ export default function AdminPanel(){
         setVersion(data.version);setCount(0);setDraftItems([]);setMessage('Đã tạo phiên bản nháp');
       })}>Tạo phiên bản nháp</button>
     </div>}
-    <div className="admin-step">
+    <div className="admin-step question-bank">
       <h2>Ngân hàng câu hỏi đã lưu</h2>
       <p>Tìm kiếm câu hỏi đã lưu trên máy chủ, kể cả từ các phiên làm việc trước.</p>
       <form onSubmit={e=>{e.preventDefault();void loadBank(0);}}>
         <label>Tìm nội dung câu hỏi<input value={search} maxLength={120} onChange={e=>setSearch(e.target.value)} placeholder="Nhập từ khóa"/></label>
-        <button disabled={busy}>Tìm câu hỏi</button>
+        <label>Môn học<select value={bankSubject} onChange={e=>{setBankSubject(e.target.value);void loadBank(0,search,e.target.value)}}><option value="">Tất cả môn học</option>{subjects.map(item=><option key={item.id} value={item.id}>{item.title}</option>)}</select></label><button disabled={busy}>Tìm câu hỏi</button>
       </form>
-      {bank.map(q=><div key={q.id} className="bank-question"><strong>{q.body}</strong><small>{q.id}</small>
-        {q.status==='draft'&&<button type="button" className="secondary" disabled={busy} onClick={()=>{
+      <p className="subtle">{bank.length} câu hỏi trong trang hiện tại</p>
+      <div className="user-table-wrap"><table className="user-table bank-table"><thead><tr><th>#</th><th>Nội dung câu hỏi</th><th>Môn học</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>{bank.map((q,index)=><tr key={q.id}><td>{offset+index+1}</td><td>{q.body}</td><td>{subjects.find(item=>item.id===q.subjectId)?.title??'—'}</td><td><span className="bank-status">{q.status==='draft'?'Bản nháp':q.status==='archived'?'Lưu trữ':'Đã lưu'}</span></td><td>        {q.status==='draft'&&<button type="button" className="secondary" disabled={busy} onClick={()=>{
           setEditing(q.id);setEditBody(q.body);setEditOptions(labels.map(label=>q.options.find(option=>option.label===label)?.text??''));setEditCorrect(q.correctOption as typeof editCorrect);setEditExplanation(q.explanation);
-        }}>Chỉnh sửa</button>}
-        {editing===q.id&&<form onSubmit={e=>{e.preventDefault();void action(async()=>{
-          const response=await fetch('/api/v1/admin/questions/'+q.id,{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({body:editBody,options:editOptions,correctOption:editCorrect,explanation:editExplanation})});
+        }}>Chỉnh sửa</button>}</td></tr>)}</tbody></table></div>
+      {bank.length===0&&!busy&&<p>Không có câu hỏi phù hợp. Chọn “Biên soạn câu hỏi / đề thi” để tạo nội dung.</p>}
+        {editing&&<form onSubmit={e=>{e.preventDefault();void action(async()=>{
+          const response=await fetch('/api/v1/admin/questions/'+editing,{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({body:editBody,options:editOptions,correctOption:editCorrect,explanation:editExplanation})});
           if(!response.ok)throw Error('HTTP '+response.status);
-          setBank(prev=>prev.map(item=>item.id===q.id?{...item,body:editBody,options:labels.map((label,i)=>({label,text:editOptions[i]})),correctOption:editCorrect,explanation:editExplanation}:item));
+          setBank(prev=>prev.map(item=>item.id===editing?{...item,body:editBody,options:labels.map((label,i)=>({label,text:editOptions[i]})),correctOption:editCorrect,explanation:editExplanation}:item));
           setEditing(null);setMessage('Đã cập nhật câu hỏi. Nội dung đề thi đã xuất bản không thay đổi.');
         });}}>
           <label>Nội dung<textarea required minLength={5} maxLength={4000} value={editBody} onChange={e=>setEditBody(e.target.value)}/></label>
@@ -169,7 +176,6 @@ export default function AdminPanel(){
           <label>Giải thích<textarea maxLength={4000} value={editExplanation} onChange={e=>setEditExplanation(e.target.value)}/></label>
           <div className="toolbar"><button disabled={busy}>Lưu chỉnh sửa</button><button type="button" className="secondary" onClick={()=>setEditing(null)}>Hủy</button></div>
         </form>}
-      </div>)}
       <div className="toolbar"><button className="secondary" disabled={busy||offset===0} onClick={()=>void loadBank(Math.max(0,offset-30))}>Trang trước</button><button className="secondary" disabled={busy||bank.length<30} onClick={()=>void loadBank(offset+30)}>Trang tiếp</button></div>
     </div>
     {version&&<div className="admin-step">
@@ -216,3 +222,4 @@ function QuestionPicker({busy,position,questions,onAdd}:{busy:boolean;position:n
     <button disabled={busy}>Thêm câu {position+1}</button>
   </form>;
 }
+

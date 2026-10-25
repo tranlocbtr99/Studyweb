@@ -8,6 +8,13 @@ const student = new Hono<Env>();
 student.use('*', requireSession);
 const versionId = z.string().uuid();
 
+student.get('/subjects',async c=>{
+ try{
+  const rows=await c.env.EXAM_CORE.prepare("SELECT s.id,s.title,(SELECT COUNT(*) FROM learning_lessons l WHERE l.subject_id=s.id AND l.status='published') AS lessonCount,(SELECT COUNT(*) FROM learning_materials m WHERE m.subject_id=s.id AND m.status='published') AS materialCount,(SELECT COUNT(*) FROM exams e JOIN exam_versions v ON v.exam_id=e.id WHERE e.subject_id=s.id AND v.status='published' AND v.published_at IS NOT NULL) AS examCount FROM subjects s WHERE EXISTS(SELECT 1 FROM learning_lessons l WHERE l.subject_id=s.id AND l.status='published') OR EXISTS(SELECT 1 FROM learning_materials m WHERE m.subject_id=s.id AND m.status='published') OR EXISTS(SELECT 1 FROM exams e JOIN exam_versions v ON v.exam_id=e.id WHERE e.subject_id=s.id AND v.status='published' AND v.published_at IS NOT NULL) ORDER BY s.title LIMIT 500").all();
+  return c.json({subjects:rows.results});
+ }catch{return c.json({error:{code:'DB_UNAVAILABLE'}},503);}
+});
+
 student.get('/learning-content',async c=>{
  const subject=(c.req.query('subject')??'').trim();
  if(subject.length<1||subject.length>160)return c.json({error:{code:'VALIDATION_FAILED'}},400);
@@ -173,7 +180,7 @@ student.post('/attempts/:attemptId/submit', sameOrigin, async c => {
     ).bind(id.data,userId).first<{id:string;saveVersion:number;gradingSnapshotJson:string;answerSnapshotJson:string;expiresAt:number;status:string}>();
     if (!attempt) return c.json({ error: { code: 'NOT_FOUND' } }, 404);
     const now = Math.floor(Date.now()/1000);
-    if (attempt.status !== 'active' || attempt.expiresAt <= now)
+    if (attempt.status !== 'active')
       return c.json({ error: { code: 'ATTEMPT_CLOSED' } }, 409);
     if (attempt.saveVersion !== saveVersion)
       return c.json({ error: { code: 'SAVE_CONFLICT', currentVersion: attempt.saveVersion } }, 409);
@@ -183,8 +190,8 @@ student.post('/attempts/:attemptId/submit', sameOrigin, async c => {
     const response = { result: { attemptId: id.data, points, maxPoints: grading.length, submittedAt: now } };
     const writes = await db.batch([
       db.prepare(
-        "UPDATE attempts SET status='submitted',submitted_at=?,updated_at=? WHERE id=? AND user_id=? AND status='active' AND expires_at>? AND save_version=?"
-      ).bind(now,now,id.data,userId,now,saveVersion),
+        "UPDATE attempts SET status='submitted',submitted_at=?,updated_at=? WHERE id=? AND user_id=? AND status='active' AND save_version=?"
+      ).bind(now,now,id.data,userId,saveVersion),
       db.prepare(
         "INSERT INTO scores(id,attempt_id,points,max_points,graded_at,grading_version) SELECT ?,id,?,?,?,'v1' FROM attempts WHERE id=? AND user_id=? AND status='submitted' AND submitted_at=?"
       ).bind(crypto.randomUUID(),points,grading.length,now,id.data,userId,now),
@@ -243,3 +250,4 @@ student.get('/attempts/:attemptId/result', async c => {
   }
 });
 export default student;
+
