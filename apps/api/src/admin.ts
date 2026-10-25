@@ -261,6 +261,49 @@ admin.get('/exam-versions/:id/items',async c=>{
   }catch{return c.json({error:{code:'READ_FAILED'}},503);}
 });
 
+
+const editItemSchema=z.object({versionId:z.string().uuid(),itemId:z.string().uuid()});
+admin.delete('/exam-items/:id',sameOrigin,async c=>{
+  const parsed=editItemSchema.safeParse({versionId:c.req.query('versionId'),itemId:c.req.param('id')});
+  if(!parsed.success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+  const {versionId,itemId}=parsed.data;
+  try{
+    const item=await c.env.EXAM_CORE.prepare("SELECT i.position FROM exam_items i JOIN exam_versions v ON v.id=i.exam_version_id WHERE i.id=? AND i.exam_version_id=? AND v.status='draft' AND v.published_at IS NULL").bind(itemId,versionId).first<{position:number}>();
+    if(!item)return c.json({error:{code:'ITEM_NOT_EDITABLE'}},409);
+    const result=await c.env.EXAM_CORE.batch([
+      c.env.EXAM_CORE.prepare("DELETE FROM exam_items WHERE id=? AND exam_version_id=? AND EXISTS(SELECT 1 FROM exam_versions WHERE id=? AND status='draft' AND published_at IS NULL)").bind(itemId,versionId,versionId),
+      c.env.EXAM_CORE.prepare("UPDATE exam_items SET position=position+1001 WHERE exam_version_id=? AND position>?").bind(versionId,item.position),
+      c.env.EXAM_CORE.prepare("UPDATE exam_items SET position=position-1002 WHERE exam_version_id=? AND position>=1001").bind(versionId),
+      c.env.EXAM_CORE.prepare("INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) VALUES(?,?,?,?,?)").bind(crypto.randomUUID(),c.get('identity').id,'exam_item.deleted',itemId,Math.floor(Date.now()/1000))
+    ]);
+    if((result as Array<{meta?:{changes?:number}}>)[0]?.meta?.changes!==1)return c.json({error:{code:'ITEM_NOT_EDITABLE'}},409);
+    return c.json({deleted:true});
+  }catch{return c.json({error:{code:'WRITE_FAILED'}},503);}
+});
+const moveItemSchema=z.object({versionId:z.string().uuid(),direction:z.enum(['up','down'])}).strict();
+admin.patch('/exam-items/:id/move',sameOrigin,async c=>{
+  const itemId=c.req.param('id');
+  if(!z.string().uuid().safeParse(itemId).success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+  let input:unknown;try{input=await c.req.json();}catch{return c.json({error:{code:'BAD_JSON'}},400);}
+  const parsed=moveItemSchema.safeParse(input);
+  if(!parsed.success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+  const {versionId,direction}=parsed.data;
+  try{
+    const item=await c.env.EXAM_CORE.prepare("SELECT i.position FROM exam_items i JOIN exam_versions v ON v.id=i.exam_version_id WHERE i.id=? AND i.exam_version_id=? AND v.status='draft' AND v.published_at IS NULL").bind(itemId,versionId).first<{position:number}>();
+    if(!item)return c.json({error:{code:'ITEM_NOT_EDITABLE'}},409);
+    const target=item.position+(direction==='up'?-1:1);
+    const neighbor=await c.env.EXAM_CORE.prepare('SELECT id FROM exam_items WHERE exam_version_id=? AND position=?').bind(versionId,target).first<{id:string}>();
+    if(!neighbor)return c.json({error:{code:'NO_ADJACENT_ITEM'}},409);
+    await c.env.EXAM_CORE.batch([
+      c.env.EXAM_CORE.prepare('UPDATE exam_items SET position=1001 WHERE id=? AND exam_version_id=?').bind(itemId,versionId),
+      c.env.EXAM_CORE.prepare('UPDATE exam_items SET position=? WHERE id=? AND exam_version_id=?').bind(item.position,neighbor.id,versionId),
+      c.env.EXAM_CORE.prepare('UPDATE exam_items SET position=? WHERE id=? AND exam_version_id=?').bind(target,itemId,versionId),
+      c.env.EXAM_CORE.prepare("INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) VALUES(?,?,?,?,?)").bind(crypto.randomUUID(),c.get('identity').id,'exam_item.moved',itemId,Math.floor(Date.now()/1000))
+    ]);
+    return c.json({moved:true});
+  }catch{return c.json({error:{code:'WRITE_FAILED'}},503);}
+});
+
 const examItemSchema = z.object({
   versionId: z.string().uuid(),
   questionId: z.string().uuid(),
