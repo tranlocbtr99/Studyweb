@@ -82,3 +82,6 @@
 
 ## 2026-10-25 — API deployment-readiness repair
 - Fixed undefined exam attempt duration variable that prevented API TypeScript compilation; duration is derived from the published exam version.
+
+## 2026-10-25 — CI attempt-start fixture
+- Updated the mock published exam version with its duration to reflect the duration-based attempt expiry API.
