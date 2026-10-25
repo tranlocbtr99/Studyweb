@@ -4,6 +4,7 @@ import AdminPanel from './AdminPanel';
 import ReviewFlags from './ReviewFlags';
 import UserDirectory from './UserDirectory';
 import SubjectDetail from './SubjectDetail';
+import AdminLearning from './AdminLearning';
 
 type Question = { body:string; options:Array<{label:string;text:string}> };
 type Exam = { version:{id:string;examId:string;durationMinutes:number};questions:Array<{position:number;question:Question}> };
@@ -19,7 +20,7 @@ export default function App(){
   const [accessMode,setAccessMode]=useState<'student'|'admin'|'register'>('student');
   const [isAdmin,setIsAdmin]=useState(false);
   const [signedIn,setSignedIn]=useState<boolean|null>(null);
-  const [workspace,setWorkspace]=useState<'overview'|'authoring'|'exams'|'users'>('overview');
+  const [workspace,setWorkspace]=useState<'overview'|'authoring'|'exams'|'users'|'learning'>('overview');
   const [adminOverview,setAdminOverview]=useState<{users:number;subjects:number;questions:number;exams:number;publishedVersions:number}|null>(null);
   const [overviewError,setOverviewError]=useState('');
   useEffect(()=>{
@@ -210,7 +211,7 @@ export default function App(){
       <div className="study-logo"><span aria-hidden="true">🎓</span><strong>LTStudy</strong></div>
       <div className="study-role">{isAdmin?'Không gian quản trị':'Không gian học viên'}</div>
       <nav className="study-menu" aria-label="Danh mục">
-        {isAdmin?<><button type="button" className={workspace==='overview'?'selected':''} onClick={()=>setWorkspace('overview')}>▦ <span>Tổng quan</span></button><button type="button" className={workspace==='users'?'selected':''} onClick={()=>setWorkspace('users')}>♙ <span>Quản lý người dùng</span></button><button type="button" className={workspace==='authoring'?'selected':''} onClick={()=>setWorkspace('authoring')}>▤ <span>Ngân hàng câu hỏi</span></button><button type="button" className={workspace==='exams'?'selected':''} onClick={()=>setWorkspace('exams')}>▣ <span>Quản lý đề thi</span></button></>:<><button type="button" onClick={()=>void showCatalog()}>⌂ <span>Trang chủ</span></button><button type="button" onClick={()=>void showCatalog()}>▣ <span>Đề thi</span></button><button type="button" onClick={()=>{const element=document.getElementById('student-history');element?.scrollIntoView({behavior:'smooth'});}}>◷ <span>Lịch sử</span></button></>}
+        {isAdmin?<><button type="button" className={workspace==='overview'?'selected':''} onClick={()=>setWorkspace('overview')}>▦ <span>Tổng quan</span></button><button type="button" className={workspace==='users'?'selected':''} onClick={()=>setWorkspace('users')}>♙ <span>Quản lý người dùng</span></button><button type="button" className={workspace==='authoring'?'selected':''} onClick={()=>setWorkspace('authoring')}>▤ <span>Ngân hàng câu hỏi</span></button><button type="button" className={workspace==='learning'?'selected':''} onClick={()=>setWorkspace('learning')}>📖 <span>Bài học và tài liệu</span></button><button type="button" className={workspace==='exams'?'selected':''} onClick={()=>setWorkspace('exams')}>▣ <span>Quản lý đề thi</span></button></>:<><button type="button" onClick={()=>void showCatalog()}>⌂ <span>Trang chủ</span></button><button type="button" onClick={()=>void showCatalog()}>▣ <span>Đề thi</span></button><button type="button" onClick={()=>{const element=document.getElementById('student-history');element?.scrollIntoView({behavior:'smooth'});}}>◷ <span>Lịch sử</span></button></>}
       </nav>
       <div className="study-sidebar-footer"><span className="study-avatar">LT</span><span>{isAdmin?'Quản trị viên':'Học viên'}</span></div>
     </aside>}
@@ -281,6 +282,7 @@ export default function App(){
       </div>}
     </section>}
     {signedIn&&isAdmin&&workspace==='authoring'&&<AdminPanel/>}
+    {signedIn&&isAdmin&&workspace==='learning'&&<AdminLearning/>}
     {signedIn&&isAdmin&&workspace==='users'&&<UserDirectory/>}
     {signedIn&&(!isAdmin||workspace==='exams')&&<section className="panel" id="student-history"><div className="toolbar"><h2>Lịch sử làm bài</h2><button className="secondary" disabled={busy} onClick={()=>void loadHistory(0)}>{historyOpen?'Làm mới':'Xem lịch sử'}</button></div>
       {historyOpen&&<><div className="history-summary"><article><span>Lượt thi trong trang</span><strong>{history.length}</strong></article><article><span>Đã nộp</span><strong>{history.filter(item=>item.status==='submitted').length}</strong></article><article><span>Đang làm</span><strong>{history.filter(item=>item.status==='active').length}</strong></article></div><div className="history-list">{history.map(item=><article className="bank-question history-entry" key={item.id}><strong>{item.status==='submitted'?'Đã nộp':item.status==='active'?'Đang làm':'Đã kết thúc'}</strong><p>Bắt đầu: {new Date(item.startedAt*1000).toLocaleString('vi-VN')}</p><p>{item.points!==null&&item.maxPoints!==null?'Điểm: '+item.points+'/'+item.maxPoints:'Chưa có kết quả chấm điểm'}</p><small>Mã phiên bản: {item.versionId}</small></article>)}{history.length===0&&<p>Chưa có lượt thi trong trang này.</p>}</div><div className="toolbar"><button className="secondary" disabled={busy||historyOffset===0} onClick={()=>void loadHistory(Math.max(0,historyOffset-20))}>Trang trước</button><button className="secondary" disabled={busy||history.length<20} onClick={()=>void loadHistory(historyOffset+20)}>Trang tiếp</button></div></>}
