@@ -1,0 +1,7 @@
+{
+  "authorization": "PUBLISH_LTSTUDY_20261025",
+  "sourceCommit": "7e303fda9e3f297197a58d47d76e4f92f9dd2a04",
+  "authorizedOn": "2026-10-25",
+  "target": "https://studyweb-api.tranlocbtr99.workers.dev",
+  "reason": "User explicitly requested completion and deployment; preserve existing accounts, progress and published exams."
+}
