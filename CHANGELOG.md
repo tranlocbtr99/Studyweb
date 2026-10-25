@@ -85,3 +85,6 @@
 
 ## 2026-10-25 — CI attempt-start fixture
 - Updated the mock published exam version with its duration to reflect the duration-based attempt expiry API.
+
+## 2026-10-25 — Admin overview KPIs
+- Added real read-only administrator metrics endpoint and responsive overview cards for accounts, subjects, questions, exams and published versions.
