@@ -171,3 +171,9 @@
 - API typecheck, frontend build and 126 tests passed; production rollout pending.
 
 - Deployed successfully in release run 40224556493. Hosted browser acceptance confirmed preservation of explicit keys, inference with rationale for missing keys and abstention when a chart was absent.
+
+
+## 2026-10-26 — Actionable exam-save validation
+- Replace silently disabled Save with clickable validation, exact missing-field/question feedback and navigation to the field requiring correction.
+- Validate whole-minute duration, imported field sizes and duplicate questions before requests; bound source filenames to the server limit.
+- Verified successful hosted save of a clearly labeled synthetic unpublished draft. Six targeted tests and frontend build passed; deployment pending.
