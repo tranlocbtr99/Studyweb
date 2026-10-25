@@ -8,6 +8,14 @@ const schema = z.object({slug:z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).min
 admin.use('*',requireSession,requireRole('admin'));
 
 
+
+admin.get('/overview',async c=>{
+ try{
+  const core=await c.env.EXAM_CORE.prepare("SELECT (SELECT COUNT(*) FROM users) AS users,(SELECT COUNT(*) FROM subjects) AS subjects,(SELECT COUNT(*) FROM questions) AS questions,(SELECT COUNT(*) FROM exams) AS exams,(SELECT COUNT(*) FROM exam_versions WHERE status='published') AS publishedVersions").first<{users:number;subjects:number;questions:number;exams:number;publishedVersions:number}>();
+  return c.json({overview:core??{users:0,subjects:0,questions:0,exams:0,publishedVersions:0}});
+ }catch{return c.json({error:{code:'READ_FAILED'}},503);}
+});
+
 admin.get('/users',async c=>{
  const search=(c.req.query('search')??'').trim();
  const offset=Number(c.req.query('offset')??0);
