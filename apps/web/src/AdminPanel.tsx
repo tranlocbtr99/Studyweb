@@ -173,7 +173,22 @@ export default function AdminPanel(){
     {version&&<div className="admin-step">
       <h2>6. Thêm câu hỏi vào đề</h2>
       <button className="secondary" disabled={busy} onClick={()=>void loadDraftItems(version.id).catch(()=>setMessage('Không tải được nội dung đề'))}>Làm mới danh sách câu hỏi</button>
-      {draftItems.map(item=><div className="bank-question" key={item.id}><strong>Câu {item.position+1}. {item.body}</strong><small>{item.options.map(option=>option.label+'. '+option.text).join(' · ')}</small></div>)}
+      {draftItems.map(item=><div className="bank-question" key={item.id}>
+        <strong>Câu {item.position+1}. {item.body}</strong>
+        <small>{item.options.map(option=>option.label+'. '+option.text).join(' · ')}</small>
+        <div className="toolbar">
+          {(['up','down'] as const).map(direction=><button type="button" key={direction} className="secondary" disabled={busy||(direction==='up'?item.position===0:item.position===draftItems.length-1)} onClick={()=>void action(async()=>{
+            const response=await fetch('/api/v1/admin/exam-items/'+item.id+'/move',{method:'PATCH',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({versionId:version.id,direction})});
+            if(!response.ok)throw Error('HTTP '+response.status);
+            await loadDraftItems(version.id);setMessage('Đã thay đổi thứ tự câu hỏi');
+          })}>{direction==='up'?'Chuyển lên':'Chuyển xuống'}</button>)}
+          <button type="button" className="secondary" disabled={busy} onClick={()=>{if(!window.confirm('Loại câu hỏi này khỏi đề nháp?'))return;void action(async()=>{
+            const response=await fetch('/api/v1/admin/exam-items/'+item.id+'?'+new URLSearchParams({versionId:version.id}),{method:'DELETE',credentials:'same-origin',headers:{'Content-Type':'application/json'}});
+            if(!response.ok)throw Error('HTTP '+response.status);
+            await loadDraftItems(version.id);setMessage('Đã loại câu hỏi khỏi đề nháp');
+          });}}>Loại khỏi đề</button>
+        </div>
+      </div>)}
       <p>Chọn câu hỏi đã tạo để thêm vào phiên bản đề thi.</p>
       <QuestionPicker busy={busy} position={count} questions={[...createdQuestions,...bank.filter(q=>!createdQuestions.some(item=>item.id===q.id)&&(!subject||q.subjectId===subject.id))]} onAdd={id=>action(async()=>{
         await create('exam-items',{versionId:version.id,questionId:id,position:count});
