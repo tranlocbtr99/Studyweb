@@ -105,3 +105,7 @@
 ## 2026-10-25 — Saved learning content management
 - Paginated administrator lesson/material directory with reopen/edit and draft/publication controls.
 - Validated, administrator-only, same-origin update API with audit records; no destructive data changes.
+
+## 2026-10-25 — Learning content archive and recovery
+- Filter saved lessons/materials by title and publication status across all pages.
+- Archive content with confirmation; restore to draft, with administrator guards and audit records.

@@ -207,3 +207,10 @@ Updated: 2026-10-24
 - Administrator UI can reopen saved content, edit text/links/lesson order and switch between draft/published; refreshes list after save.
 - Locked subject/type during editing and disabled form during save to prevent accidental cross-content changes. No delete or migration added.
 - Relevant guards/types reviewed against existing Env; automated CI pending. Comprehensive integration/visual tests deferred as requested. Not deployed; migration 0007 still required.
+
+## Learning content lifecycle (2026-10-25)
+- Previous commit 4694196 passed Web checks, API checks and deployment readiness.
+- Added server-side title search and status filters to the paginated learning directory, including accurate matching totals.
+- Added protected archive/restore transitions with transactional audits; restore always produces a draft. UI confirms each transition and refreshes results.
+- Local SQLite transition/conditional-audit checks passed, including missing-row no-audit behavior. New TypeScript/API/Web CI pending; final integration tests deferred.
+- No production deployment or data deletion. Migration 0007 remains required for production learning content.

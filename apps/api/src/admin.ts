@@ -37,16 +37,35 @@ admin.post('/learning/materials',sameOrigin,async c=>{
 });
 
 
-const learningListInput=z.object({subjectId:z.string().uuid(),kind:z.enum(['lesson','material']),offset:z.coerce.number().int().min(0).max(100000).default(0)});
+
+const learningStatusInput=z.object({status:z.enum(['draft','archived'])}).strict();
+admin.patch('/learning/:kind/:id/status',sameOrigin,async c=>{
+ const kind=c.req.param('kind'),id=c.req.param('id');
+ const parsed=learningStatusInput.safeParse(await c.req.json().catch(()=>null));
+ if(!['lessons','materials'].includes(kind)||!z.string().uuid().safeParse(id).success||!parsed.success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+ const table=kind==='lessons'?'learning_lessons':'learning_materials';
+ const now=Math.floor(Date.now()/1000),status=parsed.data.status;
+ try{
+  const writes=await c.env.EXAM_CORE.batch([
+   c.env.EXAM_CORE.prepare('UPDATE '+table+' SET status=?,updated_at=? WHERE id=? AND '+(status==='draft'?"status='archived'":"status IN ('draft','published')")).bind(status,now,id),
+   c.env.EXAM_CORE.prepare('INSERT INTO core_audit_logs(id,actor_id,action,target_id,created_at) SELECT ?,?,?,?,? WHERE changes()=1').bind(crypto.randomUUID(),c.get('identity').id,'learning.'+kind+'.'+(status==='draft'?'restored':'archived'),id,now)
+  ]);
+  if((writes as Array<{meta?:{changes?:number}}>)[0]?.meta?.changes!==1)return c.json({error:{code:'CONTENT_STATUS_CONFLICT'}},409);
+  return c.json({id,status});
+ }catch{return c.json({error:{code:'WRITE_FAILED'}},503);}
+});
+
+const learningListInput=z.object({subjectId:z.string().uuid(),kind:z.enum(['lesson','material']),offset:z.coerce.number().int().min(0).max(100000).default(0),status:z.enum(['all','draft','published','archived']).default('all'),search:z.string().trim().max(160).default('')});
 admin.get('/learning',async c=>{
  const parsed=learningListInput.safeParse(c.req.query());
  if(!parsed.success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
- const {subjectId,kind,offset}=parsed.data;
+ const {subjectId,kind,offset,status,search}=parsed.data;
  const table=kind==='lesson'?'learning_lessons':'learning_materials';
  const fields=kind==='lesson'?'body,position':"description AS body,url";
+ const filter=" WHERE subject_id=? AND (?='all' OR status=?) AND (?='' OR instr(lower(title),lower(?))>0)";
  try{
-  const rows=await c.env.EXAM_CORE.prepare('SELECT id,subject_id AS subjectId,title,status,updated_at AS updatedAt,'+fields+' FROM '+table+' WHERE subject_id=? ORDER BY updated_at DESC,id LIMIT 20 OFFSET ?').bind(subjectId,offset).all();
-  const count=await c.env.EXAM_CORE.prepare('SELECT COUNT(*) AS total FROM '+table+' WHERE subject_id=?').bind(subjectId).first<{total:number}>();
+  const rows=await c.env.EXAM_CORE.prepare('SELECT id,subject_id AS subjectId,title,status,updated_at AS updatedAt,'+fields+' FROM '+table+filter+' ORDER BY updated_at DESC,id LIMIT 20 OFFSET ?').bind(subjectId,status,status,search,search,offset).all();
+  const count=await c.env.EXAM_CORE.prepare('SELECT COUNT(*) AS total FROM '+table+filter).bind(subjectId,status,status,search,search).first<{total:number}>();
   return c.json({items:rows.results,total:count?.total??0,offset});
  }catch{return c.json({error:{code:'READ_FAILED'}},503);}
 });
