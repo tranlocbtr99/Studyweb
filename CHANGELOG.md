@@ -45,3 +45,6 @@
 
 ## 2026-10-25 — Exam publication integrity tests
 - Added nine regression cases for invalid exam structures, answer-key isolation and deterministic content hashing.
+
+## 2026-10-25 — Draft question review
+- Added admin-only exam item listing and draft question review in the authoring UI, without exposing answer keys.
