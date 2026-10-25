@@ -76,3 +76,6 @@
 
 ## 2026-10-25 — Attempt history cards
 - Styled student attempt history and added current-page status summaries from real data.
+
+## 2026-10-25 — Global user directory filtering
+- Added server-backed account status/search/date ordering and total counts for accurate pagination; added refresh and count feedback.
