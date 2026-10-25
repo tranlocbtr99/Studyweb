@@ -244,3 +244,13 @@ Updated: 2026-10-24
 ## Final submission control guard (2026-10-25)
 - Commit 2bee27d passed GitHub Web checks, API checks and deployment readiness.
 - Also disable clear-answer while submission/recovery is busy so the visible answer cannot change during finalization. No API/schema change or production deployment.
+
+## Persistent learning and community features (2026-10-25)
+- Added additive core migration 0008 for per-user lesson progress, discussion posts, announcements and per-user read receipts; results migration 0002 adds the leaderboard query index. No existing user/exam/attempt records are rewritten or deleted.
+- Lesson completion/incompletion persists by authenticated user, appears on real course cards and is restored when reopening content. Student content supports loading additional pages of 100 lessons/materials and uses selected subject IDs to avoid mixing equal course titles.
+- Added subject discussion with plain-text rendering, 20-post pagination, five-post/minute per-user write limit and administrator hide/restore moderation with audit records.
+- Added administrator announcement creation/archive/restore and student per-account read state/unread count. These are in-app announcements only; no emails or push notifications are sent.
+- Added top-50 per-published-version leaderboard: one best attempt per student, ties by submission time, anonymous aliases and own-row indication; emails and raw account IDs are omitted.
+- Browser QA used the actual bundled Hono API with isolated in-memory SQLite seeded test accounts/content: verified marking a lesson complete and updating course cards, creating/reading discussion, unread-to-read transition, administrator announcement publication, moderation hide/restore control, and selecting a version to render its ranking. Fixed an ambiguous created_at column found in the moderator query and added its integration assertion.
+- Validation: frontend production build, API typecheck, all 95 tests (including 19 real SQLite integration cases) and Worker dry-run passed. QA-only authentication injection and middleware are not in the source commit or production build.
+- Production remains unchanged. Required migration checks/applications before rollout: core 0006/0007/0008 and results 0002. Live authentication, deployed E2E, mobile browser validation and load at 100–500 concurrent users remain unverified. Account-role/status mutations remain outside this community feature batch.

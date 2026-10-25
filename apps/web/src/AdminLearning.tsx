@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import {Discussion} from './Community';
 type LearningItem={id:string;subjectId:string;title:string;body:string;position?:number;url?:string;status:'draft'|'published'|'archived';updatedAt:number};
 type Subject={id:string;title:string;slug:string};
 export default function AdminLearning(){
@@ -110,6 +111,7 @@ export default function AdminLearning(){
    <p>{status==='draft'?'Bản nháp chưa hiển thị cho học viên.':'Nội dung sẽ hiển thị cho học viên sau khi lưu thành công.'}</p>
   </section>}
   {message&&<p role="status">{message}</p>}
+  {subjectId&&<details className="panel"><summary>Kiểm duyệt thảo luận môn học</summary><Discussion key={subjectId} subjectId={subjectId} admin/></details>}
   {subjectId&&<section aria-label="Nội dung đã lưu">
    <form className="actions" onSubmit={event=>{event.preventDefault();setSearch(searchInput.trim());setOffset(0)}}>
     <label>Tìm tiêu đề<input type="search" maxLength={160} value={searchInput} onChange={e=>setSearchInput(e.target.value)}/></label>
@@ -132,3 +134,4 @@ export default function AdminLearning(){
   </section>}
  </section>;
 }
+

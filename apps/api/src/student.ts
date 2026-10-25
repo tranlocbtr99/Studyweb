@@ -10,17 +10,19 @@ const versionId = z.string().uuid();
 
 student.get('/subjects',async c=>{
  try{
-  const rows=await c.env.EXAM_CORE.prepare("SELECT s.id,s.title,(SELECT COUNT(*) FROM learning_lessons l WHERE l.subject_id=s.id AND l.status='published') AS lessonCount,(SELECT COUNT(*) FROM learning_materials m WHERE m.subject_id=s.id AND m.status='published') AS materialCount,(SELECT COUNT(*) FROM exams e JOIN exam_versions v ON v.exam_id=e.id WHERE e.subject_id=s.id AND v.status='published' AND v.published_at IS NOT NULL) AS examCount FROM subjects s WHERE EXISTS(SELECT 1 FROM learning_lessons l WHERE l.subject_id=s.id AND l.status='published') OR EXISTS(SELECT 1 FROM learning_materials m WHERE m.subject_id=s.id AND m.status='published') OR EXISTS(SELECT 1 FROM exams e JOIN exam_versions v ON v.exam_id=e.id WHERE e.subject_id=s.id AND v.status='published' AND v.published_at IS NOT NULL) ORDER BY s.title LIMIT 500").all();
+  const rows=await c.env.EXAM_CORE.prepare("SELECT s.id,s.title,(SELECT COUNT(*) FROM lesson_progress p JOIN learning_lessons l ON l.id=p.lesson_id WHERE p.user_id=? AND p.completed=1 AND l.subject_id=s.id AND l.status='published') AS completedLessons,(SELECT COUNT(*) FROM learning_lessons l WHERE l.subject_id=s.id AND l.status='published') AS lessonCount,(SELECT COUNT(*) FROM learning_materials m WHERE m.subject_id=s.id AND m.status='published') AS materialCount,(SELECT COUNT(*) FROM exams e JOIN exam_versions v ON v.exam_id=e.id WHERE e.subject_id=s.id AND v.status='published' AND v.published_at IS NOT NULL) AS examCount FROM subjects s WHERE EXISTS(SELECT 1 FROM learning_lessons l WHERE l.subject_id=s.id AND l.status='published') OR EXISTS(SELECT 1 FROM learning_materials m WHERE m.subject_id=s.id AND m.status='published') OR EXISTS(SELECT 1 FROM exams e JOIN exam_versions v ON v.exam_id=e.id WHERE e.subject_id=s.id AND v.status='published' AND v.published_at IS NOT NULL) ORDER BY s.title LIMIT 500").bind(c.get('identity').id).all();
   return c.json({subjects:rows.results});
  }catch{return c.json({error:{code:'DB_UNAVAILABLE'}},503);}
 });
 
 student.get('/learning-content',async c=>{
- const subject=(c.req.query('subject')??'').trim();
- if(subject.length<1||subject.length>160)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+ const subject=(c.req.query('subject')??'').trim(),subjectId=c.req.query('subjectId'),offset=Number(c.req.query('offset')??0);
+ if(!Number.isInteger(offset)||offset<0||offset>100000)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+ if(subjectId?!z.string().uuid().safeParse(subjectId).success:(subject.length<1||subject.length>160))return c.json({error:{code:'VALIDATION_FAILED'}},400);
  try{
-  const lessons=await c.env.EXAM_CORE.prepare("SELECT l.id,l.title,l.body,l.position FROM learning_lessons l JOIN subjects s ON s.id=l.subject_id WHERE s.title=? AND l.status='published' ORDER BY l.position,l.id LIMIT 100").bind(subject).all();
-  const materials=await c.env.EXAM_CORE.prepare("SELECT m.id,m.title,m.description,m.url FROM learning_materials m JOIN subjects s ON s.id=m.subject_id WHERE s.title=? AND m.status='published' ORDER BY m.created_at DESC,m.id LIMIT 100").bind(subject).all();
+  const field=subjectId?'s.id':'s.title',value=subjectId??subject;
+  const lessons=await c.env.EXAM_CORE.prepare("SELECT l.id,l.title,l.body,l.position,COALESCE((SELECT p.completed FROM lesson_progress p WHERE p.user_id=? AND p.lesson_id=l.id),0) AS completed FROM learning_lessons l JOIN subjects s ON s.id=l.subject_id WHERE "+field+"=? AND l.status='published' ORDER BY l.position,l.id LIMIT 100 OFFSET ?").bind(c.get('identity').id,value,offset).all();
+  const materials=await c.env.EXAM_CORE.prepare("SELECT m.id,m.title,m.description,m.url FROM learning_materials m JOIN subjects s ON s.id=m.subject_id WHERE "+field+"=? AND m.status='published' ORDER BY m.created_at DESC,m.id LIMIT 100 OFFSET ?").bind(value,offset).all();
   return c.json({lessons:lessons.results,materials:materials.results});
  }catch{return c.json({error:{code:'DB_UNAVAILABLE'}},503);}
 });

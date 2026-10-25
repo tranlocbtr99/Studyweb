@@ -8,6 +8,7 @@ import AdminLearning from './AdminLearning';
 import Icon from './Icon';
 import AdminActivity from './AdminActivity';
 import ResultsDirectory from './ResultsDirectory';
+import {Notifications,Leaderboard} from './Community';
 
 type Question = { body:string; options:Array<{label:string;text:string}> };
 type Exam = { version:{id:string;examId:string;durationMinutes:number};questions:Array<{position:number;question:Question}> };
@@ -20,14 +21,16 @@ const api = async <T,>(path:string,init?:RequestInit):Promise<T> => {
   return body;
 };
 export default function App(){
-  const [studentPage,setStudentPage]=useState<'home'|'courses'|'exams'|'history'>('home');
-  const [courses,setCourses]=useState<Array<{id:string;title:string;lessonCount:number;materialCount:number;examCount:number}>>([]);
+  const [studentPage,setStudentPage]=useState<'home'|'courses'|'exams'|'history'|'notifications'|'ranking'>('home');
+  const [courses,setCourses]=useState<Array<{id:string;title:string;lessonCount:number;materialCount:number;examCount:number;completedLessons?:number}>>([]);
+  const [detailSubjectId,setDetailSubjectId]=useState('');
+  async function refreshCourses(){try{const response=await fetch('/api/v1/student/subjects',{credentials:'same-origin'});if(!response.ok)throw Error();const data=await response.json() as {subjects:typeof courses};setCourses(data.subjects)}catch{setMessage('Không tải được tiến độ khóa học.')}}
   const [globalSearch,setGlobalSearch]=useState('');
   const expiryHandled=useRef<string|null>(null);
   const [accessMode,setAccessMode]=useState<'student'|'admin'|'register'>('student');
   const [isAdmin,setIsAdmin]=useState(false);
   const [signedIn,setSignedIn]=useState<boolean|null>(null);
-  const [workspace,setWorkspace]=useState<'overview'|'authoring'|'exams'|'users'|'learning'|'results'>('overview');
+  const [workspace,setWorkspace]=useState<'overview'|'authoring'|'exams'|'users'|'learning'|'results'|'notifications'>('overview');
   const [adminOverview,setAdminOverview]=useState<{users:number;subjects:number;questions:number;exams:number;publishedVersions:number}|null>(null);
   const [overviewError,setOverviewError]=useState('');
   useEffect(()=>{
@@ -238,8 +241,8 @@ export default function App(){
       <div className="study-role">{isAdmin?'Không gian quản trị':'Không gian học viên'}</div>
       <nav className="study-menu" aria-label="Danh mục">
         {(isAdmin?[
-          ['overview','grid','Tổng quan'],['users','users','Quản lý người dùng'],['learning','book','Quản lý khóa học'],['exams','file','Quản lý đề thi'],['authoring','layers','Ngân hàng câu hỏi'],['results','chart','Kết quả & thống kê']
-        ]:[['home','home','Trang chủ'],['courses','book','Khóa học'],['exams','file','Đề thi'],['history','clock','Lịch sử']]).map(([id,icon,label])=><button key={id} type="button" title={label} aria-current={(isAdmin?workspace:studentPage)===id?'page':undefined} className={(isAdmin?workspace:studentPage)===id?'selected':''} onClick={()=>isAdmin?setWorkspace(id as typeof workspace):navigateStudent(id as typeof studentPage)}><Icon name={icon}/><span>{label}</span></button>)}
+          ['overview','grid','Tổng quan'],['users','users','Quản lý người dùng'],['learning','book','Quản lý khóa học'],['exams','file','Quản lý đề thi'],['authoring','layers','Ngân hàng câu hỏi'],['results','chart','Kết quả & thống kê'],['notifications','bell','Thông báo']
+        ]:[['home','home','Trang chủ'],['courses','book','Khóa học'],['exams','file','Đề thi'],['history','clock','Lịch sử'],['ranking','chart','Bảng xếp hạng'],['notifications','bell','Thông báo']]).map(([id,icon,label])=><button key={id} type="button" title={label} aria-current={(isAdmin?workspace:studentPage)===id?'page':undefined} className={(isAdmin?workspace:studentPage)===id?'selected':''} onClick={()=>isAdmin?setWorkspace(id as typeof workspace):navigateStudent(id as typeof studentPage)}><Icon name={icon}/><span>{label}</span></button>)}
       </nav>
       <div className="study-sidebar-footer"><span className="study-avatar">LT</span><span>{isAdmin?'Quản trị viên':'Học viên'}</span></div>
     </aside>}
@@ -268,9 +271,9 @@ export default function App(){
         <button type="button" className="student-shortcut mint" disabled={busy||!resumeAvailable} onClick={()=>void resume()}><span className="shortcut-symbol"><Icon name="refresh"/></span><strong>Tiếp tục bài thi</strong><small>{resumeAvailable?'Khôi phục bài thi đang làm':'Chưa có bài thi cần khôi phục'}</small></button>
       </div>}
       <div className="student-section-title"><h2>Khóa học của tôi</h2><button type="button" className="secondary" disabled={busy} onClick={()=>{void showCatalog();fetch('/api/v1/student/subjects',{credentials:'same-origin'}).then(async r=>{if(!r.ok)throw Error();return r.json() as Promise<{subjects:typeof courses}>}).then(data=>setCourses(data.subjects)).catch(()=>setMessage('Không tải được khóa học.'))}}>Làm mới danh sách</button></div>
-      {courses.length===0?<p className="student-empty">Chưa có khóa học được xuất bản.</p>:<div className="student-course-grid">{courses.filter(course=>course.title.toLocaleLowerCase('vi').includes(globalSearch.trim().toLocaleLowerCase('vi'))).map((course,index)=><article className="student-course" key={course.id}><div className={'student-course-art art-'+index%4} aria-hidden="true"><Icon name={['scales','book','building','chart'][index%4]}/></div><div className="student-course-body"><h3>{course.title}</h3><p>{course.lessonCount} bài học · {course.materialCount} tài liệu</p><span className="course-meta">{course.examCount} đề thi đã xuất bản</span><button type="button" className="secondary" onClick={()=>setDetailSubject(course.title)}>Vào học <Icon name="arrow"/></button></div></article>)}</div>}
+      {courses.length===0?<p className="student-empty">Chưa có khóa học được xuất bản.</p>:<div className="student-course-grid">{courses.filter(course=>course.title.toLocaleLowerCase('vi').includes(globalSearch.trim().toLocaleLowerCase('vi'))).map((course,index)=><article className="student-course" key={course.id}><div className={'student-course-art art-'+index%4} aria-hidden="true"><Icon name={['scales','book','building','chart'][index%4]}/></div><div className="student-course-body"><h3>{course.title}</h3><p>{course.lessonCount} bài học · {course.materialCount} tài liệu</p><div className="course-progress"><progress aria-label={'Tiến độ '+course.title} max={course.lessonCount||1} value={course.completedLessons??0}/><small>{course.completedLessons??0}/{course.lessonCount} bài hoàn thành</small></div><span className="course-meta">{course.examCount} đề thi đã xuất bản</span><button type="button" className="secondary" onClick={()=>{setDetailSubjectId(course.id);setDetailSubject(course.title)}}>Vào học <Icon name="arrow"/></button></div></article>)}</div>}
     </section>}
-    {signedIn&&!isAdmin&&detailSubject&&<SubjectDetail subject={detailSubject} exams={catalog.filter(item=>item.subject===detailSubject)} onClose={()=>setDetailSubject(null)} onSelectExam={id=>{setCatalogSubject(detailSubject);setDetailSubject(null);void loadExam(id);}}/>}
+    {signedIn&&!isAdmin&&detailSubject&&<SubjectDetail subjectId={detailSubjectId} onProgress={()=>void refreshCourses()} subject={detailSubject} exams={catalog.filter(item=>item.subject===detailSubject)} onClose={()=>setDetailSubject(null)} onSelectExam={id=>{setCatalogSubject(detailSubject);setDetailSubject(null);void loadExam(id);}}/>}
     {signedIn&&!isAdmin&&studentPage==='home'&&!detailSubject&&<section className="panel student-insights" aria-label="Thống kê kết quả học tập">
       <div className="student-section-title"><div><h2>Kết quả học tập của tôi</h2><p>Tổng quan các lượt thi trong trang lịch sử đã tải.</p></div><button type="button" className="secondary" disabled={busy} onClick={()=>void loadHistory(0)}>Cập nhật kết quả</button></div>
       {!historyOpen?<p className="student-empty">Chọn “Cập nhật kết quả” để xem thống kê từ lịch sử làm bài của bạn.</p>:<div className="student-insights-grid">
@@ -314,6 +317,8 @@ export default function App(){
     {signedIn&&isAdmin&&workspace==='learning'&&<AdminLearning/>}
     {signedIn&&isAdmin&&workspace==='users'&&<UserDirectory/>}
     {signedIn&&isAdmin&&workspace==='results'&&<ResultsDirectory/>}
+    {signedIn&&((isAdmin&&workspace==='notifications')||(!isAdmin&&studentPage==='notifications'))&&<Notifications admin={isAdmin}/>}
+    {signedIn&&!isAdmin&&studentPage==='ranking'&&<Leaderboard exams={catalog}/>}
     {signedIn&&!isAdmin&&studentPage==='history'&&<section className="panel" id="student-history"><div className="toolbar"><h2>Lịch sử làm bài</h2><button className="secondary" disabled={busy} onClick={()=>void loadHistory(0)}>{historyOpen?'Làm mới':'Xem lịch sử'}</button></div>
       {historyOpen&&<><div className="history-summary"><article><span>Lượt thi trong trang</span><strong>{history.length}</strong></article><article><span>Đã nộp</span><strong>{history.filter(item=>item.status==='submitted').length}</strong></article><article><span>Đang làm</span><strong>{history.filter(item=>item.status==='active').length}</strong></article></div><div className="history-list">{history.map(item=><article className="bank-question history-entry" key={item.id}><strong>{item.status==='submitted'?'Đã nộp':item.status==='active'?'Đang làm':'Đã kết thúc'}</strong><p>Bắt đầu: {new Date(item.startedAt*1000).toLocaleString('vi-VN')}</p><p>{item.points!==null&&item.maxPoints!==null?'Điểm: '+item.points+'/'+item.maxPoints:'Chưa có kết quả chấm điểm'}</p><small>Mã phiên bản: {item.versionId}</small></article>)}{history.length===0&&<p>Chưa có lượt thi trong trang này.</p>}</div><div className="toolbar"><button className="secondary" disabled={busy||historyOffset===0} onClick={()=>void loadHistory(Math.max(0,historyOffset-20))}>Trang trước</button><button className="secondary" disabled={busy||history.length<20} onClick={()=>void loadHistory(historyOffset+20)}>Trang tiếp</button></div></>}
     </section>}

@@ -1,4 +1,5 @@
 const paths:Record<string,string>={
+ bell:'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9 M10 21h4',
  home:'m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z',
  book:'M4 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-2H3V4zm16 0h-4a3 3 0 0 0-3 3m0 14a4 4 0 0 1 4-2h4V4z',
  file:'M6 3h8l4 4v14H6z M14 3v5h4 M9 12h6 M9 16h6',

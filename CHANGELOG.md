@@ -127,3 +127,10 @@
 
 ## 2026-10-25 — Submission control guard
 - Disable answer clearing while final submission/recovery is in progress.
+
+## 2026-10-25 — Learning progress and community
+- Persist lesson completion per account and display actual progress on course cards; support additional lesson/material pages.
+- Add course discussions with posting limits and recoverable administrator moderation.
+- Add in-app announcements with administrator publishing/archive/restore and per-user unread/read state.
+- Add an anonymous best-attempt leaderboard per published exam version.
+- Add core community tables/results query index and SQLite integration coverage. All 95 tests, frontend build, typechecks and Worker packaging passed; production rollout pending.

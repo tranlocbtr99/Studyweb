@@ -38,3 +38,43 @@ describe('learning and deadlines with real SQLite',()=>{
  it('blocks student access to administrative results and analytics',async()=>{const f=await fixture();try{for(const path of ['/api/v1/admin/results','/api/v1/admin/analytics'])expect((await app.request(path,{headers:f.headers},f.env)).status).toBe(403)}finally{f.close()}});
 
 });
+
+describe('persistent progress and community integration',()=>{
+ const lessonId='123e4567-e89b-42d3-a456-426614174010';
+ function seedLesson(f:Awaited<ReturnType<typeof fixture>>,status='published'){const now=Math.floor(Date.now()/1000);f.core.prepare('INSERT INTO learning_lessons VALUES(?,?,?,?,?,?,?,?)').run(lessonId,id,'Lesson with progress','Text',1,status,now,now)}
+ it('persists progress and exposes only the signed-in user completion',async()=>{const f=await fixture();try{
+  seedLesson(f);const path='/api/v1/community/lessons/'+lessonId+'/progress';
+  const write=await app.request(path,{method:'PUT',headers:f.headers,body:'{"completed":true}'},f.env);expect(write.status).toBe(200);
+  const catalog=await app.request('/api/v1/student/subjects',{headers:f.headers},f.env);expect((await catalog.json()).subjects[0].completedLessons).toBe(1);
+  const read=await app.request('/api/v1/student/learning-content?subjectId='+id,{headers:f.headers},f.env);expect((await read.json()).lessons.find((l:{id:string})=>l.id===lessonId).completed).toBe(1);
+  f.core.prepare('INSERT INTO users VALUES(?,?,?,?,?)').run('other','other@example.com','unused','active',1);f.core.prepare("UPDATE sessions SET user_id='other'").run();
+  const other=await app.request('/api/v1/student/learning-content?subjectId='+id,{headers:f.headers},f.env);expect((await other.json()).lessons.find((l:{id:string})=>l.id===lessonId).completed).toBe(0);
+ }finally{f.close()}});
+ it('keeps the progress row when marking a lesson incomplete',async()=>{const f=await fixture();try{seedLesson(f);for(const completed of [true,false])expect((await app.request('/api/v1/community/lessons/'+lessonId+'/progress',{method:'PUT',headers:f.headers,body:JSON.stringify({completed})},f.env)).status).toBe(200);expect(f.core.prepare('SELECT completed FROM lesson_progress').get()?.completed).toBe(0);expect(f.core.prepare('SELECT COUNT(*) AS n FROM lesson_progress').get()?.n).toBe(1)}finally{f.close()}});
+ it('rejects progress for unpublished lessons and cross-origin writes',async()=>{const f=await fixture();try{seedLesson(f,'draft');const path='/api/v1/community/lessons/'+lessonId+'/progress';expect((await app.request(path,{method:'PUT',headers:f.headers,body:'{"completed":true}'},f.env)).status).toBe(404);expect((await app.request(path,{method:'PUT',headers:{...f.headers,Origin:'https://other.example'},body:'{"completed":true}'},f.env)).status).toBe(403)}finally{f.close()}});
+ it('limits discussion posting, uses aliases and does not expose account IDs',async()=>{const f=await fixture();try{
+  const req={method:'POST',headers:f.headers,body:JSON.stringify({subjectId:id,body:'A question about the lesson'})};for(let i=0;i<5;i++)expect((await app.request('/api/v1/community/discussion',req,f.env)).status).toBe(201);expect((await app.request('/api/v1/community/discussion',req,f.env)).status).toBe(429);
+  const read=await app.request('/api/v1/community/discussion?subjectId='+id,{headers:f.headers},f.env);const data=await read.json();expect(data.posts).toHaveLength(5);expect(data.posts[0].isMe).toBe(true);expect(data.posts[0].author).toMatch(/^Học viên [a-f0-9]{6}$/);expect(JSON.stringify(data)).not.toContain('qa@example.com');expect(JSON.stringify(data)).not.toContain('userId');
+ }finally{f.close()}});
+ it('rejects discussion on private subjects and invalid pagination',async()=>{const f=await fixture();try{expect((await app.request('/api/v1/community/discussion',{method:'POST',headers:f.headers,body:JSON.stringify({subjectId:attemptId,body:'Hidden'})},f.env)).status).toBe(404);expect((await app.request('/api/v1/community/discussion?subjectId='+id+'&offset=-1',{headers:f.headers},f.env)).status).toBe(400)}finally{f.close()}});
+ it('allows admin moderation without deleting a post',async()=>{const f=await fixture(true);try{
+  const post=await app.request('/api/v1/community/discussion',{method:'POST',headers:f.headers,body:JSON.stringify({subjectId:id,body:'Moderate this post'})},f.env);const postId=(await post.json()).id;
+  const adminList=await app.request('/api/v1/community/admin/discussion?subjectId='+id,{headers:f.headers},f.env);expect(adminList.status).toBe(200);expect((await adminList.json()).posts[0].author).toBe('qa@example.com');
+  for(const hidden of [true,false]){expect((await app.request('/api/v1/community/admin/discussion/'+postId+'/visibility',{method:'PATCH',headers:f.headers,body:JSON.stringify({hidden})},f.env)).status).toBe(200);const read=await app.request('/api/v1/community/discussion?subjectId='+id,{headers:f.headers},f.env);expect((await read.json()).posts).toHaveLength(hidden?0:1)}expect(f.core.prepare('SELECT COUNT(*) AS n FROM discussion_posts').get()?.n).toBe(1);
+ }finally{f.close()}});
+ it('lets admins publish, archive and restore announcements and users mark read idempotently',async()=>{const f=await fixture(true);try{
+  const post=await app.request('/api/v1/community/admin/announcements',{method:'POST',headers:f.headers,body:'{"title":"New announcement","body":"Read this update"}'},f.env);expect(post.status).toBe(201);const noticeId=(await post.json()).id;
+  const read=()=>app.request('/api/v1/community/announcements',{headers:f.headers},f.env);expect((await (await read()).json()).unread).toBe(1);
+  for(let i=0;i<2;i++)expect((await app.request('/api/v1/community/announcements/'+noticeId+'/read',{method:'PUT',headers:f.headers},f.env)).status).toBe(200);expect((await (await read()).json()).unread).toBe(0);expect(f.core.prepare('SELECT COUNT(*) AS n FROM announcement_reads').get()?.n).toBe(1);
+  for(const archived of [true,false]){expect((await app.request('/api/v1/community/admin/announcements/'+noticeId,{method:'PATCH',headers:f.headers,body:JSON.stringify({archived})},f.env)).status).toBe(200);expect((await (await read()).json()).announcements).toHaveLength(archived?0:1)}
+ }finally{f.close()}});
+ it('prevents students publishing announcements or moderating discussion',async()=>{const f=await fixture();try{expect((await app.request('/api/v1/community/admin/announcements',{method:'POST',headers:f.headers,body:'{"title":"Fake announcement","body":"Not authorized"}'},f.env)).status).toBe(403);expect((await app.request('/api/v1/community/admin/discussion/'+id+'/visibility',{method:'PATCH',headers:f.headers,body:'{"hidden":true}'},f.env)).status).toBe(403)}finally{f.close()}});
+ it('ranks each user once per published version without exposing identity',async()=>{const f=await fixture();try{
+  const now=Math.floor(Date.now()/1000);f.core.prepare('INSERT INTO exams VALUES(?,?,?)').run('exam',id,'Published exam');f.core.prepare("INSERT INTO exam_versions(id,exam_id,version_number,content_hash,status,published_at) VALUES(?,?,1,'hash','published',?)").run(id,'exam',now);
+  expect((await app.request('/api/v1/student/attempts/'+attemptId+'/submit',{method:'POST',headers:f.headers,body:JSON.stringify({saveVersion:1,idempotencyKey:attemptId})},f.env)).status).toBe(200);
+  f.results.prepare("INSERT INTO attempts(id,user_id,exam_version_id,exam_content_hash,grading_snapshot_json,started_at,expires_at,status,save_version,answer_snapshot_json,updated_at,submitted_at) VALUES('second','user',?,'hash','[]',?,?, 'submitted',0,'{}',?,?)").run(id,now-30,now+30,now,now);
+  f.results.prepare("INSERT INTO scores VALUES('second-score','second',0,1,?,'v1')").run(now);
+  const read=await app.request('/api/v1/community/leaderboard?versionId='+id,{headers:f.headers},f.env);expect(read.status).toBe(200);const data=await read.json();expect(data.entries).toHaveLength(1);expect(data.entries[0]).toMatchObject({rank:1,isMe:true,points:1,maxPoints:1});expect(JSON.stringify(data)).not.toContain('userId');expect(JSON.stringify(data)).not.toContain('qa@example.com');
+ }finally{f.close()}});
+ it('hides rankings of unpublished versions and requires a session',async()=>{const f=await fixture();try{expect((await app.request('/api/v1/community/leaderboard?versionId='+id,{headers:f.headers},f.env)).status).toBe(404);expect((await app.request('/api/v1/community/announcements')).status).toBe(401)}finally{f.close()}});
+});

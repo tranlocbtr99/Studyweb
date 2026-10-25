@@ -8,6 +8,7 @@ import type { Env } from './auth';
 import admin from './admin';
 import student from './student';
 import registration from './registration';
+import community from './community';
 const app = new Hono<Env>();
 const error = (code: string, message: string, requestId: string) => ({ error: { code, message, requestId } });
 app.use('*', async (c, next) => {
@@ -83,9 +84,11 @@ app.get('/api/v1/exams/:id', async c => {
 app.route('/api/v1/auth/register',registration);
 app.route('/api/v1/admin',admin);
 app.route('/api/v1/student',student);
+app.route('/api/v1/community',community);
 app.get('/api/v1/me', requireSession, c => c.json({ user: c.get('identity') }));
 app.get('/api/v1/admin/status', requireSession, requireRole('admin'), c => c.json({ status: 'authorized' }));
 // Student attempts store trusted private grading snapshots in EXAM_RESULTS; submission remains disabled until atomic finalization.
 app.notFound(c => c.json(error('NOT_FOUND', 'Route not found', ''), 404));
 app.onError((_, c) => c.json(error('INTERNAL_ERROR', 'Internal server error', ''), 500));
 export default app;
+
