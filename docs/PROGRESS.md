@@ -294,3 +294,10 @@ Updated: 2026-10-24
 - Imports atomically create exam drafts and subject question-bank entries, with idempotency receipts and subject-scoped deduplication. Editing bank content does not mutate published exam snapshots.
 - Validation: API typecheck and 115 tests passed; production frontend build passed; five nonempty upgrade/native Wrangler checks passed. Migration 0009 adds recoverable-removal columns and import metadata. Release includes an isolated actual Workers AI extraction/conversion probe before production changes.
 - Browser visual review of this update was blocked by the browser URL security policy; no workaround attempted. Full interactive file-upload E2E remains unverified. Deployment pending source CI and release checks.
+
+### Hosted import/removal release verification
+- Source c30c944 passed API, Web, Database, native D1 migration and deployment-readiness workflows. AI probe propagation/cleanup fix 8ed4a7 followed; release 185b6a4df5b0cfe921ea2d0cbd35cc12df876ade deployed successfully in Actions run 40209987458.
+- Live Worker version: 524ee9a3-bfb5-4d1c-b905-e6be729c69e8. URL: https://studyweb-api.tranlocbtr99.workers.dev/.
+- Verified actual Workers AI extraction and document conversion on an isolated synthetic Worker; both current and abandoned probe Workers were removed. Migration 0009 applied without decreasing existing row counts or changing published exam content.
+- Live frontend/API fingerprints and assets matched the release. Real registration/login, student reads, admin isolation, CSRF and logout passed. Synthetic QA account was disabled and sessions revoked afterward.
+- All 115 API tests and five upgrade/native Wrangler checks passed again in release. Actual DOCX extraction preserved Vietnamese question/option/answer text in a synthetic fixture. Complete browser upload/admin-authoring E2E remains unverified because browser URL policy blocked preview access; owner credentials were not used. Existing concurrent-user load acceptance remains outstanding.
