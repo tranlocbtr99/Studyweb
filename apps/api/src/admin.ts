@@ -246,6 +246,21 @@ admin.post('/exam-versions', sameOrigin, async c => {
   }
 });
 
+
+admin.get('/exam-versions/:id/items',async c=>{
+  const versionId=c.req.param('id');
+  if(!z.string().uuid().safeParse(versionId).success)return c.json({error:{code:'VALIDATION_FAILED'}},400);
+  try{
+    const version=await c.env.EXAM_CORE.prepare('SELECT id,status FROM exam_versions WHERE id=?').bind(versionId).first<{id:string;status:string}>();
+    if(!version)return c.json({error:{code:'VERSION_NOT_FOUND'}},404);
+    const result=await c.env.EXAM_CORE.prepare('SELECT id,position,question_snapshot_json AS snapshot FROM exam_items WHERE exam_version_id=? ORDER BY position LIMIT 1000').bind(versionId).all();
+    return c.json({version,items:(result.results as Array<{id:string;position:number;snapshot:string}>).map(row=>{
+      const question=JSON.parse(row.snapshot) as {body:string;options:Array<{label:string;text:string}>};
+      return {id:row.id,position:row.position,body:question.body,options:question.options};
+    })});
+  }catch{return c.json({error:{code:'READ_FAILED'}},503);}
+});
+
 const examItemSchema = z.object({
   versionId: z.string().uuid(),
   questionId: z.string().uuid(),
