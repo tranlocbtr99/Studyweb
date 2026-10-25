@@ -129,3 +129,8 @@ Updated: 2026-10-24
 - Student catalog and exam header show the configured duration. Server sets attempt expiry using the published version's duration instead of a global constant.
 - Student dashboard now has paginated personal attempt history, statuses, dates and scores using the existing authorized /attempts endpoint.
 - Development remains feature-first at user's request. Migrations not applied to production; integration tests and deployment pending.
+
+## LTStudy screenshot-aligned UI foundation (2026-10-25)
+- Introduced a responsive desktop sidebar and content frame for authenticated student/admin views, pastel glass styling, consistent navigation, and refreshed exam choice surfaces.
+- Reference image covers six target screens; remaining course lessons, user-management and real analytics screens require separate backed features. No fabricated dashboard metrics.
+- This is a visual foundation, not pixel-perfect completion. Integrated visual and functional testing deferred until feature completion; no production deploy.
