@@ -238,7 +238,7 @@ export default function App(){
   },[attempt?.id,remaining,result,busy]);
   return <main className={signedIn?'shell study-layout':'shell auth-shell'}>
     {signedIn&&<aside className="study-sidebar" aria-label="Điều hướng chính">
-      <div className="study-logo"><Icon name="cap"/><strong>LTStudy</strong></div>
+      <div className="study-logo"><Icon name="cap"/><strong>LTMstu</strong></div>
       <div className="study-role">{isAdmin?'Không gian quản trị':'Không gian học viên'}</div>
       <nav className="study-menu" aria-label="Danh mục">
         {(isAdmin?[
@@ -249,8 +249,8 @@ export default function App(){
     </aside>}
     <div className="study-main">{signedIn===null&&<div className="auth-loading" role="status"><Icon name="cap"/><span>Đang mở không gian học tập…</span></div>}
     <header className="study-topbar"><form className="global-search" onSubmit={event=>{event.preventDefault();if(isAdmin){setWorkspace('authoring')}else{navigateStudent('exams');setCatalogSearch(globalSearch)}}}><Icon name="search"/><input aria-label="Tìm kiếm" value={globalSearch} onChange={event=>setGlobalSearch(event.target.value)} placeholder={isAdmin?'Tìm câu hỏi, nội dung…':'Tìm khóa học, đề thi, tài liệu…'}/><button type="submit" className="icon-button" aria-label="Tìm kiếm"><Icon name="arrow"/></button></form><span className="topbar-caption">{isAdmin?'Không gian quản trị':'Không gian học tập'}</span><span className="study-avatar" aria-label={isAdmin?'Quản trị viên':'Học viên'}>{isAdmin?'QT':'HV'}</span></header>
-    {signedIn===false&&<section className="auth-screen" aria-label="Chào mừng đến LTStudy">
-      <div className="auth-intro"><div className="auth-brand"><span className="auth-brand-mark"><Icon name="cap"/></span><strong>LTStudy<span>LEARN. PRACTICE. GROW.</span></strong></div><p className="auth-eyebrow">MỖI NGÀY MỘT BƯỚC TIẾN</p><h1>Học hôm nay.<br/><em>Tự tin ngày mai.</em></h1><p className="auth-description">Một không gian để ôn tập kiến thức, luyện đề và theo dõi hành trình học tập. LTStudy đồng hành cùng bạn, từ những bài học nhỏ đến những kỳ thi quan trọng.</p>
+    {signedIn===false&&<section className="auth-screen" aria-label="Chào mừng đến LTMstu">
+      <div className="auth-intro"><div className="auth-brand"><span className="auth-brand-mark"><Icon name="cap"/></span><strong>LTMstu<span>LEARN. PRACTICE. GROW.</span></strong></div><p className="auth-eyebrow">MỖI NGÀY MỘT BƯỚC TIẾN</p><h1>Học hôm nay.<br/><em>Tự tin ngày mai.</em></h1><p className="auth-description">Một không gian để ôn tập kiến thức, luyện đề và theo dõi hành trình học tập. LTMstu đồng hành cùng bạn, từ những bài học nhỏ đến những kỳ thi quan trọng.</p>
       <div className="auth-art" aria-hidden="true"><div className="auth-art-orbit"/><div className="auth-art-sheet back"/><div className="auth-art-sheet front"><span className="auth-art-book"><Icon name="book"/></span><span className="auth-art-check">✓</span><strong>Chậm mà chắc.<br/>Học để hiểu sâu.</strong><div className="auth-art-lines"><i/><i/><i/></div></div><span className="auth-art-tag"><Icon name="cap"/> Sẵn sàng cho kỳ thi</span></div>
       <div className="auth-features"><span><Icon name="book"/> Ôn tập theo môn</span><span><Icon name="file"/> Luyện đề chủ động</span><span><Icon name="chart"/> Theo dõi tiến bộ</span></div></div>
       <div className="auth-form-card"><span className="auth-card-eyebrow">KHÔNG GIAN CỦA BẠN</span><h2 className="auth-welcome">Rất vui được gặp bạn.</h2><p className="auth-form-description">Chọn cách truy cập phù hợp để bắt đầu hành trình học tập.</p>
@@ -271,7 +271,7 @@ export default function App(){
     </section>}
     {signedIn&&<div className="toolbar account"><span>Đã đăng nhập</span><button className="secondary" disabled={busy} onClick={logout}>Đăng xuất</button></div>}
     {signedIn&&!isAdmin&&(studentPage==='home'||studentPage==='courses')&&!detailSubject&&<section className="panel student-home" aria-label="Trang chủ học viên">
-      {studentPage==='home'&&<div className="student-hero"><div><span className="student-eyebrow">LTStudy · Học tập mỗi ngày</span><h1>Chào mừng trở lại 👋</h1><p>Tiếp tục ôn tập và kiểm tra kiến thức theo tiến độ của bạn.</p></div><div className="student-hero-badge"><span>Đề thi đã tải</span><strong>{catalog.length}</strong><small>Dữ liệu từ hệ thống</small></div></div>}
+      {studentPage==='home'&&<div className="student-hero"><div><span className="student-eyebrow">LTMstu · Học tập mỗi ngày</span><h1>Chào mừng trở lại 👋</h1><p>Tiếp tục ôn tập và kiểm tra kiến thức theo tiến độ của bạn.</p></div><div className="student-hero-badge"><span>Đề thi đã tải</span><strong>{catalog.length}</strong><small>Dữ liệu từ hệ thống</small></div></div>}
       {studentPage==='home'&&<div className="student-shortcuts">
         <button type="button" className="student-shortcut blue" disabled={busy} onClick={()=>navigateStudent('exams')}><span className="shortcut-symbol"><Icon name="file"/></span><strong>Đề thi</strong><small>Khám phá đề thi đã xuất bản</small></button>
         <button type="button" className="student-shortcut pink" disabled={busy} onClick={()=>navigateStudent('history')}><span className="shortcut-symbol"><Icon name="clock"/></span><strong>Lịch sử</strong><small>Xem kết quả đã làm</small></button>
@@ -290,7 +290,7 @@ export default function App(){
       </div>}
     </section>}
     {signedIn&&isAdmin&&workspace==='overview'&&<section className="panel admin-home">
-      <div className="admin-home-heading"><div><span className="admin-eyebrow">LTStudy · Quản trị</span><h1>Không gian quản trị</h1><p>Quản lý nội dung học tập và tổ chức thi trực tuyến.</p></div><span className="admin-live">Dữ liệu hệ thống</span></div>
+      <div className="admin-home-heading"><div><span className="admin-eyebrow">LTMstu · Quản trị</span><h1>Không gian quản trị</h1><p>Quản lý nội dung học tập và tổ chức thi trực tuyến.</p></div><span className="admin-live">Dữ liệu hệ thống</span></div>
       <nav className="admin-navigation" aria-label="Điều hướng quản trị">
         <button className={workspace==='overview'?'':'secondary'} onClick={()=>setWorkspace('overview')}>Tổng quan</button>
         <button className="secondary" onClick={()=>setWorkspace('authoring')}>Tạo đề thi</button><button className="secondary" onClick={()=>setWorkspace('users')}>Người dùng</button>

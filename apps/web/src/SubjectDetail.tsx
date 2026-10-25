@@ -40,7 +40,7 @@ export default function SubjectDetail({subjectId,subject,exams,onClose,onSelectE
  const visibleExams=exams.filter(exam=>exam.title.toLocaleLowerCase('vi').includes(search.trim().toLocaleLowerCase('vi')));
  const tabs:Array<{id:Tab;label:string}>=[{id:'lessons',label:'Bài học'},{id:'materials',label:'Tài liệu'},{id:'exams',label:'Đề thi'},...(subjectId?[{id:'discussion' as Tab,label:'Thảo luận'}]:[])];
  return <section className="panel subject-detail" aria-label={'Chi tiết môn học '+subject}>
-   <div className="subject-detail-hero"><div><span className="subject-detail-eyebrow">LTStudy · Môn học</span><h2>{subject}</h2><p>{exams.length} đề thi đã xuất bản</p></div><button type="button" className="secondary" onClick={onClose}>Đóng</button></div>
+   <div className="subject-detail-hero"><div><span className="subject-detail-eyebrow">LTMstu · Môn học</span><h2>{subject}</h2><p>{exams.length} đề thi đã xuất bản</p></div><button type="button" className="secondary" onClick={onClose}>Đóng</button></div>
    {!loadingContent&&!contentError&&lessons.length>0&&<div className="lesson-progress"><span>Đã hoàn thành {lessons.filter(lesson=>lesson.completed).length}/{lessons.length} bài đã tải</span><progress aria-label="Tiến độ các bài học đã tải" max={lessons.length} value={lessons.filter(lesson=>lesson.completed).length}/></div>}
    {progressError&&<p role="alert" className="notice">{progressError}</p>}
    <div className="subject-tabs" role="tablist" aria-label="Nội dung môn học">

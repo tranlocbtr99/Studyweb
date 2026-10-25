@@ -378,3 +378,9 @@ Updated: 2026-10-24
 - Release 925f570c2af1a8cffafda82ecc9eb5266760a0a2 succeeded in run 40229328595; source Web/deployment-readiness CI passed. Existing release safety, API tests and authenticated live checks passed without changing authentication or database behavior.
 - Hosted signed-out browser verified the introduction, “Học hôm nay. Tự tin ngày mai.” headline, encouragement and “Designed by LocTM” footer. Student/admin/register modes switch to their expected forms; original password input types and autocomplete remain intact.
 - Desktop visual QA at a 1363-pixel viewport showed document width 1363 (no horizontal overflow); the introduction, credential form and footer fit the captured view. Screenshot retained for the user. Responsive CSS is included; a real mobile-device walkthrough was not performed.
+
+
+## LTMstu display-name update (2026-10-26)
+- Renamed visible LTStudy branding to the exact requested “LTMstu” across the welcome introduction, sidebar, student/admin headings and subject pages, plus browser title and description.
+- Existing origin, repository, cookie/session/storage keys and release fingerprint identifiers retain their internal names so current sessions and saved attempts continue working. “Designed by LocTM” stays intact.
+- Frontend production build passed. Production publication and hosted display verification pending.

@@ -199,3 +199,8 @@
 - Frontend production build passed; hosted visual verification pending.
 
 - Release run 40229328595 succeeded. Hosted visual QA verified all three access modes, introduction/credit/footer and desktop layout without horizontal overflow.
+
+
+## 2026-10-26 — LTMstu branding
+- Rename the website's displayed name, title and description to LTMstu; preserve existing session/data identifiers and LocTM credit.
+- Frontend build passed; rollout pending.
