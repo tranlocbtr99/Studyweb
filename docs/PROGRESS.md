@@ -143,3 +143,7 @@ Updated: 2026-10-24
 - Student home now has LTStudy-style hero, exam catalog count, quick actions (catalog, history, resume), and subject cards derived from actual published exam catalog.
 - Course tiles represent subjects with published exams, not lesson-progress records; no fabricated completion metrics.
 - Visual and functional integration verification deferred to final consolidation; not deployed.
+
+## Attempt history visual improvement (2026-10-25)
+- Added three live current-page counters (attempts, submitted, active) and styled attempt history entries as cards.
+- Counts explicitly describe the loaded page rather than global platform totals. No production deployment or completed integration tests.
