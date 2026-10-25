@@ -63,3 +63,7 @@
 
 ## 2026-10-25 — Student exam usability batch
 - Search/filter published exam catalog; completion progress meter; unanswered navigation and clear-answer control.
+
+## 2026-10-25 — Batch: exam duration and student history
+- Configurable 5–240-minute exam duration with backward-compatible 90-minute default, enforced by API and displayed in both interfaces.
+- Paginated student attempt history with status and score summaries.
